@@ -1,0 +1,49 @@
+name: compile-macosx-plugin
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    name: Compile MacOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Clone OSQP
+        uses: actions/checkout@main
+        with:
+          repository: osqp/osqp
+      - name: Clone ECOS
+        uses: actions/checkout@main
+        with:
+          repository: embotech/ecos
+      - name: dependencies and compile 
+        run: |
+          brew install cmake
+          cd osqp
+          mkdir  build
+          cd build
+          cmake -G "Unix Makefiles" ..
+          cmake --build .
+          cd ../..
+          cd ecos
+          make
+          cd ..
+          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H=./ecos/include ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a"
+          shasum src/build/honestosqp_macosx.plugin
+          shasum src/build/honestecos_macosx.plugin
+          otool -L src/build/honestosqp_macosx.plugin
+          otool -L src/build/honestecos_macosx.plugin
+      - name: commit plugin
+        run: |
+          git config --global user.name 'Mauricio Caceres'
+          git config --global user.email 'mauricio.caceres.bravo@gmail.com'
+          git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
+          git add src/build/honestosqp_macosx.plugin
+          git add src/build/honestecos_macosx.plugin
+          echo ${GITHUB_REF##*/}
+          [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
+          git fetch
+          git push -f origin HEAD:${GITHUB_REF##*/}
