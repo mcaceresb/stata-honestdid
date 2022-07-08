@@ -21,3 +21,5 @@ f src/mata/flci.mata
 f src/mata/osqp.mata
 f src/build/honestecos_unix.plugin
 f src/build/honestosqp_unix.plugin
+f src/build/honestecos_windows.plugin
+f src/build/honestosqp_windows.plugin
