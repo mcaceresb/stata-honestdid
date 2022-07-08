@@ -26,7 +26,7 @@ STDLL stata_call(int argc, char * argv[])
 ST_retcode honestecos(char *fname)
 {
     ST_retcode rc = 0;
-    ST_double *x, obj;
+    ST_double *x = NULL, obj;
     uint32_t i;
     FILE *fhandle;
 

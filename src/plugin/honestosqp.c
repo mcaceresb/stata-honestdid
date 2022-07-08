@@ -27,7 +27,7 @@ ST_retcode honestosqp(char *fname)
 {
     ST_retcode rc = 0;
     FILE *fhandle;
-    ST_double *x, obj;
+    ST_double *x = NULL, obj;
 
     c_int n, m, i;
     c_int P_nnz, A_nnz;
@@ -39,7 +39,7 @@ ST_retcode honestosqp(char *fname)
     // Workspace structures
     // --------------------
 
-    OSQPWorkspace *work;
+    OSQPWorkspace *work = NULL;
     OSQPSettings  *settings = (OSQPSettings *) c_malloc(sizeof(OSQPSettings));
     OSQPData      *data     = (OSQPData *)     c_malloc(sizeof(OSQPData));
 
