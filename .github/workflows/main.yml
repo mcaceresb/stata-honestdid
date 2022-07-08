@@ -21,9 +21,6 @@ jobs:
         with:
           repository: embotech/ecos
           path: './ecos'
-        run: |
-          pwd
-          ls -laht
       - name: dependencies and compile 
         run: |
           pwd
