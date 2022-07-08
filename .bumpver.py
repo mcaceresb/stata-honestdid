@@ -3,6 +3,8 @@
 
 import argparse
 from datetime import datetime, date
+from os import path, makedirs, unlink
+from zipfile import ZipFile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('bump',
@@ -34,19 +36,62 @@ config_files = [
     ('src/ado/honestdid.ado', 'version {major}.{minor}.{patch} {date:%d%b%Y}')
 ]
 
+config_standalone = {
+    'honestdid': [
+        'test/test-replication.do',
+        'test/LWdata_RawData.dta',
+        'src/build/lhonestdid.mlib',
+        'src/ado/honestdid.ado',
+        'doc/honestdid.sthlp',
+        'src/mata/ecos.mata',
+        'src/mata/flci.mata',
+        'src/mata/honestdid.mata',
+        'src/mata/osqp.mata',
+        'src/build/honestosqp_unix.plugin',
+        'src/build/honestosqp_macosx.plugin',
+        'src/build/honestosqp_windows.plugin',
+        'src/build/honestecos_unix.plugin',
+        'src/build/honestecos_macosx.plugin',
+        'src/build/honestecos_windows.plugin'
+    ]
+}
+
 # ---------------------------------------------------------------------
 # Bump
 
 
 def main(bump, dry = False):
-    args = ['major', 'minor', 'patch']
+    args = ['major', 'minor', 'patch', 'standalone']
     if bump not in args:
         msg = f"'{bump}' uknown; can only bump: {', '.join(args)}"
         raise Warning(msg)
 
-    current_kwargs, update_kwargs = bump_kwargs(bump, config_version, config_date)
-    for file, string in config_files:
-        bump_file(file, string, current_kwargs, update_kwargs, dry)
+    if bump == 'standalone':
+        make_standalone(config_standalone, dry)
+    else:
+        current_kwargs, update_kwargs = bump_kwargs(bump, config_version, config_date)
+        for file, string in config_files:
+            bump_file(file, string, current_kwargs, update_kwargs, dry)
+
+
+def make_standalone(standalone, dry = False):
+    for label, files in standalone.items():
+        outzip = f'standalone/{label}-{config_version}.zip'
+
+        if dry:
+            for f in files:
+                print(f'{f} -> {outzip}')
+        else:
+            if not path.isdir('standalone'):
+                makedirs('standalone')
+
+            if path.isfile(outzip):
+                unlink(outzip)
+
+            with ZipFile(outzip, 'w') as zf:
+                for f in files:
+                    print(f'{f} -> {outzip}')
+                    zf.write(f, path.basename(f))
 
 
 def bump_file(file, string, current, update, dry = False):

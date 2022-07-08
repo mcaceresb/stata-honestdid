@@ -1,12 +1,20 @@
-mata: mata clear
-mata: mata set matastrict on
-mata: mata set mataoptimize on
-cd src/build
-do ../mata/osqp.mata
-do ../mata/ecos.mata
-do ../mata/flci.mata
-do ../mata/honestdid.mata
-do ../ado/honestdid.ado
+* mata: mata clear
+* mata: mata set matastrict on
+* mata: mata set mataoptimize on
+* cd src/build
+* do ../mata/osqp.mata
+* do ../mata/ecos.mata
+* do ../mata/flci.mata
+* do ../mata/honestdid.mata
+* do ../ado/honestdid.ado
+
+* Run these if Stata doesn't find the functions:
+* ----------------------------------------------
+* do osqp.mata
+* do ecos.mata
+* do flci.mata
+* do honestdid.mata
+* do honestdid.ado
 
 ***********************************************************************
 *                                                                     *
@@ -40,7 +48,7 @@ st_matrix("sigma", sigma)
 end
 
 honestdid, b(betahat) vcov(sigma) reference(4) coefplot
-graph export ../../test/coefplot.pdf, replace
+* graph export ../../test/coefplot.pdf, replace
 
 ***********************************************************************
 *                                                                     *
@@ -48,10 +56,11 @@ graph export ../../test/coefplot.pdf, replace
 *                                                                     *
 ***********************************************************************
 
-use ../../test/LWdata_RawData.dta, clear
+* use ../../test/LWdata_RawData.dta, clear
+use LWdata_RawData.dta, clear
 replace nobs = round(nobs, 1)
 reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant
 matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
 honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot
-graph export ../../test/coefplot2.pdf, replace
+* graph export ../../test/coefplot2.pdf, replace
