@@ -15,10 +15,15 @@ jobs:
         uses: actions/checkout@main
         with:
           repository: osqp/osqp
+          path: './osqp'
       - name: Clone ECOS
         uses: actions/checkout@main
         with:
           repository: embotech/ecos
+          path: './ecos'
+        run: |
+          pwd
+          ls -laht
       - name: dependencies and compile 
         run: |
           pwd
