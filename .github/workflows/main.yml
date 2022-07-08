@@ -34,7 +34,7 @@ jobs:
           cmake -G "Unix Makefiles" ..
           cmake --build .
           cd ../..
-          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H=./ecos/include ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a"
+          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a"
           shasum src/build/honestosqp_macosx.plugin
           shasum src/build/honestecos_macosx.plugin
           otool -L src/build/honestosqp_macosx.plugin
