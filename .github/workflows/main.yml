@@ -21,7 +21,6 @@ jobs:
           repository: embotech/ecos
       - name: dependencies and compile 
         run: |
-          brew install cmake
           cd osqp
           mkdir  build
           cd build
