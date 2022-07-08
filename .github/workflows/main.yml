@@ -21,6 +21,8 @@ jobs:
           repository: embotech/ecos
       - name: dependencies and compile 
         run: |
+          pwd
+          ls -laht
           cd osqp
           mkdir  build
           cd build
