@@ -1,0 +1,23 @@
+v 0.1.0
+d
+d 'HONESTDID': HonestDiD
+d
+d KW: honestdid
+d KW: did
+d KW: honest
+d KW: diff-in-diff
+d KW: event study
+d
+d Requires: Stata version 14.1
+d
+d Distribution-Date: 20220707
+d
+f src/build/lhonestdid.mlib
+f src/ado/honestdid.ado
+f doc/honestdid.sthlp
+f src/mata/honestdid.mata
+f src/mata/ecos.mata
+f src/mata/flci.mata
+f src/mata/osqp.mata
+f src/build/honestecos_unix.plugin
+f src/build/honestosqp_unix.plugin

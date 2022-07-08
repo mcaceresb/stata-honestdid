@@ -1,14 +1,14 @@
-cap mata mata drop findOptimalFLCI()
-cap mata mata drop _findOptimalFLCI_helper()
-cap mata mata drop _honestMatrices()
-cap mata mata drop _findHForMinimumBias()
-cap mata mata drop _computeSigmaLFromW()
-cap mata mata drop _createMatricesForVarianceFromW()
-cap mata mata drop _honestInverseIndex()
-cap mata mata drop _createConstraints()
-cap mata mata drop _findLowestH()
-cap mata mata drop _qfoldednormal()
+cap mata mata drop _flciFindOptimal()
 cap mata mata drop _flciResults()
+cap mata mata drop _flciFindOptimalHelper()
+cap mata mata drop _flciFoldedNormalQuantiles()
+cap mata mata drop _flciMatrices()
+cap mata mata drop _flciFindHMinBias()
+cap mata mata drop _flciSigmaLFromW()
+cap mata mata drop _flciMatricesForVarianceFromW()
+cap mata mata drop _flciFindLowestH()
+cap mata mata drop _flciCreateConstraints()
+cap mata mata drop _flciFindWorstCaseBiasGivenH()
 
 mata:
 struct _flciResults {
@@ -20,8 +20,8 @@ struct _flciResults {
     real scalar exitcode
 }
 
-
-struct _flciResults scalar function findOptimalFLCI(
+// findOptimalFLCI
+struct _flciResults scalar function _flciFindOptimal(
     real vector betahat,
     real matrix sigma,
     real scalar numPrePeriods,
@@ -33,17 +33,17 @@ struct _flciResults scalar function findOptimalFLCI(
 {
     struct _flciResults scalar results
 
-    if ( args() < 6 ) l_vec = basisVector(1, numPostPeriods)
+    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
     if ( args() < 7 ) alpha = 0.05
     if ( args() < 8 ) numPoints = 100
 
-    results = _findOptimalFLCI_helper(sigma,
-                                      M,
-                                      numPrePeriods,
-                                      numPostPeriods,
-                                      l_vec,
-                                      alpha,
-                                      numPoints)
+    results = _flciFindOptimalHelper(sigma,
+                                     M,
+                                     numPrePeriods,
+                                     numPostPeriods,
+                                     l_vec,
+                                     alpha,
+                                     numPoints)
 
     results.FLCI = (results.optimalVec' * betahat' - results.optimalHalfLength,
                     results.optimalVec' * betahat' + results.optimalHalfLength)
@@ -54,12 +54,12 @@ end
 
 ***********************************************************************
 *                                                                     *
-*                       _findOptimalFLCI_helper                       *
+*                       .findOptimalFLCI_helper                       *
 *                                                                     *
 ***********************************************************************
 
 mata
-struct _flciResults scalar function _findOptimalFLCI_helper(
+struct _flciResults scalar function _flciFindOptimalHelper(
     real matrix sigma,
     real scalar M,
     real scalar numPrePeriods,
@@ -70,25 +70,26 @@ struct _flciResults scalar function _findOptimalFLCI_helper(
 {
     struct _flciResults scalar results
     real rowvector hGrid
-    real colvector sel, selmin
-    real scalar h0, hMin, n
+    real colvector sel, selmin, CI_halflength, optimal_l
+    real scalar h0, hMin, n, nn, i, maxBias, optimalHalfLength
     real matrix biasDF
 
-    n      = numPrePeriods + numPostPeriods
+    // n   = numPrePeriods + numPostPeriods
+    n      = numPrePeriods + numPrePeriods
     nn     = length((n/2 + 1)::n)
-    h0     = _findHForMinimumBias(sigma, numPrePeriods, numPostPeriods, l_vec)
-    hMin   = _findLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
-    hGrid  = _honest_linspace(hMin, h0, numPoints)
+    h0     = _flciFindHMinBias(sigma, numPrePeriods, numPostPeriods, l_vec)
+    hMin   = _flciFindLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
+    hGrid  = _honestLinspace(hMin, h0, numPoints)
     biasDF = J(numPoints, 2 + n + 2 * nn, .)
     for (i = 1; i <= numPoints; i++) {
-        biasDF[i, .] = _findWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
+        biasDF[i, .] = _flciFindWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
     }
     sel     = selectindex((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10))
     biasDF  = biasDF[sel, .]
     hGrid   = hGrid'[sel, .]
     maxBias = biasDF[., 2] :* M
 
-    CI_halflength = _qfoldednormal(1-alpha, maxBias :/ hGrid) :* hGrid
+    CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
     optimalHalfLength = min(CI_halflength)
     selmin = selectindex(optimalHalfLength :== CI_halflength)
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
@@ -102,12 +103,12 @@ struct _flciResults scalar function _findOptimalFLCI_helper(
     return(results)
 }
 
-real vector function _qfoldednormal(real scalar p,
-                                    real vector mu,
-                                    | real scalar sd,
-                                    real scalar numDraws) {
+real vector function _flciFoldedNormalQuantiles(real scalar p,
+                                                real vector mu,
+                                                | real scalar sd,
+                                                real scalar numDraws) {
     real matrix qvector, x
-    real vector original, mulong
+    real vector original, mulong, normDraws
     real scalar m, i, g
 
     if ( args() < 3 ) sd = 1
@@ -128,40 +129,40 @@ end
 
 ***********************************************************************
 *                                                                     *
-*                        _findHForMinimumBias                         *
+*                        .findHForMinimumBias                         *
 *                                                                     *
 ***********************************************************************
 
 mata
-struct _honestMatrices {
+struct _flciMatrices {
     real matrix A_quadratic_sd
     real matrix A_linear_sd
     real matrix A_constant_sd
 }
 
-real scalar function _findHForMinimumBias(real matrix sigma,
-                                          real scalar numPrePeriods,
-                                          real scalar numPostPeriods,
-                                          real colvector l_vec)
+real scalar function _flciFindHMinBias(real matrix sigma,
+                                       real scalar numPrePeriods,
+                                       real scalar numPostPeriods,
+                                       real colvector l_vec)
 {
     real scalar hsquared
     real rowvector w
     w = (J(1, (numPrePeriods-1), 0), (1..numPostPeriods) * l_vec)
-    hsquared = _computeSigmaLFromW(w, sigma, numPrePeriods, l_vec)
+    hsquared = _flciSigmaLFromW(w, sigma, numPrePeriods, l_vec)
     return(sqrt(hsquared))
 }
 
 // Compute variance of affine estmiator with choice w
-real scalar function _computeSigmaLFromW(real rowvector w,
-                                         real matrix sigma,
-                                         real scalar numPrePeriods,
-                                         real colvector l_vec)
+real scalar function _flciSigmaLFromW(real rowvector w,
+                                      real matrix sigma,
+                                      real scalar numPrePeriods,
+                                      real colvector l_vec)
 {
-    struct _honestMatrices  scalar A_matrices
+    struct _flciMatrices  scalar A_matrices
     real colvector UstackW
     real scalar varL
 
-    A_matrices = _createMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
+    A_matrices = _flciMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
     UstackW    = J(length(w), 1, 0) \ colshape(w, 1)
     varL = UstackW' * A_matrices.A_quadratic_sd * UstackW +
         A_matrices.A_linear_sd' * UstackW +
@@ -169,16 +170,16 @@ real scalar function _computeSigmaLFromW(real rowvector w,
     return(varL)
 }
 
-struct _honestMatrices scalar function _createMatricesForVarianceFromW(real matrix sigma,
-                                                                       real scalar numPrePeriods,
-                                                                       real colvector l_vec) {
+struct _flciMatrices scalar function _flciMatricesForVarianceFromW(real matrix sigma,
+                                                                   real scalar numPrePeriods,
+                                                                   real colvector l_vec) {
 
-    struct _honestMatrices  scalar A_matrices
+    struct _flciMatrices  scalar A_matrices
     real rowvector prePeriodIndices, postPeriodIndices
     real matrix SigmaPre, SigmaPrePost, WtoLPreMat
     real matrix UstackWtoLPreMat, A_quadratic_sd
     real colvector A_linear_sd
-    real scalar SigmaPost, A_constant_sd
+    real scalar SigmaPost, A_constant_sd, col
 
     prePeriodIndices  = 1..numPrePeriods
     postPeriodIndices = _honestInverseIndex(prePeriodIndices, cols(sigma))
@@ -203,62 +204,49 @@ struct _honestMatrices scalar function _createMatricesForVarianceFromW(real matr
     A_linear_sd      = 2 * UstackWtoLPreMat' * SigmaPrePost * l_vec
     A_constant_sd    = SigmaPost
 
-    A_matrices = _honestMatrices()
+    A_matrices = _flciMatrices()
     A_matrices.A_quadratic_sd = A_quadratic_sd
     A_matrices.A_linear_sd    = A_linear_sd
     A_matrices.A_constant_sd  = A_constant_sd
 
     return(A_matrices)
 }
-
-real matrix function _honestInverseIndex(real vector ix, real scalar n)
-{
-    real vector sel
-    if (rows(ix) > cols(ix)) {
-        sel = J(n, 1, 1)
-        sel[ix] = J(length(ix), 1, 0)
-    }
-    else {
-        sel = J(1, n, 1)
-        sel[ix] = J(1, length(ix), 0)
-    }
-    return(selectindex(sel))
-}
 end
 
 ***********************************************************************
 *                                                                     *
-*                            _findLowestH                             *
+*                            .findLowestH                             *
 *                                                                     *
 ***********************************************************************
 
 * Finds the minimum variance affine estimator.
 mata
-real scalar function _findLowestH(real matrix sigma,
-                                  real scalar numPrePeriods,
-                                  real scalar numPostPeriods,
-                                  real colvector l_vec) {
+real scalar function _flciFindLowestH(real matrix sigma,
+                                      real scalar numPrePeriods,
+                                      real scalar numPostPeriods,
+                                      real colvector l_vec) {
 
-    struct _honestMatrices scalar A_matrices
+    struct _flciMatrices scalar A_matrices
     struct OSQP_csc_matrix scalar A, P
     struct OSQP_workspace_abridged scalar varResult
-    string scalar fname
 
-    real scalar threshold_sumweights
+    real scalar threshold_sumweights, minimalVariance, minimalH
     real rowvector q, u, l
 
     threshold_sumweights = (1..numPostPeriods) * l_vec
-    A_matrices = _createMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
+    A_matrices = _flciMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
 
-    P = OSQP_csc_convert(2 * uppertriangle(A_matrices.A_quadratic_sd))
+    P = 2 * uppertriangle(A_matrices.A_quadratic_sd)
     q = A_matrices.A_linear_sd'
-    A = OSQP_csc_convert(_createConstraints(numPrePeriods))
+    A = _flciCreateConstraints(numPrePeriods)
     u = threshold_sumweights, J(1, 2 * numPrePeriods, 0)
     l = threshold_sumweights, J(1, 2 * numPrePeriods, .)
 
-    fname = st_tempfilename()
-    OSQP_setup(fname, P, q, A, u, l)
-    varResult = OSQP_solve(fname)
+    // TODO: xx high-level OSQP wrapper
+    // fname = st_tempfilename()
+    // OSQP_setup(fname, OSQP_csc_convert(P), q, OSQP_csc_convert(A), u, l)
+    // varResult = OSQP_solve(fname)
+    varResult = OSQP(P, q, A, u, l)
 
     if ( (varResult.rc != 0) | (varResult.info_status != "solved") ) {
         errprintf("Error in optimization for h0\n")
@@ -270,8 +258,8 @@ real scalar function _findLowestH(real matrix sigma,
 }
 end
 
-* _createConstraints
-* ------------------
+* _flciCreateConstraints
+* ----------------------
 *
 * ### Inequality constraints
 *
@@ -306,7 +294,7 @@ end
 * with S a vector of numPrePeriods 0s and numPrePeriods 1s
 
 mata
-real matrix function _createConstraints(real scalar numPrePeriods) {
+real matrix function _flciCreateConstraints(real scalar numPrePeriods) {
 
     // Dense version
     // -------------
@@ -340,17 +328,11 @@ real matrix function _createConstraints(real scalar numPrePeriods) {
 
     return(A)
 }
-
-real vector _honest_linspace(real scalar from, real scalar to, real scalar n) {
-    real scalar step
-    step = (to - from) / (n - 1)
-    return(from :+ step :* (0..(n - 1)))
-}
 end
 
 ***********************************************************************
 *                                                                     *
-*                      _findWorstCaseBiasGivenH                       *
+*                      .findWorstCaseBiasGivenH                       *
 *                                                                     *
 ***********************************************************************
 
@@ -410,29 +392,21 @@ end
 *
 * and we're done.
 
-* TODO: xx _honest_helper has not been thoroughly tested
-
 mata
-real scalar function _honest_helper(real scalar s, real colvector l_vec, real scalar numPostPeriods)
-{
-    return(abs((1..s) * l_vec[(numPostPeriods - s + 1)::numPostPeriods]))
-}
-
-real rowvector function _findWorstCaseBiasGivenH(real scalar hh,
-                                                 real matrix sigma,
-                                                 real scalar numPrePeriods,
-                                                 real scalar numPostPeriods,
-                                                 real colvector l_vec,
-                                                 | real scalar M) {
+real rowvector function _flciFindWorstCaseBiasGivenH(real scalar hh,
+                                                     real matrix sigma,
+                                                     real scalar numPrePeriods,
+                                                     real scalar numPostPeriods,
+                                                     real colvector l_vec,
+                                                     | real scalar M) {
 
     if ( args() < 6 ) M = 1
 
-    struct _honestMatrices  scalar A_matrices
-    real scalar threshold_sumweights, constant, n, b, u
+    struct _flciMatrices  scalar A_matrices
+    real scalar threshold_sumweights, constant, n, b, u, s
     real vector c, A, h1, h21, h22, h, v, L
-    real vector postPeriodIndices, optimal_x, optimal_l, optimal_w
+    real vector invPeriodIndices, optimal_x, optimal_l, optimal_w
     real matrix B, G1, G21, G22, G, W, C, _W0, _W1, _W2, _W3, W1, W2, W3
-    string scalar fname
     struct ECOS_workspace_abridged scalar biasResult
 
     // This function minimizes worst-case bias over Delta^{SD}(M)
@@ -445,26 +419,27 @@ real rowvector function _findWorstCaseBiasGivenH(real scalar hh,
     threshold_sumweights = (1..numPostPeriods) * l_vec
     constant = - threshold_sumweights
     for (s = 1; s <= numPostPeriods; s++) {
-        constant = constant + _honest_helper(s, l_vec, numPostPeriods)
+        constant = constant + _honestHelper(s, l_vec, numPostPeriods)
     }
 
     // First the equality and linear inequality constraints
-    n  = numPrePeriods + numPostPeriods
+    // n  = numPrePeriods + numPostPeriods
+    n  = numPrePeriods + numPrePeriods
     c  = (J(1, numPrePeriods, 1), J(1, numPrePeriods, 0))
-    B  = _createConstraints(numPrePeriods)
+    B  = _flciCreateConstraints(numPrePeriods)
     A  = B[1, .]
     b  = threshold_sumweights
     G1 = B[2::rows(B), .]
     h1 = J(n, 1, 0)
 
     // Now the second-order constraints
-    A_matrices = _createMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
+    A_matrices = _flciMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
     W  = A_matrices.A_quadratic_sd
     v  = A_matrices.A_linear_sd
     u  = A_matrices.A_constant_sd - hh^2
 
-    postPeriodIndices = _honestInverseIndex(1..numPrePeriods, n)
-    _W0 = makesymmetric(W[postPeriodIndices, postPeriodIndices])
+    invPeriodIndices = _honestInverseIndex(1..numPrePeriods, 2 * numPrePeriods)
+    _W0 = makesymmetric(W[invPeriodIndices, invPeriodIndices])
     eigensystem(_W0, C=., L=.)
     _W1 = makesymmetric(Re((C :* sqrt(L)) * C'))
     _W2 = makesymmetric(Re((C :/ sqrt(L)) * C'))
@@ -478,9 +453,9 @@ real rowvector function _findWorstCaseBiasGivenH(real scalar hh,
     W1 = J(n, n, 0)
     W2 = J(n, n, 0)
     W3 = J(n, n, 0)
-    W1[postPeriodIndices, postPeriodIndices] = _W1
-    W2[postPeriodIndices, postPeriodIndices] = _W2
-    W3[postPeriodIndices, postPeriodIndices] = _W3
+    W1[invPeriodIndices, invPeriodIndices] = _W1
+    W2[invPeriodIndices, invPeriodIndices] = _W2
+    W3[invPeriodIndices, invPeriodIndices] = _W3
 
     G21 = J(1, n, 0)
     G22 = -W1
@@ -496,22 +471,24 @@ real rowvector function _findWorstCaseBiasGivenH(real scalar hh,
     //         A * x' - threshold_sumweights
     //         G1 * x'
     //         x * W * x' + x * v + u
-
-    fname = st_tempfilename()
-    ECOS_setup(fname,
-               n,
-               rows(G),
-               rows(A),
-               n,
-               1,
-               n + 1,
-               0,
-               OSQP_csc_convert(G),
-               OSQP_csc_convert(A),
-               c,
-               h,
-               b)
-    biasResult = ECOS_solve(fname)
+    //
+    // TODO: xx use high-level ECOS function
+    // fname = st_tempfilename()
+    // ECOS_setup(fname,
+    //            n,
+    //            rows(G),
+    //            rows(A),
+    //            n,
+    //            1,
+    //            n + 1,
+    //            0,
+    //            OSQP_csc_convert(G),
+    //            OSQP_csc_convert(A),
+    //            c,
+    //            h,
+    //            b)
+    // biasResult = ECOS_solve(fname)
+    biasResult = ECOS(c, G, h, n, n + 1, 0, A, b)
 
     // Multiply objective by M (note that solution otherwise doesn't
     // depend on M, so no need to run many times with many different Ms)
@@ -526,22 +503,8 @@ real rowvector function _findWorstCaseBiasGivenH(real scalar hh,
     // Compute the implied w and l
     optimal_x = biasResult.solution_x'
     optimal_w = optimal_x[(length(optimal_x)/2 + 1)::length(optimal_x)]
-    optimal_l = _wToLFn(optimal_w)
+    optimal_l = _honestwToLFn(optimal_w)
 
     return(biasResult.info_exitcode, biasResult.info_obj_val, optimal_x', optimal_w', optimal_l')
-}
-
-real vector function _wToLFn(real vector w) {
-    numPrePeriods = length(w)
-    WtoLPreMat = I(numPrePeriods)
-    if (numPrePeriods == 1) {
-        WtoLPreMat = 1
-    }
-    else {
-        for (col = 1; col < numPrePeriods; col++) {
-            WtoLPreMat[col + 1, col] = -1
-        }
-    }
-    return(WtoLPreMat * w)
 }
 end

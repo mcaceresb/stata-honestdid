@@ -1,13 +1,74 @@
-cap mata mata drop OSQP_workspace_abridged()
-cap mata mata drop OSQP_csc_matrix()
+cap mata mata drop OSQP()
 cap mata mata drop OSQP_setup()
 cap mata mata drop OSQP_solve()
 cap mata mata drop OSQP_cleanup()
-cap mata mata drop OSQP_csc_matrix()
+cap mata mata drop OSQP_csc_convert()
 cap mata mata drop OSQP_vec_export()
 cap mata mata drop OSQP_int_export()
 cap mata mata drop OSQP_csc_export()
-cap mata mata drop OSQP_csc_convert()
+cap mata mata drop OSQP_csc_matrix()
+cap mata mata drop OSQP_workspace_abridged()
+
+* Operator Splitting Quadratic Program
+* ------------------------------------
+*
+* Mata interface to OSQP. This solves problems of the form
+*
+* min_x
+*     0.5 x' P x + q' x
+* s.t.
+*     l <= Ax <= u
+*
+* with
+*
+* - P a symmetric positive semi-definite matrix
+* - q, x conformable vectors
+* - A any matrix conformable with x
+* - l, u bounds conformable with Ax
+*
+* Following this notation, with P, q, A, u, l the corresponding stata
+* matrices, run
+*
+*     result = OSQP(P, q, A, u, l)
+*
+* result will be a structure of type OSQP_workspace_abridged with components
+*
+* - rc: Return code for the function (0 means success)
+* - info_status: Status of the optimization ('solved' means a solution was found)
+* - info_obj_val: Objective value
+* - solution_x: Minimizer
+*
+* Notes
+* -----
+*
+* - For equality constraints, set the corresponding l and u entries to
+*   the same number
+* - For one-sided inequality constraints, set the corresponding entry
+*   of l or u to missing (.); this is interpreted as -infty or + infty,
+*   respectively.
+*
+* Sparse matrices
+* ---------------
+*
+* If you read the OSQP documentation you will note sparse matrices are
+* required.  OSQP converts stata matrices to Compressed Sparse Column
+* format internally using the OSQP_csc_matrix structure. If you need
+* to create your own sparce matrices using the OSQP_csc_matrix structure,
+* you can access the internals as follows:
+*
+*     fname = st_tempfilename()
+*     OSQP_setup(fname, P, q, A, u, l)
+*     result = OSQP_solve(fname)
+*
+* Where P, A are already of type OSQP_csc_matrix. IMPORTANT: In
+* this case, P needs to be upper-triangular. Since P is meant to be
+* symmetric, only one triangle is required, and OSQP's internals assume
+* you are only passing the upper triangle of the matrix.
+*
+* Reference
+* ---------
+*
+* See https://osqp.org/docs
 
 mata
 struct OSQP_workspace_abridged {
@@ -21,6 +82,18 @@ struct OSQP_csc_matrix {
     real vector data
     real vector indices
     real vector indptr
+}
+
+struct OSQP_workspace_abridged scalar OSQP(real matrix P,
+                                           real vector q,
+                                           real matrix A,
+                                           real vector u,
+                                           real vector l)
+{
+    string scalar fname
+    fname = st_tempfilename()
+    OSQP_setup(fname, OSQP_csc_convert(uppertriangle(P)), q, OSQP_csc_convert(A), u, l)
+    return(OSQP_solve(fname))
 }
 
 void OSQP_setup (string scalar fname,

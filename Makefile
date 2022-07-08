@@ -42,7 +42,7 @@ OSQP_H = /home/mauricio/bulk/lib/osqp/include
 OSQP_A = /home/mauricio/bulk/lib/osqp/build/out/libosqp.a
 ECOS_H = /home/mauricio/bulk/lib/ecos/include
 ECOS_A = /home/mauricio/bulk/lib/ecos/libecos.a /home/mauricio/bulk/lib/ecos/libecos_bb.a
-CFLAGS = -Wall -O3 $(OSFLAGS) -DLDL_LONG -DDLONG
+CFLAGS = -Wall -O3 $(OSFLAGS)
 
 # ---------------------------------------------------------------------
 # Main
@@ -59,7 +59,7 @@ honestosqp: src/plugin/honestosqp.c src/plugin/stplugin.c
 
 ## Compile ECOS plugin
 honestecos: src/plugin/honestecos.c src/plugin/stplugin.c
-	$(GCC) $(CFLAGS) -I$(ECOS_H) -o $(ECOS_OUT) $^ $(ECOS_A)
+	$(GCC) $(CFLAGS) -DLDL_LONG -DDLONG -I$(ECOS_H) -o $(ECOS_OUT) $^ $(ECOS_A)
 
 .PHONY: clean
 clean:
