@@ -16,24 +16,23 @@ jobs:
         with:
           repository: osqp/osqp
           path: './osqp'
+          submodules: recursive
       - name: Clone ECOS
         uses: actions/checkout@main
         with:
           repository: embotech/ecos
           path: './ecos'
-      - name: dependencies and compile 
+      - name: dependencies and compile
         run: |
-          pwd
-          ls -laht
+          cd ecos
+          make
+          cd ..
           cd osqp
           mkdir  build
           cd build
           cmake -G "Unix Makefiles" ..
           cmake --build .
           cd ../..
-          cd ecos
-          make
-          cd ..
           make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H=./ecos/include ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a"
           shasum src/build/honestosqp_macosx.plugin
           shasum src/build/honestecos_macosx.plugin
