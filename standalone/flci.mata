@@ -284,7 +284,7 @@ real scalar function _flciFindLowestH(real matrix sigma,
     threshold_sumweights = (1..numPostPeriods) * l_vec
     A_matrices = _flciMatricesForVarianceFromW(sigma, numPrePeriods, l_vec)
 
-    P = 2 * uppertriangle(A_matrices.A_quadratic_sd)
+    P = 2 * A_matrices.A_quadratic_sd
     q = A_matrices.A_linear_sd'
     A = _flciCreateConstraints(numPrePeriods)
     u = threshold_sumweights, J(1, 2 * numPrePeriods, 0)
