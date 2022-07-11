@@ -1,4 +1,4 @@
-*! version 0.1.0 07Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.1.1 11Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -19,13 +19,17 @@ program honestdid, sclass
     [                                      ///
         b(str)                             /// name of coefficient matrix; default is e(b)
         vcov(str)                          /// name of vcov matrix; default is e(V)
-        l_vec(str)                         /// Matrix with parameters of interest (default is first period post event)
+        l_vec(str)                         /// Vector with parameters of interest (default is first period post event)
+        mvec(str)                          /// Vector or list with with M-values
+        alpha(passthru)                    /// 1 - level of the CI
+                                           ///
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
+        ciopts(str)                        ///
         *                                  /// Options for coefplot
     ]
 
@@ -56,43 +60,61 @@ program honestdid, sclass
         }
     }
 
-    local dohonest = ("`b'`v'`l_vec'`referenceperiodindex'`preperiodindices'`postperiodindices'" != "")
+    local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`referenceperiodindex'`preperiodindices'`postperiodindices'" != "")
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
     }
 
     if ( `dohonest' | ("`cached'" == "") ) {
-        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') ///
+        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') `alpha' ///
             reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices')
 
-        tempname l_vector
         mata {
-            `results' = HonestDiD("`b'", "`vcov'", `referenceperiodindex', "`preperiodindices'", "`postperiodindices'", "`l_vec'")
+            `results' = HonestDiD("`b'",                  ///
+                                  "`vcov'",               ///
+                                  `referenceperiodindex', ///
+                                  "`preperiodindices'",   ///
+                                  "`postperiodindices'",  ///
+                                  "`l_vec'",              ///
+                                  "`mvec'",               ///
+                                  `alpha')
             _honestPrintFLCI(`results')
         }
         * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
         * `results'.referencePeriod = 2008
     }
 
-    tempname plotmatrix cimatrix dummycoef
+    tempname plotmatrix cimatrix dummycoef labels
     if ( "`coefplot'" != "" ) {
         cap which coefplot
         if ( _rc ) {
             disp as err "-coefplot- not found; required to plot CIs"
             exit _rc
         }
-        mata {
+    }
+
+    mata {
+        if ( "`coefplot'" != "" ) {
             `plotmatrix' = `results'.FLCI
+            `labels' = strofreal(`plotmatrix'[., 1]')
+            `labels'[1] = "Original"
+
             st_matrix("`cimatrix'", `plotmatrix'[., 2::3]')
-            st_local("cimatlab", invtokens(strofreal(`plotmatrix'[., 1]')))
             st_matrix("`dummycoef'", ((`plotmatrix'[., 3] :+ `plotmatrix'[., 2])/2)')
+            st_local("cimatlab", invtokens(`labels'))
         }
+    }
+
+    if ( "`coefplot'" != "" ) {
+        if ( `"`ciopts'"' == "" ) local ciopts ciopts(recast(rcap))
+        else local ciopts ciopts(recast(rcap) `ciopts')
 
         matrix colnames `cimatrix'  = `cimatlab'
         matrix rownames `cimatrix'  = lb ub
         matrix colnames `dummycoef' = `cimatlab'
-        coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) ciopts(recast(rcap)) `options'
+        coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
+        disp as err "({bf:warning:} horizontal distance needn't be to scale)"
     }
 
     sreturn local HonestEventStudy = "`results'"
@@ -104,7 +126,9 @@ program HonestSanityChecks
     [                               ///
         b(str)                      /// name of coefficient matrix; default is e(b)
         vcov(str)                   /// name of vcov matrix; default is e(V)
-        l_vec(str)                  /// Matrix with parameters of interest (default is first period post event)
+        l_vec(str)                  /// Vector with parameters of interest (default is first period post event)
+        mvec(str)                   /// Vector or list with with M-values
+        alpha(real 0.05)            /// 1 - level of CI
         REFERENCEperiodindex(int 0) /// index for the reference period
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
@@ -192,7 +216,13 @@ program HonestSanityChecks
     }
 
     if ( "`l_vec'" != "" ) confirm matrix `l_vec'
+    if ( "`mvec'"  != "" ) {
+        local 0, mvec(`mvec')
+        cap syntax, mvec(numlist)
+        if ( _rc == 0 ) c_local mvec: copy local mvec
+    }
 
+    c_local alpha: copy local alpha
     c_local b: copy local b
     c_local vcov: copy local vcov
 end

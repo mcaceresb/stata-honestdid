@@ -10,6 +10,53 @@ cap mata mata drop _flciFindLowestH()
 cap mata mata drop _flciCreateConstraints()
 cap mata mata drop _flciFindWorstCaseBiasGivenH()
 
+* Done
+* ----
+*
+* .findOptimalFLCI()                 <-> _flciFindOptimal()
+* .findOptimalFLCI_helper()          <-> _flciFindOptimalHelper()
+* .findHForMinimumBias()             <-> _flciFindHMinBias()
+* .computeSigmaLFromW()              <-> _flciSigmaLFromW()
+* .findLowestH()                     <-> _flciFindLowestH()
+* .createMatricesForVarianceFromW()  <-> _flciMatricesForVarianceFromW()
+* .createConstraints_AbsoluteValue() <-> _flciCreateConstraints()
+* .findWorstCaseBiasGivenH()         <-> _flciFindWorstCaseBiasGivenH()
+* .qfoldednormal()                   <-> _flciFoldedNormalQuantiles()
+* .wToLFn()                          <-> _honestwToLFn()
+* .lToWFn()                          <-> _honestlToWFn()
+*
+* Not translated directly
+* -----------------------
+*
+* .createObjectiveObject_MinimizeSD()    <-> Not needed given how OSQP is called
+* .createConstraints_SumWeights()        <-> Not needed given how OSQP/ECOS are called
+* .createConstraintsObject_SDLessThanH() <-> Not needed given how ECOS is called
+* .createObjectiveObjectForBias()        <-> Not needed given how ECOS is called
+*
+* Extra internal Stata structures
+* -------------------------------
+*
+* _flciResults()
+* _flciMatrices()
+*
+* Notes
+* -----
+*
+* .computeSigmaLFromW() passes optional arguments to
+* .createMatricesForVarianceFromW() However, this is only called from
+* .findHForMinimumBias() and the extra arguments are never used. Hence I
+* drop them here.
+*
+* .createConstraintsObject_SDLessThanH() passes optional arguments
+* to .createMatricesForVarianceFromW() However, this is only called
+* from .findWorstCaseBiasGivenH() and the extra arguments are never
+* used. Hence I drop them here.
+*
+* .createObjectiveObject_MinimizeSD() passes optional arguments to
+* .createMatricesForVarianceFromW() However, this is only called from
+* .findLowestH() and the extra arguments are never used. Hence I drop
+* them here.
+
 mata:
 struct _flciResults {
     real vector FLCI
@@ -172,16 +219,17 @@ real scalar function _flciSigmaLFromW(real rowvector w,
 
 struct _flciMatrices scalar function _flciMatricesForVarianceFromW(real matrix sigma,
                                                                    real scalar numPrePeriods,
-                                                                   real colvector l_vec) {
+                                                                   real colvector l_vec,
+                                                                   | real rowvector prePeriodIndices) {
 
     struct _flciMatrices  scalar A_matrices
-    real rowvector prePeriodIndices, postPeriodIndices
+    real rowvector postPeriodIndices
     real matrix SigmaPre, SigmaPrePost, WtoLPreMat
     real matrix UstackWtoLPreMat, A_quadratic_sd
     real colvector A_linear_sd
     real scalar SigmaPost, A_constant_sd, col
 
-    prePeriodIndices  = 1..numPrePeriods
+    if ( args() < 4 ) prePeriodIndices = 1..numPrePeriods
     postPeriodIndices = _honestInverseIndex(prePeriodIndices, cols(sigma))
 
     // Constructs matrix to compute the variance of the affine estimator for a choice of weights W.
@@ -241,11 +289,6 @@ real scalar function _flciFindLowestH(real matrix sigma,
     A = _flciCreateConstraints(numPrePeriods)
     u = threshold_sumweights, J(1, 2 * numPrePeriods, 0)
     l = threshold_sumweights, J(1, 2 * numPrePeriods, .)
-
-    // TODO: xx high-level OSQP wrapper
-    // fname = st_tempfilename()
-    // OSQP_setup(fname, OSQP_csc_convert(P), q, OSQP_csc_convert(A), u, l)
-    // varResult = OSQP_solve(fname)
     varResult = OSQP(P, q, A, u, l)
 
     if ( (varResult.rc != 0) | (varResult.info_status != "solved") ) {
@@ -471,23 +514,6 @@ real rowvector function _flciFindWorstCaseBiasGivenH(real scalar hh,
     //         A * x' - threshold_sumweights
     //         G1 * x'
     //         x * W * x' + x * v + u
-    //
-    // TODO: xx use high-level ECOS function
-    // fname = st_tempfilename()
-    // ECOS_setup(fname,
-    //            n,
-    //            rows(G),
-    //            rows(A),
-    //            n,
-    //            1,
-    //            n + 1,
-    //            0,
-    //            OSQP_csc_convert(G),
-    //            OSQP_csc_convert(A),
-    //            c,
-    //            h,
-    //            b)
-    // biasResult = ECOS_solve(fname)
     biasResult = ECOS(c, G, h, n, n + 1, 0, A, b)
 
     // Multiply objective by M (note that solution otherwise doesn't

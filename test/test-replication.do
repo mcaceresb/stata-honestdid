@@ -47,7 +47,12 @@ st_matrix("betahat", betahat)
 st_matrix("sigma", sigma)
 end
 
-honestdid, b(betahat) vcov(sigma) reference(4) coefplot
+matrix mvec = 0.3, 0.4, 0.5
+honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)
+honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01) coefplot xlabel(,angle(60))
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) coefplot
 * graph export ../../test/coefplot.pdf, replace
 
 ***********************************************************************
@@ -60,7 +65,8 @@ honestdid, b(betahat) vcov(sigma) reference(4) coefplot
 use LWdata_RawData.dta, clear
 replace nobs = round(nobs, 1)
 reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant
+honestdid, pre(1/9) post(10/32)
 matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
-honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot
+honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3)
 * graph export ../../test/coefplot2.pdf, replace

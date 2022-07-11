@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.1.0 07Jul2022}{...}
+{* *! version 0.1.1 11Jul2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -30,7 +30,9 @@ HonestDiD alpha release
 {syntab :Options}
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b)                   {p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V)                       {p_end}
-{synopt :{opt l_vec(str)}} Matrix with parameters of interest (default is first period post event){p_end}
+{synopt :{opt l_vec(str)}} Vector with parameters of interest (default is first period post event){p_end}
+{synopt :{opt mvec(str)}} Vector name with M values or list of M values{p_end}
+{synopt :{opt alpha(real)}} 1 - confience level; default 0.05{p_end}
 {synopt :{opt reference:periodindex(str)}} index for the reference period            {p_end}
 {synopt :{opt pre:periodindex(str)}} pre-period indices                              {p_end}
 {synopt :{opt post:periodindex(str)}} post-period indices                            {p_end}

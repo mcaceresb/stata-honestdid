@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime, date
 from os import path, makedirs, unlink
 from zipfile import ZipFile
+from shutil import copy2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('bump',
@@ -23,8 +24,8 @@ args = vars(parser.parse_args())
 # Config
 
 config_token   = "CrossPlatformCompatibilityCookie"
-config_version = "0.1.0"
-config_date = date(2022, 7, 7)
+config_version = "0.1.1"
+config_date = date(2022, 7, 11)
 config_files = [
     ('.bumpver.py', 'config_version = "{major}.{minor}.{patch}"'),
     ('.bumpver.py', f'config_date = date({{date:%Y, {config_token}%m, {config_token}%d}})'),
@@ -61,37 +62,46 @@ config_standalone = {
 
 
 def main(bump, dry = False):
-    args = ['major', 'minor', 'patch', 'standalone']
+    args = ['major', 'minor', 'patch', 'standalone', 'standalone-zip']
     if bump not in args:
-        msg = f"'{bump}' uknown; can only bump: {', '.join(args)}"
+        msg = f"'{bump}' uknown; can only bump: {', '.join(args[:3])}"
         raise Warning(msg)
 
-    if bump == 'standalone':
-        make_standalone(config_standalone, dry)
+    if bump in ['standalone', 'standalone-zip']:
+        make_standalone(config_standalone, dry, '-zip' in bump)
     else:
         current_kwargs, update_kwargs = bump_kwargs(bump, config_version, config_date)
         for file, string in config_files:
             bump_file(file, string, current_kwargs, update_kwargs, dry)
 
 
-def make_standalone(standalone, dry = False):
+def make_standalone(standalone, dry=False, inzip=False):
     for label, files in standalone.items():
         outzip = f'standalone/{label}-{config_version}.zip'
 
         if dry:
-            for f in files:
-                print(f'{f} -> {outzip}')
+            if inzip:
+                for f in files:
+                    print(f'{f} -> {outzip}')
+            else:
+                for f in files:
+                    print(f'{f} -> standalone/')
         else:
             if not path.isdir('standalone'):
                 makedirs('standalone')
 
-            if path.isfile(outzip):
+            if inzip and path.isfile(outzip):
                 unlink(outzip)
 
-            with ZipFile(outzip, 'w') as zf:
+            if inzip:
+                with ZipFile(outzip, 'w') as zf:
+                    for f in files:
+                        print(f'{f} -> {outzip}')
+                        zf.write(f, path.basename(f))
+            else:
                 for f in files:
-                    print(f'{f} -> {outzip}')
-                    zf.write(f, path.basename(f))
+                    print(f'{f} -> standalone/')
+                    copy2(f, 'standalone')
 
 
 def bump_file(file, string, current, update, dry = False):
