@@ -26,7 +26,7 @@ STDLL stata_call(int argc, char * argv[])
 ST_retcode honestecos(char *fname)
 {
     ST_retcode rc = 0;
-    ST_double *x = NULL, obj;
+    ST_double *x = NULL, *y = NULL, *z = NULL, obj;
     uint32_t i;
     FILE *fhandle;
 
@@ -59,7 +59,9 @@ ST_retcode honestecos(char *fname)
     if ((rc = honestecos_read_vector(fhandle, &h, &nh))) goto exit;
     if ((rc = honestecos_read_vector(fhandle, &b, &nb))) goto exit;
 
-    if ((rc = ((x = calloc(n, sizeof *x)) == NULL))) goto exit;
+    if ((rc = ((x = calloc(HONESTECOS_PWMAX(n, 1), sizeof *x)) == NULL))) goto exit;
+    if ((rc = ((y = calloc(HONESTECOS_PWMAX(p, 1), sizeof *y)) == NULL))) goto exit;
+    if ((rc = ((z = calloc(HONESTECOS_PWMAX(m, 1), sizeof *z)) == NULL))) goto exit;
 
     fclose (fhandle);
 
@@ -72,7 +74,7 @@ ST_retcode honestecos(char *fname)
                       c, h, b);
 
     if (work) {
-        work->stgs->verbose = 0;
+        work->stgs->verbose = 0; // set to 1 to debug
         exitflag = ECOS_solve(work);
     }
     else {
@@ -83,10 +85,21 @@ ST_retcode honestecos(char *fname)
     fhandle = fopen(fname, "wb");
     rc = rc | (fwrite((uint32_t *) &rc, sizeof(uint32_t), 1, fhandle) != 1);
     if (work) {
-        if ( (exitflag != 0) && (exitflag != 0)  ) {
-            obj = SV_missval;
+        // Proofing against corner instance where n, p, m = 0 somehow
+        x[0] = SV_missval;
+        y[0] = SV_missval;
+        z[0] = SV_missval;
+        obj  = SV_missval;
+
+        if ( (exitflag != 0) && (exitflag != 10)  ) {
             for (i = 0; i < n; i++) {
                 x[i] = SV_missval;
+            }
+            for (i = 0; i < p; i++) {
+                y[i] = SV_missval;
+            }
+            for (i = 0; i < m; i++) {
+                z[i] = SV_missval;
             }
         }
         else {
@@ -95,11 +108,27 @@ ST_retcode honestecos(char *fname)
                 x[i] = work->x[i];
                 obj += c[i] * x[i];
             }
+            for (i = 0; i < p; i++) {
+                y[i] = work->y[i];
+            }
+            for (i = 0; i < m; i++) {
+                z[i] = work->z[i];
+            }
         }
+
+        // Proofing against corner instance where n, p, m = 0 somehow
+        n = HONESTECOS_PWMAX(n, 1);
+        p = HONESTECOS_PWMAX(p, 1);
+        m = HONESTECOS_PWMAX(m, 1);
+
         rc = rc | (fwrite((uint32_t *) &exitflag, sizeof(uint32_t),  1, fhandle) != 1);
         rc = rc | (fwrite(&obj,                   sizeof(ST_double), 1, fhandle) != 1);
         rc = rc | (fwrite((uint32_t *) &n,        sizeof(uint32_t),  1, fhandle) != 1);
         rc = rc | (fwrite(x,                      sizeof *x,         n, fhandle) != n);
+        rc = rc | (fwrite((uint32_t *) &p,        sizeof(uint32_t),  1, fhandle) != 1);
+        rc = rc | (fwrite(y,                      sizeof *y,         p, fhandle) != p);
+        rc = rc | (fwrite((uint32_t *) &m,        sizeof(uint32_t),  1, fhandle) != 1);
+        rc = rc | (fwrite(z,                      sizeof *z,         m, fhandle) != m);
     }
     else {
         rc = 17293;
@@ -128,6 +157,10 @@ exit:
     if (c) free(c);
     if (h) free(h);
     if (b) free(b);
+
+    if (x) free(x);
+    if (y) free(y);
+    if (z) free(z);
 
     return(rc);
 }
