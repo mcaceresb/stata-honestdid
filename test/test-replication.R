@@ -12,6 +12,7 @@ data(BCdata_EventStudy)
 #                                                                     #
 #######################################################################
 
+# biasDirection  = "negative"
 BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
 BC_l_vec          <- basisVector(index = 1, size = BC_numPostPeriods)
@@ -22,6 +23,33 @@ BC_DeltaSDNB_RobustResults <-
                              numPostPeriods = BC_numPostPeriods,
                              l_vec          = BC_l_vec,
                              method         = "FLCI",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+BC_DeltaSDNB_RobustResultsConditional <-
+    createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
+                             sigma          = BCdata_EventStudy$sigma,
+                             numPrePeriods  = BC_numPrePeriods,
+                             numPostPeriods = BC_numPostPeriods,
+                             l_vec          = BC_l_vec,
+                             method         = "Conditional",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+BC_DeltaSDNB_RobustResultsCF <-
+    createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
+                             sigma          = BCdata_EventStudy$sigma,
+                             numPrePeriods  = BC_numPrePeriods,
+                             numPostPeriods = BC_numPostPeriods,
+                             l_vec          = BC_l_vec,
+                             method         = "C-F",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+BC_DeltaSDNB_RobustResultsCLF <-
+    createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
+                             sigma          = BCdata_EventStudy$sigma,
+                             numPrePeriods  = BC_numPrePeriods,
+                             numPostPeriods = BC_numPostPeriods,
+                             l_vec          = BC_l_vec,
+                             method         = "C-LF",
                              Mvec           = seq(from=0, to=0.3, by=0.1))
 
 BC_OriginalResults <-
@@ -76,19 +104,15 @@ betahat = EmpFemale.EventStudy$beta[coefIndex, ]
 # Extract estimated variance-covariance matrix of event study coefficients
 sigma = EmpFemale.EventStudy$clustervcv[coefIndex, coefIndex]
 
-#Rescale by 100 so that results will be in units of percentage points
-betahat = 100 * betahat
-sigma = 100^2 * sigma
-
 # Construct vector of event times and the scalar reference period
 timeVec = c(seq(from = -11, to = -3, by = 1), seq(from = -1, to = 21, by = 1))
-referencePeriod = -2
-postPeriodIndices = which(timeVec > -2)
-prePeriodIndices = which(timeVec < -2)
-
+referencePeriod   <- -2
+postPeriodIndices <- which(timeVec > -2)
+prePeriodIndices  <- which(timeVec < -2)
 LW_numPrePeriods  <- length(prePeriodIndices)
 LW_numPostPeriods <- length(postPeriodIndices)
 LW_l_vec          <- basisVector(index = 1, size = LW_numPostPeriods)
+
 LW_DeltaSDNB_RobustResults <-
     createSensitivityResults(betahat        = betahat,
                              sigma          = sigma,
@@ -96,6 +120,78 @@ LW_DeltaSDNB_RobustResults <-
                              numPostPeriods = LW_numPostPeriods,
                              l_vec          = LW_l_vec,
                              method         = "FLCI",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsConditional <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "Conditional",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsCF <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "C-F",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsCLF <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "C-LF",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+#######################################################################
+#                                                                     #
+#                               Scaled                                #
+#                                                                     #
+#######################################################################
+
+#Rescale by 100 so that results will be in units of percentage points
+betahat <- 100 * betahat
+sigma   <- 100^2 * sigma
+LW_DeltaSDNB_RobustResults <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "FLCI",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsConditional <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "Conditional",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsCF <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "C-F",
+                             Mvec           = seq(from=0, to=0.3, by=0.1))
+
+LW_DeltaSDNB_RobustResultsCLF <-
+    createSensitivityResults(betahat        = betahat,
+                             sigma          = sigma,
+                             numPrePeriods  = LW_numPrePeriods,
+                             numPostPeriods = LW_numPostPeriods,
+                             l_vec          = LW_l_vec,
+                             method         = "C-FL",
                              Mvec           = seq(from=0, to=0.3, by=0.1))
 
 LW_OriginalResults <-
