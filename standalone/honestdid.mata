@@ -15,14 +15,15 @@ cap mata mata drop _honestHelper()
 cap mata mata drop _honestwToLFn()
 cap mata mata drop _honestlToWFn()
 cap mata mata drop _honestPrintFLCI()
-cap mata mata drop _honestUpperBoundMpre()
-cap mata mata drop _honestCreateASD()
+cap mata mata drop _honestQuantiles()
+cap mata mata drop _honestMatrixPow()
+cap mata mata drop _honestPrimes()
+cap mata mata drop _honestPrimesn()
+cap mata mata drop _honestHalton()
 
 * Done
 * ----
 *
-* DeltaSD_upperBound_Mpre()  <-> _honestUpperBoundMpre()
-* .create_A_SD()             <-> _honestCreateASD()
 * constructOriginalCS()      <-> HonestOriginalCS()
 * createSensitivityResults() <-> HonestSensitivityResults()
 *
@@ -45,13 +46,14 @@ cap mata mata drop _honestCreateASD()
 * post      = "`postperiodindices'"
 * l_vec     = "`l_vec'"
 * Mvec      = "`mvec'"
-* alpha     = 0.01
+* alpha     = 0.05
 
 mata
 struct _honestOptions {
     real scalar alpha
     real vector l_vec
     real vector Mvec
+    string scalar method
 }
 
 struct _honestResults {
@@ -81,9 +83,10 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          real scalar reference,
                                          string scalar pre,
                                          string scalar post,
-                                         | string scalar l_vec,
+                                         string scalar l_vec,
                                          string scalar Mvec,
-                                         real scalar alpha)
+                                         real scalar alpha,
+                                         string scalar method)
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
@@ -105,13 +108,14 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         results.sigma   = st_matrix(V)[sel, sel]
     }
 
-    options.alpha = alpha
+    options.method = method
+    options.alpha  = alpha
     if ( Mvec == "" ) {
         if ( length(results.prePeriodIndices) == 1) {
             options.Mvec = _honestLinspace(0, results.sigma[1, 1], 10)
         }
         else {
-            Mub = _honestUpperBoundMpre(results.betahat, results.sigma, length(results.prePeriodIndices), options.alpha)
+            Mub = _honestSDUpperBoundMpre(results.betahat, results.sigma, length(results.prePeriodIndices), options.alpha)
             options.Mvec = _honestLinspace(0, Mub, 10)
         }
     }
@@ -119,6 +123,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         options.Mvec = strtoreal(tokens(Mvec))
         if ( missing(options.Mvec) ) {
             if ( length(st_matrix(Mvec)) == 0 ) {
+                errprintf("HonestDiD(): ")
                 errprintf("Unable to parse option mvec(); must be number list of vector name\n")
                 _error(198)
             }
@@ -155,18 +160,19 @@ struct _honestResults colvector function HonestSensitivityHelper(
     struct _honestOptions scalar options)
 {
     struct _honestResults colvector Results
-    struct _flciResults scalar temp
+    struct _flciResults scalar temp_flci
     string scalar biasDirection, method, monotonicityDirection, Delta, hybrid_flag
     real colvector l_vec
     real vector Mvec
     real scalar m, alpha
+    real matrix temp_mat
 
-    alpha = options.alpha
-    Mvec  = options.Mvec
-    l_vec = options.l_vec
+    alpha  = options.alpha
+    Mvec   = options.Mvec
+    l_vec  = options.l_vec
+    method = options.method
 
     // TODO: xx some hard-coded stuff here
-    method                = "FLCI"
     biasDirection         = ""
     monotonicityDirection = ""
     Results               = J(length(Mvec), 1, _honestResults())
@@ -189,6 +195,9 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Delta = "DeltaSDNB"
         }
         // computeConditionalCS_DeltaSDB
+        errprintf("HonestSensitivityHelper(): ")
+        errprintf("Method %s with Delta = %s not implemented\n", method, Delta)
+        _error(198)
     }
     else if ( (biasDirection == "") & (monotonicityDirection != "") ) {
         if ( method == "" ) {
@@ -201,13 +210,18 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Delta = "DeltaSDD"
         }
         // computeConditionalCS_DeltaSDM
+        errprintf("HonestSensitivityHelper(): ")
+        errprintf("Method %s with Delta = %s not implemented\n", method, Delta)
+        _error(198)
     }
 
     if ( method == "FLCI" ) {
         if ( biasDirection != "" ) {
+            errprintf("HonestSensitivityHelper(): ")
             errprintf("You specified a sign restriction but method = FLCI. The FLCI does not use the sign restriction!\n")
         }
         if ( monotonicityDirection != "" ) {
+            errprintf("HonestSensitivityHelper(): ")
             errprintf("You specified a shape restriction but method = FLCI. The FLCI does not use the shape restriction!\n")
         }
     }
@@ -221,36 +235,48 @@ struct _honestResults colvector function HonestSensitivityHelper(
         hybrid_flag = "LF"
     }
     else {
+        errprintf("HonestSensitivityHelper(): ")
         errprintf("Method must equal one of: FLCI, Conditional, C-F or C-LF")
         _error(198)
     }
 
     if ( method == "FLCI" ) {
         for (m = 1; m <= length(Mvec); m++) {
-            temp = _flciFindOptimal(betahat,
-                                    sigma,
-                                    numPrePeriods,
-                                    numPostPeriods,
-                                    Mvec[m],
-                                    l_vec,
-                                    alpha)
+            temp_flci = _flciFindOptimal(betahat,
+                                         sigma,
+                                         numPrePeriods,
+                                         numPostPeriods,
+                                         Mvec[m],
+                                         l_vec,
+                                         alpha)
 
-            Results[m].lb     = temp.FLCI[1]
-            Results[m].ub     = temp.FLCI[2]
+            Results[m].lb     = temp_flci.FLCI[1]
+            Results[m].ub     = temp_flci.FLCI[2]
+            Results[m].method = method
+            Results[m].Delta  = Delta
+            Results[m].M      = Mvec[m]
+        }
+    }
+    else if ( Delta == "DeltaSD" ) {
+        for (m = 1; m <= length(Mvec); m++) {
+            temp_mat = _honestSDConditionalCS(betahat,
+                                              sigma,
+                                              numPrePeriods,
+                                              numPostPeriods,
+                                              l_vec,
+                                              Mvec[m],
+                                              alpha,
+                                              hybrid_flag)
+
+            Results[m].lb     = min(temp_mat[selectindex(temp_mat[., 2]), 1])
+            Results[m].ub     = max(temp_mat[selectindex(temp_mat[., 2]), 1])
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
         }
     }
     else {
-        // computeConditionalCS_DeltaSD(betahat,
-        //                              sigma,
-        //                              numPrePeriods,
-        //                              numPostPeriods,
-        //                              Mvec[m],
-        //                              l_vec,
-        //                              alpha,
-        //                              hybrid_flag = "ARP")
+        errprintf("HonestSensitivityHelper(): ")
         errprintf("Method %s with Delta = %s not implemented\n", method, Delta)
         _error(198)
     }
@@ -340,15 +366,18 @@ void function _honestPrintFLCI(struct HonestEventStudy scalar EventStudy)
     printf("| ------ | ------ | ------ |\n")
     for (i = 1; i <= rows(EventStudy.FLCI); i++) {
         if ( i == 1 ) {
-            printf("| %6.2f | %6.3f | %6.3f | (Original)\n",
+            printf("| %6.4f | %6.3f | %6.3f | (Original)\n",
                    EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
         }
         else {
-            printf("| %6.2f | %6.3f | %6.3f |\n",
+            printf("| %6.4f | %6.3f | %6.3f |\n",
                    EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
         }
     }
-    printf("(DeltaSD is hard-coded; alpha = %5.3f)\n", EventStudy.options.alpha)
+    printf("(method = %s, Delta = %s, alpha = %5.3f)\n", 
+           EventStudy.Results[1].method,
+           EventStudy.Results[1].Delta,
+           EventStudy.options.alpha)
 }
 end
 
@@ -423,66 +452,77 @@ real scalar function _honestHelper(real scalar s, real colvector l_vec, real sca
     return(abs((1..s) * l_vec[(numPostPeriods - s + 1)::numPostPeriods]))
 }
 
-// This function constructs an upper-bound for M at the 1-alpha
-// level based on the observed pre-period coefficients.
-real scalar function _honestUpperBoundMpre(real vector betahat,
-                                           real matrix sigma,
-                                           real scalar numPrePeriods,
-                                           real scalar alpha) {
-
-    real vector prePeriod_coef, prePeriodCoefDiffs, seDiffs, upperBoundVec
-    real matrix prePeriod_sigma, A_SD, prePeriodSigmaDiffs
-
-    prePeriod_coef  = betahat[1::numPrePeriods]'
-    prePeriod_sigma = sigma[1::numPrePeriods, 1::numPrePeriods]
-
-    A_SD                = _honestCreateASD(numPrePeriods, 0)
-    prePeriodCoefDiffs  = A_SD * prePeriod_coef
-    prePeriodSigmaDiffs = A_SD * prePeriod_sigma * A_SD'
-    seDiffs             = sqrt(diagonal(prePeriodSigmaDiffs))
-
-    upperBoundVec = prePeriodCoefDiffs + invnormal(1 - alpha) * seDiffs
-    return(max(upperBoundVec))
+real vector function _honestQuantiles(real vector x, real vector p) {
+    real scalar n
+    real colvector m, i, g, orderx
+    n = length(x)
+    m = 1 :- colshape(p, 1)
+    i = floor(n * colshape(p, 1) + m)
+    g = n * colshape(p, 1) + m - i
+    orderx = sort(colshape(x, 1), 1)[|i \ i + 1|]
+    return(((1 :- g) :* orderx[1] + g :* orderx[2]))
 }
 
-real matrix function _honestCreateASD(real scalar numPrePeriods,
-                                      real scalar numPostPeriods,
-                                      | real scalar postPeriodMomentsOnly) {
-
-    real vector postPeriodIndices, prePeriodOnlyRows
-    real matrix Atilde
-    real scalar r
-
-    if ( args() < 3 ) postPeriodMomentsOnly = 0
-
-    // This function creates a matrix for the linear constraints that
-    // \delta \in Delta^SD(M).  It implements this using the general
-    // characterization of A, NOT the sharp characterization of the
-    // identified set.
-    //
-    // Inputs:
-    //   numPrePeriods         = number of pre-periods. This is an element of resultsObjects.
-    //   numPostPeriods        = number of post-periods. This is an element of resultsObjects.
-    //   postPeriodMomentsOnly = whether to exlude moments relating only to pre-period (which don't affect ID set)
-    //
-    // First construct matrix Atilde -- (numPrePeriods+numPostPeriods-2) x (numPrePeriods+numPostPeriods+1)
-    // Note Atilde is just the positive moments; is not related to Atilde, the rotate matrix, in the paper
-    // Note: Atilde initially includes t = 0. We then drop it.
-
-    Atilde = J(numPrePeriods + numPostPeriods - 1, numPrePeriods + numPostPeriods + 1, 0)
-    for (r = 1; r <= (numPrePeriods + numPostPeriods - 1); r++) {
-        Atilde[r, r..(r+2)] = (1, -2, 1)
+real matrix _honestMatrixPow(real matrix X, real scalar pow) {
+    real matrix C
+    real vector L
+    if ( rows(X) != cols(X) ) {
+        errprintf("_honestMatrixPow() requires a square matrix\n")
+        _error(198)
     }
-    Atilde = Atilde[., _honestInverseIndex(numPrePeriods+1, cols(Atilde))]
-
-    // If postPeriodMomentsOnly == 1, exclude moments that only involve pre-periods
-    if ( postPeriodMomentsOnly ) {
-        postPeriodIndices = (numPrePeriods + 1)::cols(Atilde)
-        prePeriodOnlyRows = selectindex(rowsum(Atilde[., postPeriodIndices] :!= 0) :== 0)
-        Atilde = Atilde[_honestInverseIndex(prePeriodOnlyRows, cols(Atilde)), .]
+    if ( (rank(X) != cols(X)) & (pow < 0) ) {
+        errprintf("_honestMatrixPow() requires a full-rank matrix for inverses\n")
+        _error(198)
     }
+    eigensystem(X, C=., L=.)
+    return(Re((C :* (L:^pow)) * C'))
+}
 
-    // Construct A = [Atilde; -Atilde]
-    return(Atilde \ -Atilde)
+real matrix _honestHalton(real scalar n, real scalar d)
+{
+    real matrix r
+    real colvector p
+    real scalar i, j, k, f
+    r = J(n, d, 0)
+    p = _honestPrimes(d)
+    for (j = 1; j <= d; j++) {
+        for (i = 1; i <= n; i++) {
+            k = i
+            f = 1
+            while ( k > 0 ) {
+                f       = f / p[j]
+                r[i, j] = r[i, j] + (f * mod(k, p[j]))
+                k       = floor(k / p[j])
+            }
+        }
+    }
+    return(r)
+}
+
+real matrix _honestPrimes(real scalar k)
+{
+    real scalar n, nk
+    n  = 2
+    nk = n / log(n)
+    while (nk < (k + 1)) {
+        ++n
+        nk = n / log(n)
+    }
+    return(_honestPrimesn(n)[1::k])
+}
+
+real matrix _honestPrimesn(real scalar n)
+{
+    real scalar start, m
+    real colvector s, sel
+    s = 2 :* (1::(trunc(n/2)-1)) :+ 1
+    for (m = 3; m <= trunc(sqrt(n)); m++, m++) {
+        if ( s[trunc((m - 3) / 2) + 1] ) {
+            start  = trunc((m * m - 3) / 2) + 1
+            sel    = m :* (0::trunc((length(s) - start) / m)) :+ start
+            s[sel] = J(length(sel), 1, 0)
+        }
+    }
+    return((2 \ s[selectindex(s :> 0)]))
 }
 end

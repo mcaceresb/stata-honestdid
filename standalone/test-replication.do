@@ -2,17 +2,21 @@
 * mata: mata set matastrict on
 * mata: mata set mataoptimize on
 * cd src/build
-* do ../mata/osqp.mata
-* do ../mata/ecos.mata
-* do ../mata/flci.mata
-* do ../mata/honestdid.mata
-* do ../ado/honestdid.ado
+* qui do ../mata/osqp.mata
+* qui do ../mata/ecos.mata
+* qui do ../mata/flci.mata
+* qui do ../mata/deltasd.mata
+* qui do ../mata/arp.mata
+* qui do ../mata/honestdid.mata
+* qui do ../ado/honestdid.ado
 
 * Run these if Stata doesn't find the functions:
 * ----------------------------------------------
 * do osqp.mata
 * do ecos.mata
 * do flci.mata
+* do deltasd.mata
+* do arp.mata
 * do honestdid.mata
 * do honestdid.ado
 
@@ -55,6 +59,23 @@ honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)
 honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) coefplot
 * graph export ../../test/coefplot.pdf, replace
 
+honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(Conditional)
+honestdid, coefplot cached
+honestdid, coefplot cached xlabel(,angle(60))
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(Conditional)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(Conditional)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(Conditional)
+
+honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(C-F)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(C-F)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(C-F)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(C-F)
+
+honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(C-LF)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(C-LF)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(C-LF)
+honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(C-LF)
+
 ***********************************************************************
 *                                                                     *
 *                            Data Exmaple                             *
@@ -65,8 +86,16 @@ honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) coefplot
 use LWdata_RawData.dta, clear
 replace nobs = round(nobs, 1)
 reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant
+
 honestdid, pre(1/9) post(10/32)
+honestdid, pre(1/9) post(10/32) mvec(0(0.1)0.3) method(FLCI)
+honestdid, pre(1/9) post(10/32) mvec(0(0.1)0.3) method(Conditional)
+honestdid, pre(1/9) post(10/32) mvec(0(0.1)0.3) method(C-F)
+honestdid, pre(1/9) post(10/32) mvec(0(0.1)0.3) method(C-LF)
 matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
-honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3)
+honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3) method(FLCI)
+honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3) method(Conditional)
+honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3) method(C-F)
+honestdid, b(b) vcov(V) pre(1/9) post(10/32) coefplot mvec(0(0.1)0.3) method(C-LF)
 * graph export ../../test/coefplot2.pdf, replace

@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.1.1 11Jul2022}{...}
+{* *! version 0.1.2 17Jul2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -36,6 +36,7 @@ HonestDiD alpha release
 {synopt :{opt reference:periodindex(str)}} index for the reference period            {p_end}
 {synopt :{opt pre:periodindex(str)}} pre-period indices                              {p_end}
 {synopt :{opt post:periodindex(str)}} post-period indices                            {p_end}
+{synopt :{opt method(str)}} FLCI (xx default), Conditional, C-F or C-LF{p_end}
 {synopt :{opt mata:save(str)}} Save resulting mata object (default: HonestEventStudy){p_end}
 {synopt :{opt coefplot}} Coefficient plot                                            {p_end}
 {synopt :{opt cached}} Use cached results for coefficient plot                       {p_end}

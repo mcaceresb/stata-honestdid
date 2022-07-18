@@ -1,4 +1,4 @@
-*! version 0.1.1 11Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.1.2 17Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -26,6 +26,7 @@ program honestdid, sclass
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
+        method(str)                        /// FLCI (xx default), Conditional, C-F or C-LF
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
@@ -60,17 +61,23 @@ program honestdid, sclass
         }
     }
 
-    local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`referenceperiodindex'`preperiodindices'`postperiodindices'" != "")
+    local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
+    local dohonest = `dohonest' | (`referenceperiodindex' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
     }
 
     if ( `dohonest' | ("`cached'" == "") ) {
-        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') `alpha' ///
+        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
             reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices')
+    }
+    else {
+        local alpha = 0.05
+    }
 
-        mata {
+    mata {
+        if ( `dohonest' | ("`cached'" == "") ) {
             `results' = HonestDiD("`b'",                  ///
                                   "`vcov'",               ///
                                   `referenceperiodindex', ///
@@ -78,12 +85,13 @@ program honestdid, sclass
                                   "`postperiodindices'",  ///
                                   "`l_vec'",              ///
                                   "`mvec'",               ///
-                                  `alpha')
+                                  `alpha',                ///
+                                  "`method'")
             _honestPrintFLCI(`results')
         }
-        * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
-        * `results'.referencePeriod = 2008
     }
+    * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
+    * `results'.referencePeriod = 2008
 
     tempname plotmatrix cimatrix dummycoef labels
     if ( "`coefplot'" != "" ) {
@@ -114,7 +122,7 @@ program honestdid, sclass
         matrix rownames `cimatrix'  = lb ub
         matrix colnames `dummycoef' = `cimatlab'
         coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
-        disp as err "({bf:warning:} horizontal distance needn't be to scale)"
+        disp as err "({bf:warning:} horizontal distance in plot needn't be to scale)"
     }
 
     sreturn local HonestEventStudy = "`results'"
@@ -132,7 +140,21 @@ program HonestSanityChecks
         REFERENCEperiodindex(int 0) /// index for the reference period
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
+        method(str)                 /// FLCI (xx default), Conditional, C-F or C-LF
     ]
+
+    local method = lower(`"`method'"')
+    if ( `"`method'"' != "" ) {
+             if ( `"`method'"' == "flci"        ) local method FLCI
+        else if ( `"`method'"' == "conditional" ) local method Conditional
+        else if ( `"`method'"' == "c-f"         ) local method C-F
+        else if ( `"`method'"' == "c-lf"        ) local method C-LF
+        else {
+            disp as err "Method must equal one of: FLCI, Conditional, C-F or C-LF"
+            exit 198
+        }
+        c_local method: copy local method
+    }
 
     if ((`referenceperiodindex' != 0) & "`preperiodindices'`postperiodindices'" != "") {
         disp as err "Specify only one of reference() or pre() and post()"
@@ -140,7 +162,7 @@ program HonestSanityChecks
     }
 
     if ((`referenceperiodindex' == 0) & (("`preperiodindices'" == "") | ("`postperiodindices'" == "")) ) {
-        disp as err "Specify both pre() and post()"
+        disp as err "Specify either reference() or both pre() and post()"
         exit 198
     }
 

@@ -1,4 +1,6 @@
 cap mata mata drop ECOS()
+cap mata mata drop ECOS_sol()
+cap mata mata drop ECOS_obj()
 cap mata mata drop ECOS_setup()
 cap mata mata drop ECOS_solve()
 cap mata mata drop ECOS_cleanup()
@@ -125,7 +127,50 @@ struct ECOS_workspace_abridged {
     real scalar info_exitcode
     real scalar info_obj_val
     real vector solution_x
+    real vector solution_y
+    real vector solution_z
+    real scalar success
     real scalar rc
+}
+
+real scalar ECOS_obj(real vector c,
+                     real matrix G,
+                     real vector h,
+                     real scalar l,
+                     real vector q,
+                     real scalar e,
+                     real matrix A,
+                     real vector b)
+{
+    struct ECOS_workspace_abridged scalar res
+    res = ECOS(c, G, h, l, q, e, A, b)
+    if ( (res.rc == 0) & ((res.info_exitcode == 0) | (res.info_exitcode == 10)) ) {
+        return(res.info_obj_val)
+    }
+    else {
+        errprintf("ECOS failed with status: %g, %s\n", res.info_exitcode, res.info_status)
+        _error(res.rc? res.rc: 198)
+    }
+}
+
+real vector ECOS_sol(real vector c,
+                     real matrix G,
+                     real vector h,
+                     real scalar l,
+                     real vector q,
+                     real scalar e,
+                     real matrix A,
+                     real vector b)
+{
+    struct ECOS_workspace_abridged scalar res
+    res = ECOS(c, G, h, l, q, e, A, b)
+    if ( (res.rc == 0) & ((res.info_exitcode == 0) | (res.info_exitcode == 10)) ) {
+        return(res.solution_x)
+    }
+    else {
+        errprintf("ECOS failed with status: %g, %s\n", res.info_exitcode, res.info_status)
+        _error(res.rc? res.rc: 198)
+    }
 }
 
 struct ECOS_workspace_abridged scalar ECOS(real vector c,
@@ -138,13 +183,15 @@ struct ECOS_workspace_abridged scalar ECOS(real vector c,
                                            real vector b)
 {
     string scalar fname
+    real scalar ncones
     fname = st_tempfilename()
+    ncones = max(q) > 0? length(q): 0
     ECOS_setup(fname,
                length(c),
                rows(G),
                rows(A),
                l,
-               length(q),
+               ncones,
                q,
                e,
                OSQP_csc_convert(G),
@@ -155,19 +202,19 @@ struct ECOS_workspace_abridged scalar ECOS(real vector c,
     return(ECOS_solve(fname))
 }
 
-void ECOS_setup (string scalar fname,
-                 real scalar n,
-                 real scalar m,
-                 real scalar p,
-                 real scalar l,
-                 real scalar ncones,
-                 real vector q,
-                 real scalar e,
-                 struct OSQP_csc_matrix G,
-                 struct OSQP_csc_matrix A,
-                 real vector c,
-                 real vector h,
-                 real vector b)
+void ECOS_setup(string scalar fname,
+                real scalar n,
+                real scalar m,
+                real scalar p,
+                real scalar l,
+                real scalar ncones,
+                real vector q,
+                real scalar e,
+                struct OSQP_csc_matrix G,
+                struct OSQP_csc_matrix A,
+                real vector c,
+                real vector h,
+                real vector b)
 {
     real scalar fh
     fh = fopen(fname, "rw")
@@ -186,14 +233,14 @@ void ECOS_setup (string scalar fname,
     fclose(fh)
 }
 
-struct ECOS_workspace_abridged scalar ECOS_solve (string scalar fname) {
+struct ECOS_workspace_abridged scalar ECOS_solve(string scalar fname) {
     struct ECOS_workspace_abridged scalar work
     stata(sprintf(`"plugin call honestecos_plugin, `"%s"'"', fname))
     ECOS_cleanup(work, fname)
     return(work)
 }
 
-void ECOS_cleanup (struct ECOS_workspace_abridged scalar work, string scalar fname) {
+void ECOS_cleanup(struct ECOS_workspace_abridged scalar work, string scalar fname) {
     real scalar fh
     colvector C
     fh = fopen(fname, "r")
@@ -201,9 +248,17 @@ void ECOS_cleanup (struct ECOS_workspace_abridged scalar work, string scalar fna
     work.rc = fbufget(C, fh, "%4bu", 1)
     if ( work.rc == 0 ) {
         work.info_exitcode = fbufget(C, fh, "%4bu", 1)
+        work.success       = ((work.info_exitcode == 0) | (work.info_exitcode == 10)) 
         work.info_status   = ECOS_code(work.info_exitcode)
         work.info_obj_val  = fbufget(C, fh, "%8z", 1)
         work.solution_x    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
+        work.solution_y    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
+        work.solution_z    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
+    }
+    else {
+        work.success       = 0
+        work.info_obj_val  = .
+        work.info_exitcode = .
     }
     fclose(fh)
     unlink(fname)
@@ -218,16 +273,19 @@ void function ECOS_vec_export(real scalar fh, real vector v)
 }
 
 string scalar ECOS_code (real scalar exitcode) {
-    if (exitcode == 0 ) return("Optimal solution found")
-    if (exitcode == 1 ) return("Certificate of primal infeasibility found")
-    if (exitcode == 2 ) return("Certificate of dual infeasibility found")
-    if (exitcode == 10) return("Optimal solution found subject to reduced tolerances")
-    if (exitcode == 11) return("Certificate of primal infeasibility found subject to reduced tolerances")
-    if (exitcode == 12) return("Certificate of dual infeasibility found subject to reduced tolerances")
-    if (exitcode == -1) return("Maximum number of iterations reached")
-    if (exitcode == -2) return("Numerical problems (unreliable search direction)")
-    if (exitcode == -3) return("Numerical problems (slacks or multipliers outside cone)")
-    if (exitcode == -4) return("Interrupted by signal or CTRL-C")
-    if (exitcode == -7) return("Unknown problem in solver")
+    string scalar decode
+    decode = "Unknown exit code"
+    if (exitcode == 0 ) decode = "Optimal solution found"
+    if (exitcode == 1 ) decode = "Certificate of primal infeasibility found"
+    if (exitcode == 2 ) decode = "Certificate of dual infeasibility found"
+    if (exitcode == 10) decode = "Optimal solution found subject to reduced tolerances"
+    if (exitcode == 11) decode = "Certificate of primal infeasibility found subject to reduced tolerances"
+    if (exitcode == 12) decode = "Certificate of dual infeasibility found subject to reduced tolerances"
+    if (exitcode == -1) decode = "Maximum number of iterations reached"
+    if (exitcode == -2) decode = "Numerical problems (unreliable search direction)"
+    if (exitcode == -3) decode = "Numerical problems (slacks or multipliers outside cone)"
+    if (exitcode == -4) decode = "Interrupted by signal or CTRL-C"
+    if (exitcode == -7) decode = "Unknown problem in solver"
+    return(decode)
 }
 end

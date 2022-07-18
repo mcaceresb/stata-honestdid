@@ -82,16 +82,9 @@ struct _flciResults scalar function _flciFindOptimal(
 
     if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
     if ( args() < 7 ) alpha = 0.05
-    if ( args() < 8 ) numPoints = 100
+    if ( args() < 8 ) numPoints = 10
 
-    results = _flciFindOptimalHelper(sigma,
-                                     M,
-                                     numPrePeriods,
-                                     numPostPeriods,
-                                     l_vec,
-                                     alpha,
-                                     numPoints)
-
+    results = _flciFindOptimalHelper(sigma, M, numPrePeriods, numPostPeriods, l_vec, alpha, numPoints)
     results.FLCI = (results.optimalVec' * betahat' - results.optimalHalfLength,
                     results.optimalVec' * betahat' + results.optimalHalfLength)
 
@@ -111,21 +104,35 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     real scalar M,
     real scalar numPrePeriods,
     real scalar numPostPeriods,
-    real colvector l_vec,
+    | real colvector l_vec,
     real scalar alpha,
-    real scalar numPoints)
+    real scalar numPoints,
+    real scalar finer)
 {
     struct _flciResults scalar results
     real rowvector hGrid
     real colvector sel, selmin, CI_halflength, optimal_l
-    real scalar h0, hMin, n, nn, i, maxBias, optimalHalfLength
+    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter
     real matrix biasDF
 
+    if ( args() < 5 ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 6 ) alpha = 0.05
+    if ( args() < 7 ) numPoints = 10
+    if ( args() < 8 ) finer = 1
+
+    if ( (finer == 0) & (args() < 7) ) numPoints = 100
+
     // n   = numPrePeriods + numPostPeriods
-    n      = numPrePeriods + numPrePeriods
-    nn     = length((n/2 + 1)::n)
-    h0     = _flciFindHMinBias(sigma, numPrePeriods, numPostPeriods, l_vec)
-    hMin   = _flciFindLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
+    xtol    = sqrt(epsilon(1))
+    maxiter = 100
+    n       = numPrePeriods + numPrePeriods
+    nn      = length((n/2 + 1)::n)
+    h0      = _flciFindHMinBias(sigma, numPrePeriods, numPostPeriods, l_vec)
+    hMin    = _flciFindLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
+    diff    = finer
+    iter    = 0
+
+    // First attempt
     hGrid  = _honestLinspace(hMin, h0, numPoints)
     biasDF = J(numPoints, 2 + n + 2 * nn, .)
     for (i = 1; i <= numPoints; i++) {
@@ -135,42 +142,80 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     biasDF  = biasDF[sel, .]
     hGrid   = hGrid'[sel, .]
     maxBias = biasDF[., 2] :* M
-
     CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
-    optimalHalfLength = min(CI_halflength)
-    selmin = selectindex(optimalHalfLength :== CI_halflength)
+    selmin = selectindex(min(CI_halflength) :== CI_halflength)
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
+
+    // Refinement to hedge against numerical precision (turn off with finer = 0)
+    while ( (diff > xtol) & (++iter < maxiter) ) {
+        if ( selmin == 1 ) {
+            hGrid = _honestLinspace(hGrid[selmin] - (hGrid[selmin+1] - hGrid[selmin]), hGrid[selmin+1], numPoints)
+        }
+        else if ( selmin == length(hGrid) ) {
+            hGrid = _honestLinspace(hGrid[selmin-1], hGrid[selmin] + (hGrid[selmin] - hGrid[selmin-1]), numPoints)
+        }
+        else {
+            hGrid = _honestLinspace(hGrid[selmin-1], hGrid[selmin+1], numPoints)
+        }
+        biasDF = J(numPoints, 2 + n + 2 * nn, .)
+        for (i = 1; i <= numPoints; i++) {
+            biasDF[i, .] = _flciFindWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
+        }
+        sel     = selectindex((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10))
+        biasDF  = biasDF[sel, .]
+        hGrid   = hGrid'[sel, .]
+        maxBias = biasDF[., 2] :* M
+
+        CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
+        selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
+        diff = max(abs(optimal_l :- biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
+        optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
+        if ( finer & (diff <= xtol) ) {
+            finer = 0
+            numPoints = numPoints * 10
+            diff = 1
+        }
+    }
 
     results.optimalVec          = optimal_l \ l_vec
     results.optimalPrePeriodVec = optimal_l
-    results.optimalHalfLength   = optimalHalfLength
+    results.optimalHalfLength   = min(CI_halflength)
     results.M                   = M
     results.exitcode            = biasDF[selmin, 1]
 
     return(results)
 }
 
+// Find exact quantiles of folded normal using bisective search
+// ------------------------------------------------------------
+
 real vector function _flciFoldedNormalQuantiles(real scalar p,
                                                 real vector mu,
-                                                | real scalar sd,
-                                                real scalar numDraws) {
-    real matrix qvector, x
-    real vector original, mulong, normDraws
-    real scalar m, i, g
-
+                                                | real scalar sd) {
     if ( args() < 3 ) sd = 1
-    if ( args() < 4 ) numDraws = 1e3
 
-    original  = order(order(mu, 1), 1)
-    normDraws = invnormal(halton(numDraws, 1)) * sd
-    mulong    = colshape(J(1, numDraws, mu), 1)
-    qvector   = mulong, colshape(J(1, numDraws, 1::length(mu)), 1), abs(J(length(mu), 1, normDraws) + mulong)
-    _sort(qvector, (1, 2, 3))
-    x = rowshape(qvector[., 3], length(mu))
-    m = 1 - p
-    i = floor(p * numDraws + m)
-    g = numDraws * p + m - i
-    return(((1 - g) * x[., i] + g * x[., i + 1])[original])
+    real scalar tol
+    real vector left, right, exact, quant, sell, selr, miss
+
+    miss  = !(mu :< .)
+    tol   = epsilon(1)^(3/4)
+    left  = invnormal(p/2) * sd :+ mu
+    right = invnormal(p + (1 - p)/2) * sd :+ abs(mu)
+    assert(all(((normal(left  :- mu) - normal(-left  :- mu)) :<= p) :| miss))
+    assert(all(((normal(right :- mu) - normal(-right :- mu)) :>= p) :| miss))
+
+    quant = (left :+ right) / 2
+    exact = normal(quant :- mu) - normal(-quant :- mu)
+    while ( max(abs(exact :- p)) > tol ) {
+        selr = selectindex(exact :> p)
+        sell = selectindex(exact :< p)
+        if ( length(selr) ) right[selr] = quant[selr]
+        if ( length(sell) ) left[sell]  = quant[sell]
+        quant = (left :+ right) / 2
+        exact = normal(quant :- mu) - normal(-quant :- mu)
+    }
+
+    return(quant)
 }
 end
 
