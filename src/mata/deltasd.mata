@@ -389,7 +389,7 @@ real rowvector function _honestSDComputeIDSet(real scalar M,
     else {
         // Construct upper/lower bound of identified set
         id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_min.info_obj_val
-        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_max.info_obj_val
+        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' + result_max.info_obj_val
     }
 
     // Return identified set

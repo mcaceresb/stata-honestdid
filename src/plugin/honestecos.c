@@ -74,7 +74,13 @@ ST_retcode honestecos(char *fname)
                       c, h, b);
 
     if (work) {
-        work->stgs->verbose = 0; // set to 1 to debug
+        // Default parameters to match CVXR:
+        // https://cvxr.rbind.io/cvxr_examples/cvxr_solver-parameters/
+        work->stgs->verbose = 0;
+        work->stgs->reltol  = 1e-8;
+        work->stgs->abstol  = 1e-8;
+        work->stgs->feastol = 1e-8;
+        work->stgs->maxit   = 100;
         exitflag = ECOS_solve(work);
     }
     else {

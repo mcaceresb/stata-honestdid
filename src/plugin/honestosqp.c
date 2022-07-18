@@ -86,7 +86,14 @@ ST_retcode honestosqp(char *fname)
 
     if (settings) {
         osqp_set_default_settings(settings);
-        settings->verbose = 0;
+        // Default parameters to match CVXR:
+        // https://cvxr.rbind.io/cvxr_examples/cvxr_solver-parameters/
+        settings->verbose      = 0;
+        settings->eps_abs      = 1e-5;
+        settings->eps_rel      = 1e-5;
+        settings->eps_prim_inf = 1e-4;
+        settings->eps_dual_inf = 1e-4;
+        settings->max_iter     = 10000;
     }
     else {
         rc = 17292;
