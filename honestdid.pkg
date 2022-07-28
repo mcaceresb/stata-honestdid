@@ -1,4 +1,4 @@
-v 0.1.2
+v 0.2.0
 d
 d 'HONESTDID': HonestDiD
 d
@@ -10,7 +10,7 @@ d KW: event study
 d
 d Requires: Stata version 14.1
 d
-d Distribution-Date: 20220717
+d Distribution-Date: 20220728
 d
 f src/build/lhonestdid.mlib
 f src/ado/honestdid.ado

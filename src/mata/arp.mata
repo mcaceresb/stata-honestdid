@@ -43,14 +43,14 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
                                          real colvector l_vec,
                                          real scalar alpha,
                                          string scalar hybrid_flag,
-                                         struct _honestSDHybridList scalar hybrid_list,
+                                         struct _honestHybridList scalar hybrid_list,
                                          real scalar returnLength,
                                          real scalar grid_lb,
                                          real scalar grid_ub,
                                          real scalar gridPoints,
                                          real vector rowsForARP)
 {
-    real scalar i, theta, left, right
+    real scalar i, theta, left, right, reject
     real matrix Gamma, AGammaInv, AGammaInv_one, AGammaInv_minusOne
     real matrix sigmaY, resultsGrid
     real vector thetaGrid, testResultsGrid, thetaDiff, gridLength, Y
@@ -181,7 +181,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
                                                 real vector rowsForARP,
                                                 real scalar sims) {
 
-    real scalar dimDelta
+    real scalar i, dimDelta
     real matrix xi_draws, Cons, C0
     real colvector eta_vec, sdVec
     real rowvector f, f0, A0
@@ -196,6 +196,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     //   hybrid_kappa = desired size
     //   sims  = number of simulations, default = 10000
 
+// TODO: xx For higher dimensions, some Halton sequences are highly correlated, which is not great!
     if ( args() < 5 ) sims = 1000
     if ( args() < 3 ) {
         // no nuisance parameter case; the issue is that sigma
@@ -245,13 +246,14 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     }
 }
 
+// NB: theta passed but not used
 real scalar function _honestARPDeltaLPWrapper(real scalar theta,
                                               real colvector y_T,
                                               real matrix X_T,
                                               real matrix sigma,
                                               real scalar alpha,
                                               string scalar hybrid_flag,
-                                              struct _honestSDHybridList scalar hybrid_list,
+                                              struct _honestHybridList scalar hybrid_list,
                                               | real vector rowsForARP) {
 
     real scalar results
@@ -261,9 +263,6 @@ real scalar function _honestARPDeltaLPWrapper(real scalar theta,
     // it only returns an indicator for whether the test rejects.  This is
     // used by other functions to construct the ARP CIs.
 
-// TODO: xx in R this also gives back eta_star, delta_star, lambda
-//          but here I only return reject so the wrapper is deprecated.
-//          Also, theta is not used, but is passed?
     results = _honestARPConditionalTest(theta,
                                         y_T,
                                         X_T,
@@ -275,14 +274,15 @@ real scalar function _honestARPDeltaLPWrapper(real scalar theta,
     return(results)
 }
 
-// TODO: xx in R this also gives back eta_star, delta_star, lambda
+// NB: In R this also gives back eta_star, delta_star, lambda but here I
+// only return reject so the wrapper is deprecated.
 real scalar function _honestARPConditionalTest(real scalar theta,
                                                real colvector y_T,
                                                real matrix X_T,
                                                real matrix sigma,
                                                real scalar alpha,
                                                string scalar hybrid_flag,
-                                               struct _honestSDHybridList scalar hybrid_list,
+                                               struct _honestHybridList scalar hybrid_list,
                                                | real vector rowsForARP,
                                                real scalar tol_lambda) {
 
@@ -384,12 +384,11 @@ real scalar function _honestARPConditionalTest(real scalar theta,
     // solutions are equal to one another. If these conditions don't hold,
     // we will switch to the dual.
     degenerate_flag = (sum(linSoln.solution_z :> tol_lambda) != (k+1))
-// TODO: xx Fully not quite getting this? Isn't k+1 the number of coefficients, not constraints/lambdas?
 
     // Store which moments are binding: Do so using lambda rather than the moments.
     B_index  = (linSoln.solution_z :> tol_lambda)
     Bc_index = (1 :- B_index)
-    X_TB     = X_T_ARP[selectindex(B_index), .] // select binding moments
+    X_TB     = X_T_ARP[selectindex(B_index), .]  // select binding moments
     // Check whether binding moments have full rank
     fullRank_flag = (rank(X_TB) == min((rows(X_TB), cols(X_TB))))
 
@@ -449,7 +448,7 @@ real scalar function _honestARPConditionalTest(real scalar theta,
             _error(198)
         }
 
-        if (!((zlo_dual <= maxstat) & (maxstat <= zup_dual))) {
+        if (!((missing(zlo_dual) | zlo_dual <= maxstat) & (maxstat <= zup_dual | missing(zup_dual)))) {
             return(0)
         }
         else {
@@ -460,13 +459,10 @@ real scalar function _honestARPConditionalTest(real scalar theta,
         }
     }
     else {
-errprintf("DEBUG WARNING: primal approach not yet checked against R at all: %25.21f\n", theta)
-// TODO: xx primal approach not yet checked against R at all
 
         // ---------------
         // primal approach
         // ---------------
-        // size_Bc  = sum(1 :- B_index)
         size_B   = sum(B_index)
         sdVec    = sqrt(diagonal(sigma_ARP))
         sdVec_B  = sdVec[selectindex(B_index)]
@@ -484,12 +480,10 @@ errprintf("DEBUG WARNING: primal approach not yet checked against R at all: %25.
         sigma2_B = v_B' * sigma_ARP * v_B
         sigma_B  = sqrt(sigma2_B)
         rho      = (Gamma_B * sigma_ARP * v_B) :/ sigma2_B
-// TODO: xx is sigma2_B ever a matrix? No because the numerator is a column vector, right?
 
         // Compute truncation values
         maximand_or_minimand = ((-Gamma_B * y_T_ARP) :/ rho) :+ (v_B' * y_T_ARP)
 
-// TODO: xx vlo was meant to be -Inf if false
         vlo = any(rho :> 0)? max(maximand_or_minimand[selectindex(rho :> 0)]): .
         vup = any(rho :< 0)? min(maximand_or_minimand[selectindex(rho :< 0)]): .
 
@@ -526,7 +520,7 @@ errprintf("DEBUG WARNING: primal approach not yet checked against R at all: %25.
 
         // Compute test statistic
         maxstat = eta/sigma_B
-        if ( !((zlo <= maxstat) & (maxstat <= zup)) ) {
+        if ( !((missing(zlo) | zlo <= maxstat) & (maxstat <= zup | missing(zup))) ) {
             // errprintf("max stat (%3f) is not between z_lo (%3f) and z_up (%3f) in the primal approach",
             //           maxstat, zlo, zup)
             return(0)
@@ -620,7 +614,7 @@ real rowvector function _honestARPDualVLO(real scalar eta,
                                           real matrix W_T) {
 
     real scalar tol_c, tol_equality, sigma_B, low_initial, high_initial, maxiters
-    real scalar dif, iters, low, high, vlo, vup
+    real scalar dif, iters, low, high, vlo, vup, mid
 
     // This function computes vlo and vup for the dual linear program for the
     // conditional values using the bisection method described in Appendix
@@ -686,7 +680,10 @@ real rowvector function _honestARPDualVLO(real scalar eta,
 
     // Compute vlo
     if ( _honestARPCheckSolHelper(low_initial, tol_equality, s_T, gamma_tilde, sigma, W_T)) {
-// TODO: xx this was -Inf, but there's no such thing in Stata ):
+        // NB: -Inf, Inf are not actual concepts in Stata (missing is
+        // technically equivalent to Inf but it's not always the best
+        // idea to use it in that way. In any case, if either bound is
+        // missing the condition evaluates to True downstream.
         vlo = .
     }
     else {
@@ -708,8 +705,8 @@ real rowvector function _honestARPDualVLO(real scalar eta,
             }
             dif = high-low
         }
-        if (iters == maxiters) {
-            // warning("vlo: Reached max iterations without a solution!")
+        if (iters >= maxiters) {
+            errprintf("_honestARPDualVLO(): Reached max iterations; please report this as a bug.\n")
         }
         vlo = mid
     }
@@ -767,7 +764,7 @@ real rowvector function _honestARPFLCIVloVup(real colvector vbar,
     // Comptute max_min
     max_or_min = (dbar :- (VbarMat * S)) :/ (VbarMat * c)
     // Compute Vlo, Vup for the FLCI
-// TODO: xx what is R's behavior when vlo or vup are empty? check
+    // NB: If empty this returns missing for either bound
     vlo = max(max_or_min[selectindex((VbarMat * c) :< 0)])
     vup = min(max_or_min[selectindex((VbarMat * c) :> 0)])
     // Return Vlo, Vup

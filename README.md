@@ -3,7 +3,7 @@ HonestDiD
 
 HonestDiD translation to Stata. This repo is for development; it should eventually disapper.
 
-`version 0.1.2 17Jul2022` | [Installation](#installation) | [Usage](#usage) | [Examples](#examples)
+`version 0.2.0 28Jul2022` | [Installation](#installation) | [Usage](#usage) | [Examples](#examples)
 
 ### Installation
 

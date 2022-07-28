@@ -3,7 +3,6 @@ cap mata mata drop _honestSDUpperBoundMpre()
 cap mata mata drop _honestSDComputeIDSet()
 cap mata mata drop _honestSDCreateA()
 cap mata mata drop _honestSDCreated()
-cap mata mata drop _honestSDHybridList()
 
 * Done
 * ----
@@ -13,21 +12,14 @@ cap mata mata drop _honestSDHybridList()
 * .create_d_SD()                 <-> _honestSDCreated()
 * .compute_IDset_DeltaSD()       <-> _honestSDComputeIDSet()
 * computeConditionalCS_DeltaSD() <-> _honestSDConditionalCS()
+* .ARP_computeCI()               <-> _honestARPComputeCI()
+* .APR_computeCI_NoNuis()        <-> _honestARPComputeCINoNuis()
 
 * TODO
 * ----
 * xx ALL THE COMMENTS
 
 mata
-struct _honestSDHybridList {
-    real scalar hybrid_kappa
-    real scalar flci_halflength
-    real scalar lf_cv
-    real colvector flci_l
-    real colvector vbar
-    real colvector dbar
-}
-
 real matrix function _honestSDConditionalCS(real rowvector betahat,
                                             real matrix sigma,
                                             real scalar numPrePeriods,
@@ -38,7 +30,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                             string scalar hybrid_flag)
 {
 
-    struct _honestSDHybridList scalar hybrid_list
+    struct _honestHybridList scalar hybrid_list
     real rowvector IDset
     real colvector sel
     struct _flciResults scalar flci
@@ -46,7 +38,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
 
     real scalar hybrid_kappa, returnLength, postPeriodMomentsOnly
     real scalar gridPoints, grid_ub, grid_lb, sdTheta
-    real vector d_SD, rowsForARP, postPeriodIndices, postPeriodRows, q
+    real vector d_SD, rowsForARP, postPeriodIndices, q
     real matrix A_SD, P, CI
 
     // This function computes the ARP CI that includes nuisance parameters
@@ -75,8 +67,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
     if ( args() < 7 ) alpha = 0.05
     if ( args() < 8 ) hybrid_flag = "FLCI"
 
-    // TODO xx: Hard-coded
-    // grid_midPoint         = .
+    // TODO xx hard-coded
     hybrid_kappa          = alpha/10
     returnLength          = 0
     postPeriodMomentsOnly = 1
@@ -90,8 +81,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
 
     if ( postPeriodMomentsOnly & (numPostPeriods > 1) ) {
         postPeriodIndices = (numPrePeriods +1)..cols(A_SD)
-        postPeriodRows = selectindex(rowsum(A_SD[. , postPeriodIndices] :!= 0) :> 0)
-        rowsForARP = postPeriodRows
+        rowsForARP = selectindex(rowsum(A_SD[. , postPeriodIndices] :!= 0) :> 0)
     }
     else {
         rowsForARP = 1::rows(A_SD)
@@ -164,24 +154,20 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             _error(198)
         }
 
-        errprintf("_honestSDConditionalCS(): ")
-        errprintf("CASE: numPostPeriods == 1 not yet implemented\n")
-        _error(198)
-        // TODO: xx Compute confidence set
-        // CI = xx.APR_computeCI_NoNuis(betahat,
-        //                              sigma,
-        //                              A_SD,
-        //                              d_SD,
-        //                              numPrePeriods,
-        //                              numPostPeriods,
-        //                              l_vec,
-        //                              alpha,
-        //                              returnLength,
-        //                              hybrid_flag,
-        //                              hybrid_list,
-        //                              grid_lb,
-        //                              grid_ub,
-        //                              gridPoints)
+        CI = _honestARPComputeCINoNuis(betahat,
+                                       sigma,
+                                       numPrePeriods,
+                                       numPostPeriods,
+                                       A_SD,
+                                       d_SD,
+                                       l_vec,
+                                       alpha,
+                                       hybrid_flag,
+                                       hybrid_list,
+                                       returnLength,
+                                       grid_lb,
+                                       grid_ub,
+                                       gridPoints)
     }
     else {
         // CASE: NumPostPeriods > 1
@@ -383,13 +369,20 @@ real rowvector function _honestSDComputeIDSet(real scalar M,
 
     if ( !(result_max.success & result_min.success) ) {
         errprintf("_honestSDComputeIDSet(): Solver did not find an optimum\n")
-        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
+    }
+
+    if ( result_max.success ) {
         id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
     }
     else {
-        // Construct upper/lower bound of identified set
-        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_min.info_obj_val
         id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' + result_max.info_obj_val
+    }
+
+    if ( result_min.success ) {
+        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
+    }
+    else {
+        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_min.info_obj_val
     }
 
     // Return identified set

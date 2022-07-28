@@ -1,4 +1,4 @@
-*! version 0.1.2 17Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.2.0 28Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -23,10 +23,11 @@ program honestdid, sclass
         mvec(str)                          /// Vector or list with with M-values
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
+        rm                                 /// relative magnitudes
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
-        method(str)                        /// FLCI (xx default), Conditional, C-F or C-LF
+        method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
@@ -34,6 +35,7 @@ program honestdid, sclass
         *                                  /// Options for coefplot
     ]
 
+    local relativeMagnitudes = "`rm'" != ""
     if "`matasave'" == "" local results HonestEventStudy
     else local results: copy local matasave
 
@@ -58,6 +60,15 @@ program honestdid, sclass
         if ( _rc ) {
             disp as err "Cached results not found"
             exit 198
+        }
+        mata st_local("rmcached", `results'.options.relativeMagnitudes)
+        if ( "`rm'" != "`rmcached'" ) {
+            if ( "`rmcached'" != "" ) {
+                disp as txt "{bf:note:} cached results uses relativeMagnitudes"
+            }
+            if ( "`rm'" != "" ) {
+                disp as txt "{bf:warning:} cached results do not use relativeMagnitudes; option -rm- ignored"
+            }
         }
     }
 
@@ -86,7 +97,8 @@ program honestdid, sclass
                                   "`l_vec'",              ///
                                   "`mvec'",               ///
                                   `alpha',                ///
-                                  "`method'")
+                                  "`method'",             ///
+                                  `relativeMagnitudes')
             _honestPrintFLCI(`results')
         }
     }
@@ -140,7 +152,7 @@ program HonestSanityChecks
         REFERENCEperiodindex(int 0) /// index for the reference period
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
-        method(str)                 /// FLCI (xx default), Conditional, C-F or C-LF
+        method(str)                 /// FLCI, Conditional, C-F or C-LF (default depends on rm)
     ]
 
     local method = lower(`"`method'"')

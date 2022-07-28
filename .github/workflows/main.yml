@@ -2,8 +2,12 @@ name: compile-macosx-plugin
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/plugin'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/plugin'
   workflow_dispatch:
 jobs:
   build:
