@@ -39,7 +39,8 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
                                          real scalar numPrePeriods,
                                          real scalar numPostPeriods,
                                          real matrix A,
-                                         real vector d,
+                                         real colvector d,
+                                         real scalar debug,
                                          real colvector l_vec,
                                          real scalar alpha,
                                          string scalar hybrid_flag,
@@ -75,6 +76,11 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
     // Outputs:
     //   testResultsGrid
 
+    if ( debug == 1 ) {
+        printf("\thonest debug: _honestARPComputeCI()\n")
+        printf("\thonest debug: \thybrid_flag = %s\n", hybrid_flag)
+    }
+
     // Construct grid of theta values to test over.
     thetaGrid = _honestLinspace(grid_lb, grid_ub, gridPoints)
 
@@ -86,7 +92,6 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
     AGammaInv_minusOne = AGammaInv[., _honestInverseIndex(1, cols(AGammaInv))]
 
     // Compute Y = A betahat - d and its variance A*sigma*A'
-    d = colshape(d, 1)
     Y = A * betahat' - d
     sigmaY = A * sigma * A'
 
@@ -134,11 +139,13 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
 
     // Compute length, else return grid
     if ( returnLength ) {
+        if ( debug == 1 ) printf("\thonest debug: \treturnLength = 1\n")
         thetaDiff = thetaGrid[2::gridPoints] :- thetaGrid[1::(gridPoints-1)]
         gridLength = ((0, thetaDiff) + (thetaDiff, 0)) :/ 2
         return(gridLength * resultsGrid[., 2])
     }
     else {
+        if ( debug == 1 ) printf("\thonest debug: \treturnLength = 0\n")
         return(resultsGrid)
     }
 }
@@ -196,7 +203,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     //   hybrid_kappa = desired size
     //   sims  = number of simulations, default = 10000
 
-// TODO: xx For higher dimensions, some Halton sequences are highly correlated, which is not great!
+// TODO: xx For higher dimensions, some Halton sequences are highly correlated! Fix via e.g. _jumble
     if ( args() < 5 ) sims = 1000
     if ( args() < 3 ) {
         // no nuisance parameter case; the issue is that sigma
@@ -335,6 +342,17 @@ real scalar function _honestARPConditionalTest(real scalar theta,
     y_T_ARP   = y_T[rowsForARP]
     X_T_ARP   = X_T[rowsForARP, .]
     sigma_ARP = sigma[rowsForARP, rowsForARP]
+
+// Debug: Use this in place of *_ARP to switch to primal
+//     y_T = 1::3
+//     X_T = (1 \ -2 \ 1), (-1 \ 1 \ 0)
+//     sigma = I(3)
+//
+// Debug: Use this in place of *_ARP with +/- y_T to test out the VLO/VUP function
+//     rseed(1234)
+//     y_T = -(1::5)
+//     X_T = (1 \ -2 \ 1 \ 1 \ 0), (-1 \ 1 \ 0 \ 1 \ 1), (0 \ 0 \ 0 \ 0 \ 1)
+//     sigma = makesymmetric(runiform(5, 5))
 
     // Dimensions of objects
     M = rows(sigma_ARP)
@@ -578,6 +596,7 @@ struct ECOS_workspace_abridged scalar function _honestARPDeltaTest(
     // Define linear program using lpSolveAPI
     res = ECOS(f, C, b, rows(C), 0, 0, (J(1, length(f)-1, 0), 1), 1)
     res.solution_x = res.solution_x[1::(length(f)-1)]
+
     return(res)
 }
 
@@ -613,8 +632,10 @@ real rowvector function _honestARPDualVLO(real scalar eta,
                                           real matrix sigma,
                                           real matrix W_T) {
 
+    struct ECOS_workspace_abridged scalar linprog
     real scalar tol_c, tol_equality, sigma_B, low_initial, high_initial, maxiters
-    real scalar dif, iters, low, high, vlo, vup, mid
+    real scalar dif, iters, low, high, vlo, vup, mid, checksol
+    real colvector b
 
     // This function computes vlo and vup for the dual linear program for the
     // conditional values using the bisection method described in Appendix
@@ -638,48 +659,48 @@ real rowvector function _honestARPDualVLO(real scalar eta,
     low_initial  = min((-100, eta - 20 * sigma_B))
     high_initial = max(( 100, eta + 20 * sigma_B))
     maxiters     = 10000
+    checksol     = _honestARPCheckSolHelper(eta, tol_equality, s_T, gamma_tilde, sigma, W_T)
 
-    if ( missing(_honestARPCheckSolHelper(eta, tol_equality, s_T, gamma_tilde, sigma, W_T)) ) {
+    if ( missing(checksol) | (checksol == 0) ) {
         // errprintf("User-supplied eta is not a solution. Not rejecting automatically\n")
         return((eta, .))
     }
 
-    if ( !_honestARPCheckSolHelper(eta, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
-        // errprintf("User-supplied eta is not a solution. Not rejecting automatically\n")
-        return((eta, .))
-    }
-
+// TODO: xx Check with J and A about this shortcut
     // Compute vup
-    if ( _honestARPCheckSolHelper(high_initial, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
+    linprog = ECOS_workspace_abridged()
+    if ( _honestARPCheckSolHelper(high_initial, tol_equality, s_T, gamma_tilde, sigma, W_T, linprog) ) {
         vup = .
     }
     else {
-        // Throughout the while loop, the high value is not a solution and the
-        // low-value is a solution. If the midpoint between them is a solution,
-        // then we set low to the midpoint; otherwise, we set high to the midpoint.
-
-        dif   = tol_c + 1
-        iters = 0
-        low   = eta
-        high  = high_initial
-        while ( (dif > tol_c) & (++iters < maxiters) ) {
-            mid = (high + low)/2
-            if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T)) {
-                low = mid
-            }
-            else {
-                high = mid
-            }
-            dif = high - low
-        }
-        if ( iters == maxiters ) {
-            // warning("vup: Reached max iterations without a solution!")
-        }
-        vup = mid
+        // Shortcut instead of bisection search
+        b   = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
+        vup = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        // xx // Throughout the while loop, the high value is not a solution and the
+        // xx // low-value is a solution. If the midpoint between them is a solution,
+        // xx // then we set low to the midpoint; otherwise, we set high to the midpoint.
+        // xx dif   = tol_c + 1
+        // xx iters = 0
+        // xx low   = eta
+        // xx high  = high_initial
+        // xx while ( (dif > tol_c) & (++iters < maxiters) ) {
+        // xx     mid = (high + low)/2
+        // xx     if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
+        // xx         low = mid
+        // xx     }
+        // xx     else {
+        // xx         high = mid
+        // xx     }
+        // xx     dif = high - low
+        // xx }
+        // xx if ( iters == maxiters ) {
+        // xx     // warning("vup: Reached max iterations without a solution!")
+        // xx }
+        // xx vup = mid
     }
 
     // Compute vlo
-    if ( _honestARPCheckSolHelper(low_initial, tol_equality, s_T, gamma_tilde, sigma, W_T)) {
+    if ( _honestARPCheckSolHelper(low_initial, tol_equality, s_T, gamma_tilde, sigma, W_T, linprog) ) {
         // NB: -Inf, Inf are not actual concepts in Stata (missing is
         // technically equivalent to Inf but it's not always the best
         // idea to use it in that way. In any case, if either bound is
@@ -687,29 +708,32 @@ real rowvector function _honestARPDualVLO(real scalar eta,
         vlo = .
     }
     else {
-        // Throughout the while loop, the low value is not a solution and the
-        // high-value is a solution. If the midpoint between them is a solution,
-        // then we set high to the midpoint; otherwise, we set low to the midpoint.
-
-        dif   = tol_c + 1
-        iters = 0
-        low   = low_initial
-        high  = eta
-        while ( (dif > tol_c) & (++iters < maxiters) ) {
-            mid = (low + high)/2
-            if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T)) {
-                high = mid
-            }
-            else {
-                low = mid
-            }
-            dif = high-low
-        }
-        if (iters >= maxiters) {
-            errprintf("_honestARPDualVLO(): Reached max iterations; please report this as a bug.\n")
-        }
-        vlo = mid
+        b   = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
+        vlo = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        // xx // Throughout the while loop, the low value is not a solution and the
+        // xx // high-value is a solution. If the midpoint between them is a solution,
+        // xx // then we set high to the midpoint; otherwise, we set low to the midpoint.
+        // xx dif   = tol_c + 1
+        // xx iters = 0
+        // xx low   = low_initial
+        // xx high  = eta
+        // xx mid   = (high + low) / 2
+        // xx while ( (dif > tol_c) & (++iters < maxiters) ) {
+        // xx     mid = (low + high)/2
+        // xx     if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
+        // xx         high = mid
+        // xx     }
+        // xx     else {
+        // xx         low = mid
+        // xx     }
+        // xx     dif = high-low
+        // xx }
+        // xx if (iters >= maxiters) {
+        // xx     errprintf("_honestARPDualVLO(): Reached max iterations; please report this as a bug.\n")
+        // xx }
+        // xx vlo = mid
     }
+
     return((vlo, vup))
 }
 
@@ -718,9 +742,12 @@ real scalar function _honestARPCheckSolHelper(real scalar c,
                                               real colvector s_T,
                                               real colvector gamma_tilde,
                                               real matrix sigma,
-                                              real matrix W_T) {
+                                              real matrix W_T, 
+                                              | struct ECOS_workspace_abridged linprog) {
+
+    if ( args() < 7 ) linprog = ECOS_workspace_abridged()
     real scalar min_value
-    min_value = _honestARPMaxProgram(s_T, gamma_tilde, sigma, W_T, c)
+    min_value = _honestARPMaxProgram(s_T, gamma_tilde, sigma, W_T, c, linprog)
     return((missing(min_value)? .: abs(c - min_value) <= tol))
 }
 
@@ -728,9 +755,11 @@ real scalar function _honestARPMaxProgram(real colvector s_T,
                                           real colvector gamma_tilde,
                                           real matrix sigma,
                                           real matrix W_T,
-                                          real scalar c) {
+                                          real scalar c,
+                                          | struct ECOS_workspace_abridged linprog) {
 
-    struct ECOS_workspace_abridged scalar linprog
+    if ( args() < 6 ) linprog = ECOS_workspace_abridged()
+
     real scalar n
     real colvector f, beq
     real matrix Aeq

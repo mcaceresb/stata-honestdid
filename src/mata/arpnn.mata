@@ -16,7 +16,6 @@ cap mata mata drop _honestTestInIdSet_LF_Hybrid()
 * TODO
 * ----
 * xx ALL THE COMMENTS
-* xx NOT TESTED!
 
 mata
 real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
@@ -25,6 +24,7 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
                                                real scalar numPostPeriods,
                                                real matrix A,
                                                real colvector d,
+                                               real scalar debug,
                                                real colvector l_vec,
                                                real scalar alpha,
                                                string scalar hybrid_flag,
@@ -36,9 +36,6 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
 {
     real matrix resultsGrid
     real rowvector thetaGrid, thetaDiff, gridLength
-
-    printf("_honestARPComputeCINoNuis(): ")
-    printf("function in beta; please report errors as bugs.\n")
 
     // This function computes the ARP confidence interval for Delta^SD(M) for a given event study.
     // It takes the following inputs:
@@ -54,7 +51,9 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
 
     // Construct grid of tau values to test and test which values of tau lie in ID set.
     thetaGrid = _honestLinspace(grid_lb, grid_ub, gridPoints)
+    if ( debug == 1 ) printf("\thonest debug: _honestARPComputeCINoNuis()\n")
     if (hybrid_flag == "ARP") {
+        if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = ARP\n")
         resultsGrid = _honestARPTestOverGrid(betahat,
                                              sigma,
                                              thetaGrid,
@@ -66,6 +65,7 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
                                              hybrid_list)
     }
     else if (hybrid_flag == "FLCI") {
+        if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = FLCI\n")
         resultsGrid = _honestARPTestOverGrid(betahat,
                                              sigma,
                                              thetaGrid,
@@ -77,6 +77,7 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
                                              hybrid_list)
     }
     else if (hybrid_flag == "LF") {
+        if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = LF\n")
         resultsGrid = _honestARPTestOverGrid(betahat,
                                              sigma,
                                              thetaGrid,
@@ -99,11 +100,13 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
 
     // Compute length, else return grid
     if ( returnLength ) {
+        if ( debug == 1 ) printf("\thonest debug: \treturnLength = 1\n")
         thetaDiff = thetaGrid[2..gridPoints] :- thetaGrid[1..(gridPoints-1)]
         gridLength = ((0, thetaDiff) + (thetaDiff, 0)) :/ 2
         return(gridLength * resultsGrid[., 2])
     }
     else {
+        if ( debug == 1 ) printf("\thonest debug: \treturnLength = 0\n")
         return(resultsGrid)
     }
 }
@@ -126,7 +129,7 @@ real matrix function _honestARPTestOverGrid(real rowvector betahat,
     for (i = 1; i <= length(thetaGrid); i++) {
         theta  = thetaGrid[i]
         y      = betahat' - _honestBasis(numPrePeriods + 1, length(betahat)) * theta
-        reject = (*testFn)(y, sigma, A, d, alpha)
+        reject = (*testFn)(y, sigma, A, d, alpha, hybrid_list)
         testResultsGrid[i] = 1 - reject
     }
     return((thetaGrid', testResultsGrid))
@@ -142,11 +145,10 @@ real scalar function _honestTestInIdSet(real colvector y,
                                         real colvector dbar_additional)
 {
     real scalar reject, maxLocation, maxMoment, criticalVal, sigmabar
-    real matrix sigmaTilde, Atilde, w, T_B, Abar
+    real matrix sigmaTilde, Atilde, T_B, Abar
     real colvector dtilde, normalizedMoments, iota, gamma, dbar, c, z
     real vector i, VLoVUpVec
 
-    // TODO: xx Hard-coded
     if ( args() < 7 ) Abar_additional = .
     if ( args() < 8 ) dbar_additional = .
 
@@ -160,7 +162,7 @@ real scalar function _honestTestInIdSet(real colvector y,
     dtilde = diag(1 :/ sigmaTilde) * d
 
     normalizedMoments = Atilde * y - dtilde
-    maxindex(normalizedMoments, 1, i=., w=.)
+    maxindex(normalizedMoments, 1, i=., .)
     maxLocation = i[1]
     maxMoment   = normalizedMoments[maxLocation]
 
@@ -168,7 +170,7 @@ real scalar function _honestTestInIdSet(real colvector y,
     iota  = J(rows(Atilde), 1, 1)
     gamma = (T_B * Atilde)'
     Abar  = Atilde - iota * T_B * Atilde
-    dbar  = (diag(rows(dtilde)) - iota * T_B) * dtilde
+    dbar  = (I(rows(dtilde)) - iota * T_B) * dtilde
 
     // If statement, modifies Abar for the FLCI hybrid
     if ( !missing(Abar_additional) ) {
@@ -181,7 +183,7 @@ real scalar function _honestTestInIdSet(real colvector y,
 
     sigmabar  = sqrt(gamma' * sigma * gamma)
     c         = sigma * gamma :/ (gamma' * sigma * gamma)
-    z         = (diag(rows(y)) - c * gamma') * y
+    z         = (I(rows(y)) - c * gamma') * y
     VLoVUpVec = _honestVLoVUpFN(gamma, sigma, Abar, dbar, z)
 
     // Per ARP (2021), CV = max(0, c_{1-alpha}), where c_{1-alpha} is
@@ -216,7 +218,7 @@ real scalar function _honestTestInIdSet_FLCI_Hybrid(real colvector y,
     // We reject if A_firststage %*%y - d_firststage has any positive elements
     // otherwise we add these to the constraints
 
-    A_firststage = (hybrid_list.flci_l \ -hybrid_list.flci_l)
+    A_firststage = (hybrid_list.flci_l, -hybrid_list.flci_l)'
     d_firststage = (hybrid_list.flci_halflength \ hybrid_list.flci_halflength)
 
     // Run the first-stage test
@@ -240,7 +242,7 @@ real scalar function _honestTestInIdSet_LF_Hybrid(real colvector y,
                                                   struct _honestHybridList scalar hybrid_list)
 {
     real scalar reject, maxLocation, maxMoment, alphatilde, criticalVal, sigmabar
-    real matrix sigmaTilde, Atilde, w, T_B, Abar
+    real matrix sigmaTilde, Atilde, T_B, Abar
     real colvector dtilde, normalizedMoments, iota, gamma, dbar, c, z
     real vector i, VLoVUpVec
 
@@ -249,7 +251,7 @@ real scalar function _honestTestInIdSet_LF_Hybrid(real colvector y,
     dtilde = diag(1 :/ sigmaTilde) * d
 
     normalizedMoments = Atilde * y - dtilde
-    maxindex(normalizedMoments, 1, i=., w=.)
+    maxindex(normalizedMoments, 1, i=., .)
     maxLocation = i[1]
     maxMoment   = normalizedMoments[maxLocation]
 
@@ -261,11 +263,11 @@ real scalar function _honestTestInIdSet_LF_Hybrid(real colvector y,
         iota  = J(rows(Atilde), 1, 1)
         gamma = (T_B * Atilde)'
         Abar  = Atilde - iota * T_B * Atilde
-        dbar  = (diag(rows(dtilde)) - iota * T_B) * dtilde
+        dbar  = (I(rows(dtilde)) - iota * T_B) * dtilde
 
         sigmabar  = sqrt(gamma' * sigma * gamma)
         c         = sigma * gamma :/ (gamma' * sigma * gamma)
-        z         = (diag(rows(y)) - c * gamma') * y
+        z         = (I(rows(y)) - c * gamma') * y
         VLoVUpVec = _honestVLoVUpFN(gamma, sigma, Abar, dbar, z)
 
         // Per ARP (2021), CV = max(0, c_{1-alpha-tilde}), where alpha-tilde = (alpha - kappa)/(1-kappa)

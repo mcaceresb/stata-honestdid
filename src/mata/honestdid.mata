@@ -57,6 +57,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          string scalar Mvec,
                                          real scalar alpha,
                                          string scalar method,
+                                         string scalar debug,
                                          real scalar rm)
 {
     struct _honestOptions scalar options
@@ -79,6 +80,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         results.sigma   = st_matrix(V)[sel, sel]
     }
 
+    options.debug              = debug != ""
     options.rm                 = rm
     options.relativeMagnitudes = rm? "rm": ""
     options.method             = method
@@ -109,6 +111,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         }
     }
 
+    options.Mvec    = rowshape(sort(colshape(options.Mvec, 1), 1), 1)
     options.l_vec   = (l_vec == "")? _honestBasis(1, length(results.postPeriodIndices)): colshape(st_matrix(l_vec), 1)
     results.Results = HonestSensitivityResults(results, options)
     results.OG      = HonestOriginalCS(results, options)
@@ -140,7 +143,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
     string scalar biasDirection, method, monotonicityDirection, Delta, hybrid_flag, bound
     real colvector l_vec
     real vector Mvec
-    real scalar m, alpha, rm
+    real scalar m, alpha, rm, debug
     real matrix temp_mat
 
     alpha  = options.alpha
@@ -148,6 +151,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
     l_vec  = options.l_vec
     method = options.method
     rm     = options.rm
+    debug  = options.debug
 
     // TODO: xx hard-coded
     biasDirection         = ""
@@ -249,6 +253,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
                                          numPrePeriods,
                                          numPostPeriods,
                                          Mvec[m],
+                                         debug,
                                          l_vec,
                                          alpha)
 
@@ -265,6 +270,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
                                               sigma,
                                               numPrePeriods,
                                               numPostPeriods,
+                                              debug,
                                               l_vec,
                                               Mvec[m],
                                               alpha,
@@ -283,6 +289,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
                                               sigma,
                                               numPrePeriods,
                                               numPostPeriods,
+                                              debug,
                                               l_vec,
                                               Mvec[m],
                                               alpha,
@@ -348,15 +355,15 @@ void function _honestPrintFLCI(struct HonestEventStudy scalar EventStudy)
 {
     real scalar i
     printf("\n")
-    printf("|   M    |   lb   |   ub   |\n")
-    printf("| ------ | ------ | ------ |\n")
+    printf("|    M    |   lb   |   ub   |\n")
+    printf("| ------- | ------ | ------ |\n")
     for (i = 1; i <= rows(EventStudy.FLCI); i++) {
         if ( i == 1 ) {
-            printf("| %6.4f | %6.3f | %6.3f | (Original)\n",
+            printf("| %7.4f | %6.3f | %6.3f | (Original)\n",
                    EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
         }
         else {
-            printf("| %6.4f | %6.3f | %6.3f |\n",
+            printf("| %7.4f | %6.3f | %6.3f |\n",
                    EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
         }
     }

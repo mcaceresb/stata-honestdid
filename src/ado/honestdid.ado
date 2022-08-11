@@ -1,4 +1,4 @@
-*! version 0.2.0 28Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.3.0 11Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -32,6 +32,7 @@ program honestdid, sclass
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
         ciopts(str)                        ///
+        debug                              /// Print all the mata steps
         *                                  /// Options for coefplot
     ]
 
@@ -81,7 +82,7 @@ program honestdid, sclass
 
     if ( `dohonest' | ("`cached'" == "") ) {
         HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
-            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices')
+            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
         local alpha = 0.05
@@ -98,6 +99,7 @@ program honestdid, sclass
                                   "`mvec'",               ///
                                   `alpha',                ///
                                   "`method'",             ///
+                                  "`debug'",              ///
                                   `relativeMagnitudes')
             _honestPrintFLCI(`results')
         }
@@ -153,6 +155,7 @@ program HonestSanityChecks
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
         method(str)                 /// FLCI, Conditional, C-F or C-LF (default depends on rm)
+        rm                          /// relative magnitudes
     ]
 
     local method = lower(`"`method'"')
@@ -166,6 +169,13 @@ program HonestSanityChecks
             exit 198
         }
         c_local method: copy local method
+    }
+
+    if ( "`rm'" != "" ) {
+        if !inlist("`method'", "C-LF", "Conditional") {
+            disp as err "Method '`method'' not allowed with RelativeMagnitudes"
+            exit 198
+        }
     }
 
     if ((`referenceperiodindex' != 0) & "`preperiodindices'`postperiodindices'" != "") {

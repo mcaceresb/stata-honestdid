@@ -14,13 +14,13 @@ cap mata mata drop _honestRMCreated()
 * TODO
 * ----
 * xx ALL THE COMMENTS
-* xx NOT TESTED!
 
 mata
 real matrix function _honestRMConditionalCS(real rowvector betahat,
                                             real matrix sigma,
                                             real scalar numPrePeriods,
                                             real scalar numPostPeriods,
+                                            real scalar debug,
                                             | real colvector l_vec,
                                             real scalar Mbar,
                                             real scalar alpha,
@@ -54,10 +54,10 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     //  Outputs:
     //   data_frame containing upper and lower bounds of CI.
 
-    if ( args() < 5 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 6 ) Mbar = 0
-    if ( args() < 7 ) alpha = 0.05
-    if ( args() < 8 ) hybrid_flag = "LF"
+    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 7 ) Mbar = 0
+    if ( args() < 8 ) alpha = 0.05
+    if ( args() < 9 ) hybrid_flag = "LF"
 
     // TODO xx hard-coded
     hybrid_kappa          = alpha/10
@@ -82,6 +82,13 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     // Loop over s values for (+), (-), left join the resulting CIs based on the grid
     CIs_RM_plus_allS  = J(gridPoints, length(s_indices), 0)
     CIs_RM_minus_allS = J(gridPoints, length(s_indices), 0)
+
+    if ( debug == 1 ) {
+        printf("\thonest debug: _honestRMConditionalCS()\n")
+        printf("\thonest debug: \tnumPostPeriods = %g\n", numPostPeriods)
+        printf("\thonest debug: \thybrid_flag    = %s\n", hybrid_flag)
+    }
+
     for (s_i = 1; s_i <= length(s_indices); s_i++) {
         // Compute CI for s, (+) and bind it to all CI's for (+)
         CI_s_plus = _honestRMConditionalCSFixedS(s_indices[s_i],
@@ -96,8 +103,8 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
                                                  hybrid_flag,
                                                  hybrid_kappa,
                                                  postPeriodMomentsOnly,
-                                                 grid_ub,
                                                  grid_lb,
+                                                 grid_ub,
                                                  gridPoints)
 
         // Compute CI for s, (-) and bind it to all CI's for (-)
@@ -113,8 +120,8 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
                                                   hybrid_flag,
                                                   hybrid_kappa,
                                                   postPeriodMomentsOnly,
-                                                  grid_ub,
                                                   grid_lb,
+                                                  grid_ub,
                                                   gridPoints)
 
         CIs_RM_plus_allS[., s_i]  = CI_s_plus[., 2]
@@ -127,7 +134,7 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     // Take the max between (+), (-) and Construct grid containing theta
     // points and whether any CI accepted
     thetaGrid   = _honestLinspace(grid_lb, grid_ub, gridPoints)
-    resultsGrid = thetaGrid, rowmax((CIs_RM_plus_maxS, CIs_RM_minus_maxS))
+    resultsGrid = thetaGrid', rowmax((CIs_RM_plus_maxS, CIs_RM_minus_maxS))
     if ( returnLength ) {
         thetaDiff  = thetaGrid[2::gridPoints] :- thetaGrid[1::(gridPoints-1)]
         gridLength = ((0, thetaDiff) + (thetaDiff, 0)) :/ 2
@@ -164,7 +171,7 @@ real matrix function _honestRMConditionalCSFixedS(real scalar s,
     // of its computations. It is used as a helper function in computeConditionalCS_DeltaRM below.
 
     // Check that hybrid_flag equals LF or ARP
-    if (hybrid_flag != "LF" & hybrid_flag != "ARP") {
+    if ( hybrid_flag != "LF" & hybrid_flag != "ARP" ) {
         errprintf("_honestRMConditionalCSFixedS(): ")
         errprintf("hybrid_flag must equal 'ARP' or 'LF'.\n")
         _error(198)
@@ -200,13 +207,14 @@ real matrix function _honestRMConditionalCSFixedS(real scalar s,
                                        numPostPeriods,
                                        A_RM_s,
                                        d_RM,
+                                       0,
                                        l_vec,
                                        alpha,
                                        hybrid_flag,
                                        hybrid_list,
                                        0,
-                                       grid_ub,
                                        grid_lb,
+                                       grid_ub,
                                        gridPoints)
     }
     else {
@@ -218,6 +226,7 @@ real matrix function _honestRMConditionalCSFixedS(real scalar s,
                                  numPostPeriods,
                                  A_RM_s,
                                  d_RM,
+                                 0,
                                  l_vec,
                                  alpha,
                                  hybrid_flag,
@@ -236,8 +245,8 @@ real matrix function _honestRMCreateA(real scalar numPrePeriods,
                                       real scalar numPostPeriods,
                                       real scalar s,
                                       | real scalar Mbar,
-                                      real scalar dropZero,
-                                      real scalar max_positive)
+                                      real scalar max_positive,
+                                      real scalar dropZero)
 {
 
     real matrix A, Atilde, A_UB
@@ -283,19 +292,19 @@ real matrix function _honestRMCreateA(real scalar numPrePeriods,
 
     // Remove all-zero rows of the matrix Atilde, corresponding with the constraint
     // (delta_s - delta_s-1) - (delta_s - delta_s-1) <= (delta_s delta_s-1) - (delta_s - delta_s-1)
-    A = A[selectindex(rowsum(A:^2) > 1e-10), ]
+    A = A[selectindex(rowsum(A:^2) :> 1e-10), ]
 
     // Remove the period corresponding with t=0
     if ( dropZero ) {
-        A = A[., _honestInverseIndex(numPrePeriods+1)]
+        A = A[., _honestInverseIndex(numPrePeriods+1, numPrePeriods+numPostPeriods+1)]
     }
 
     return(A)
 }
 
-real vector function _honestRMCreated(real scalar numPrePeriods,
-                                      real scalar numPostPeriods,
-                                      | real scalar dropZero)
+real colvector function _honestRMCreated(real scalar numPrePeriods,
+                                         real scalar numPostPeriods,
+                                         | real scalar dropZero)
 {
 
     real matrix A_RM

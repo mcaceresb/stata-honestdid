@@ -74,15 +74,18 @@ struct _flciResults scalar function _flciFindOptimal(
     real scalar numPrePeriods,
     real scalar numPostPeriods,
     real scalar M,
+    real scalar debug,
     | real colvector l_vec,
     real scalar alpha,
     real scalar numPoints)
 {
     struct _flciResults scalar results
 
-    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 7 ) alpha = 0.05
-    if ( args() < 8 ) numPoints = 10
+    if ( args() < 7 ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 8 ) alpha = 0.05
+    if ( args() < 9 ) numPoints = 10
+
+    if ( debug == 1 ) printf("\thonest debug: _flciFindOptimal()\n")
 
     results = _flciFindOptimalHelper(sigma, M, numPrePeriods, numPostPeriods, l_vec, alpha, numPoints)
     results.FLCI = (results.optimalVec' * betahat' - results.optimalHalfLength,
@@ -115,10 +118,10 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter
     real matrix biasDF
 
-    if ( args() < 5 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 6 ) alpha = 0.05
+    if ( args() < 5 ) l_vec     = _honestBasis(1, numPostPeriods)
+    if ( args() < 6 ) alpha     = 0.05
     if ( args() < 7 ) numPoints = 10
-    if ( args() < 8 ) finer = 1
+    if ( args() < 8 ) finer     = 1
 
     if ( (finer == 0) & (args() < 7) ) numPoints = 100
 
@@ -143,10 +146,9 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     hGrid   = hGrid'[sel, .]
     maxBias = biasDF[., 2] :* M
     CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
-    selmin = selectindex(min(CI_halflength) :== CI_halflength)
+    selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
 
-    // Refinement to hedge against numerical precision (turn off with finer = 0)
     while ( (diff > xtol) & (++iter < maxiter) ) {
         if ( selmin == 1 ) {
             hGrid = _honestLinspace(hGrid[selmin] - (hGrid[selmin+1] - hGrid[selmin]), hGrid[selmin+1], numPoints)
@@ -194,25 +196,27 @@ real vector function _flciFoldedNormalQuantiles(real scalar p,
                                                 | real scalar sd) {
     if ( args() < 3 ) sd = 1
 
-    real scalar tol
+    real scalar tol, diff
     real vector left, right, exact, quant, sell, selr, miss
 
     miss  = !(mu :< .)
     tol   = epsilon(1)^(3/4)
     left  = invnormal(p/2) * sd :+ mu
-    right = invnormal(p + (1 - p)/2) * sd :+ abs(mu)
+    right = invnormal((p + 9) / 10) * sd :+ abs(mu)
     assert(all(((normal(left  :- mu) - normal(-left  :- mu)) :<= p) :| miss))
     assert(all(((normal(right :- mu) - normal(-right :- mu)) :>= p) :| miss))
 
     quant = (left :+ right) / 2
     exact = normal(quant :- mu) - normal(-quant :- mu)
-    while ( max(abs(exact :- p)) > tol ) {
+    diff  = max(abs(exact :- p))
+    while ( !missing(diff) & diff > tol ) {
         selr = selectindex(exact :> p)
         sell = selectindex(exact :< p)
         if ( length(selr) ) right[selr] = quant[selr]
         if ( length(sell) ) left[sell]  = quant[sell]
         quant = (left :+ right) / 2
         exact = normal(quant :- mu) - normal(-quant :- mu)
+        diff  = max(abs(exact :- p))
     }
 
     return(quant)

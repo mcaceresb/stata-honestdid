@@ -24,6 +24,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                             real matrix sigma,
                                             real scalar numPrePeriods,
                                             real scalar numPostPeriods,
+                                            real scalar debug,
                                             | real colvector l_vec,
                                             real scalar M,
                                             real scalar alpha,
@@ -62,10 +63,10 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
     //  Outputs:
     //   data_frame containing upper and lower bounds of CI.
 
-    if ( args() < 5 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 6 ) M = 0
-    if ( args() < 7 ) alpha = 0.05
-    if ( args() < 8 ) hybrid_flag = "FLCI"
+    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 7 ) M = 0
+    if ( args() < 8 ) alpha = 0.05
+    if ( args() < 9 ) hybrid_flag = "FLCI"
 
     // TODO xx hard-coded
     hybrid_kappa          = alpha/10
@@ -91,8 +92,12 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
     hybrid_list.hybrid_kappa = hybrid_kappa
 
     // If there is only one post-period, we use the no-nuisance parameter functions
+    if ( debug == 1 ) printf("\thonest debug: _honestSDConditionalCS()\n")
     if (numPostPeriods == 1) {
+        if ( debug == 1 ) printf("\thonest debug: \tnumPostPeriods = 1\n")
+
         if ( hybrid_flag == "FLCI" ) {
+            if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = FLCI\n")
             // Compute FLCI
             flci = _flciFindOptimalHelper(sigma, M, numPrePeriods, numPostPeriods, l_vec, hybrid_kappa)
 
@@ -112,6 +117,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             }
         }
         else if ( hybrid_flag == "LF" ) {
+            if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = LF\n")
             // Compute LF CV
             hybrid_list.lf_cv = _honestARPLeastFavorableCV(A_SD * sigma * A_SD', hybrid_kappa)
 
@@ -132,6 +138,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             }
         }
         else if ( hybrid_flag == "ARP" ) {
+            if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = ARP\n")
             // construct theta grid
             if ( missing(grid_lb) | missing(grid_ub) ) {
                 // Compute identified set under parallel trends
@@ -160,6 +167,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                        numPostPeriods,
                                        A_SD,
                                        d_SD,
+                                       debug,
                                        l_vec,
                                        alpha,
                                        hybrid_flag,
@@ -168,6 +176,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                        grid_lb,
                                        grid_ub,
                                        gridPoints)
+
     }
     else {
         // CASE: NumPostPeriods > 1
@@ -220,6 +229,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                  numPostPeriods,
                                  A_SD,
                                  d_SD,
+                                 debug,
                                  l_vec,
                                  alpha,
                                  hybrid_flag,
@@ -298,10 +308,10 @@ real matrix function _honestSDCreateA(real scalar numPrePeriods,
     return(Atilde \ -Atilde)
 }
 
-real vector function _honestSDCreated(real scalar numPrePeriods,
-                                      real scalar numPostPeriods,
-                                      real scalar M,
-                                      | real scalar postPeriodMomentsOnly) {
+real colvector function _honestSDCreated(real scalar numPrePeriods,
+                                         real scalar numPostPeriods,
+                                         real scalar M,
+                                         | real scalar postPeriodMomentsOnly) {
 
     real matrix A_SD
 
@@ -318,7 +328,7 @@ real vector function _honestSDCreated(real scalar numPrePeriods,
     //   postPeriodMomentsOnly = whether to exlude moments relating only to pre-period (which don't affect ID set)
 
     A_SD = _honestSDCreateA(numPrePeriods, numPostPeriods, postPeriodMomentsOnly)
-    return(J(1, rows(A_SD), M))
+    return(J(rows(A_SD), 1, M))
 }
 
 
@@ -372,17 +382,17 @@ real rowvector function _honestSDComputeIDSet(real scalar M,
     }
 
     if ( result_max.success ) {
-        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
+        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' + result_max.info_obj_val
     }
     else {
-        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' + result_max.info_obj_val
+        id_lb = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
     }
 
     if ( result_min.success ) {
-        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
+        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_min.info_obj_val
     }
     else {
-        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]' - result_min.info_obj_val
+        id_ub = l_vec' * trueBeta[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)]'
     }
 
     // Return identified set

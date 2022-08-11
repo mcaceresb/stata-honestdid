@@ -16,6 +16,7 @@ data(BCdata_EventStudy)
 BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
 BC_l_vec          <- basisVector(index = 1, size = BC_numPostPeriods)
+BC_l_vec          <- cbind(c(1, 0, 0, 0))
 BC_DeltaSDNB_RobustResults <-
     createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
                              sigma          = BCdata_EventStudy$sigma,
@@ -62,6 +63,15 @@ BC_OriginalResults <-
 BC_DeltaSDNB_SensitivityPlot <-
     createSensitivityPlot(robustResults   = BC_DeltaSDNB_RobustResults,
                           originalResults = BC_OriginalResults)
+
+BC_DeltaRMNB_RobustResultsConditional <-
+    createSensitivityResults_relativeMagnitudes(betahat        = BCdata_EventStudy$betahat,
+                                                sigma          = BCdata_EventStudy$sigma,
+                                                numPrePeriods  = BC_numPrePeriods,
+                                                numPostPeriods = BC_numPostPeriods,
+                                                l_vec          = BC_l_vec,
+                                                method         = "Conditional",
+                                                Mbarvec        = seq(from=0, to=0.3, by=0.1))
 
 BC_OriginalResults
 BC_DeltaSDNB_RobustResults
