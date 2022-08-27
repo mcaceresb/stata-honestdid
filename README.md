@@ -3,7 +3,7 @@ HonestDiD
 
 HonestDiD translation to Stata. This repo is for development; it should eventually disapper.
 
-`version 0.3.0 11Aug2022` | [Installation](#installation) | [Usage](#usage) | [Examples](#examples)
+`version 0.4.0 26Aug2022` | [Installation](#installation) | [Usage](#usage) | [Examples](#examples)
 
 ### Installation
 
@@ -19,4 +19,4 @@ help honestdid
 
 ### Examples
 
-See `./standalone/test-replication.do`; compare to `./test/test-replication.R`.
+See `doc/examples.do`.
