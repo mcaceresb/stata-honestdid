@@ -4,7 +4,7 @@ cap mata mata drop HonestSensitivityHelper()
 cap mata mata drop HonestOriginalCS()
 cap mata mata drop HonestOriginalCSHelper()
 cap mata mata drop HonestEventStudy()
-cap mata mata drop _honestPrintFLCI()
+cap mata mata drop _honestPrintCI()
 
 * Done
 * ----
@@ -39,7 +39,7 @@ struct HonestEventStudy {
     struct _honestResults scalar OG
     struct _honestOptions scalar options
 
-    real matrix FLCI
+    real matrix CI
     real vector betahat
     real matrix sigma
     real vector timeVec
@@ -58,7 +58,10 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          real scalar alpha,
                                          string scalar method,
                                          string scalar debug,
-                                         real scalar rm)
+                                         real scalar rm,
+                                         real scalar grid_lb,
+                                         real scalar grid_ub,
+                                         real scalar gridPoints)
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
@@ -85,6 +88,9 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     options.relativeMagnitudes = rm? "rm": ""
     options.method             = method
     options.alpha              = alpha
+    options.grid_lb            = grid_lb   
+    options.grid_ub            = grid_ub   
+    options.gridPoints         = gridPoints
     if ( Mvec == "" ) {
         if ( rm ) {
             options.Mvec = _honestLinspace(0, 2, 10)
@@ -115,7 +121,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     options.l_vec   = (l_vec == "")? _honestBasis(1, length(results.postPeriodIndices)): colshape(st_matrix(l_vec), 1)
     results.Results = HonestSensitivityResults(results, options)
     results.OG      = HonestOriginalCS(results, options)
-    results.FLCI    = _honestSensitivityFLCIMatrix(results.Results, results.OG)
+    results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
     results.options = options
 
     return(results)
@@ -143,15 +149,18 @@ struct _honestResults colvector function HonestSensitivityHelper(
     string scalar biasDirection, method, monotonicityDirection, Delta, hybrid_flag, bound
     real colvector l_vec
     real vector Mvec
-    real scalar m, alpha, rm, debug
+    real scalar m, alpha, rm, debug, grid_lb, grid_ub, gridPoints
     real matrix temp_mat
 
-    alpha  = options.alpha
-    Mvec   = options.Mvec
-    l_vec  = options.l_vec
-    method = options.method
-    rm     = options.rm
-    debug  = options.debug
+    alpha      = options.alpha
+    Mvec       = options.Mvec
+    l_vec      = options.l_vec
+    method     = options.method
+    rm         = options.rm
+    debug      = options.debug
+    grid_lb    = options.grid_lb
+    grid_ub    = options.grid_ub
+    gridPoints = options.gridPoints
 
     // TODO: xx hard-coded
     biasDirection         = ""
@@ -160,6 +169,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
     bound                 = "deviation from linear trend"
     bound                 = "deviation from parallel trends"
 
+    Delta = ""
     if ( rm ) {
         if (method == "C-LF") {
             hybrid_flag = "LF"
@@ -274,7 +284,10 @@ struct _honestResults colvector function HonestSensitivityHelper(
                                               l_vec,
                                               Mvec[m],
                                               alpha,
-                                              hybrid_flag)
+                                              hybrid_flag,
+                                              grid_lb,
+                                              grid_ub,
+                                              gridPoints)
 
             Results[m].lb     = min(temp_mat[selectindex(temp_mat[., 2]), 1])
             Results[m].ub     = max(temp_mat[selectindex(temp_mat[., 2]), 1])
@@ -293,7 +306,10 @@ struct _honestResults colvector function HonestSensitivityHelper(
                                               l_vec,
                                               Mvec[m],
                                               alpha,
-                                              hybrid_flag)
+                                              hybrid_flag,
+                                              grid_lb,
+                                              grid_ub,
+                                              gridPoints)
 
             Results[m].lb     = min(temp_mat[selectindex(temp_mat[., 2]), 1])
             Results[m].ub     = max(temp_mat[selectindex(temp_mat[., 2]), 1])
@@ -308,6 +324,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
         _error(198)
     }
 
+    options.method = method
+    options.Delta  = Delta
     return(Results)
 }
 
@@ -351,25 +369,25 @@ struct _honestResults scalar function HonestOriginalCSHelper(
 }
 
 
-void function _honestPrintFLCI(struct HonestEventStudy scalar EventStudy)
+void function _honestPrintCI(struct HonestEventStudy scalar EventStudy)
 {
     real scalar i
     printf("\n")
     printf("|    M    |   lb   |   ub   |\n")
     printf("| ------- | ------ | ------ |\n")
-    for (i = 1; i <= rows(EventStudy.FLCI); i++) {
+    for (i = 1; i <= rows(EventStudy.CI); i++) {
         if ( i == 1 ) {
             printf("| %7.4f | %6.3f | %6.3f | (Original)\n",
-                   EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
+                   EventStudy.CI[i, 1], EventStudy.CI[i, 2], EventStudy.CI[i, 3])
         }
         else {
             printf("| %7.4f | %6.3f | %6.3f |\n",
-                   EventStudy.FLCI[i, 1], EventStudy.FLCI[i, 2], EventStudy.FLCI[i, 3])
+                   EventStudy.CI[i, 1], EventStudy.CI[i, 2], EventStudy.CI[i, 3])
         }
     }
     printf("(method = %s, Delta = %s, alpha = %5.3f)\n",
-           EventStudy.Results[1].method,
-           EventStudy.Results[1].Delta,
+           EventStudy.options.method,
+           EventStudy.options.Delta,
            EventStudy.options.alpha)
 }
 end

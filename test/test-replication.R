@@ -5,6 +5,7 @@
 library(lfe)
 library(HonestDiD)
 data(BCdata_EventStudy)
+data(LWdata_EventStudy)
 
 #######################################################################
 #                                                                     #
@@ -17,6 +18,7 @@ BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
 BC_l_vec          <- basisVector(index = 1, size = BC_numPostPeriods)
 BC_l_vec          <- cbind(c(1, 0, 0, 0))
+
 BC_DeltaSDNB_RobustResults <-
     createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
                              sigma          = BCdata_EventStudy$sigma,
@@ -70,12 +72,50 @@ BC_DeltaRMNB_RobustResultsConditional <-
                                                 numPrePeriods  = BC_numPrePeriods,
                                                 numPostPeriods = BC_numPostPeriods,
                                                 l_vec          = BC_l_vec,
-                                                method         = "Conditional",
-                                                Mbarvec        = seq(from=0, to=0.3, by=0.1))
+                                                bound          = "deviation from linear trend",
+                                                Mbarvec        = seq(from=0, to=2, by=0.5))
 
 BC_OriginalResults
 BC_DeltaSDNB_RobustResults
 BC_DeltaSDNB_SensitivityPlot
+
+#######################################################################
+#                                                                     #
+#                              Vignette                               #
+#                                                                     #
+#######################################################################
+
+createSensitivityResults_relativeMagnitudes(betahat        = BCdata_EventStudy$betahat,
+                                            sigma          = BCdata_EventStudy$sigma,
+                                            numPrePeriods  = BC_numPrePeriods,
+                                            numPostPeriods = BC_numPostPeriods,
+                                            l_vec          = BC_l_vec,
+                                            gridPoints     = 100,
+                                            grid.ub        = 1,
+                                            grid.lb        = -1,
+                                            bound          = "deviation from parallel trends",
+                                            Mbarvec        = seq(from=0, to=2, by=0.5))
+
+tt = Sys.time()
+createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
+                         sigma          = BCdata_EventStudy$sigma,
+                         numPrePeriods  = BC_numPrePeriods,
+                         numPostPeriods = BC_numPostPeriods,
+                         l_vec          = BC_l_vec,
+                         Mvec           = seq(from=0, to=2, by=0.5))
+Sys.time() - tt
+
+LW_numPrePeriods = length(LWdata_EventStudy$prePeriodIndices)
+LW_numPostPeriods = length(LWdata_EventStudy$postPeriodIndices)
+LW_l_vec = basisVector(15 - (-2), LW_numPostPeriods)
+tt = Sys.time()
+createSensitivityResults(betahat        = LWdata_EventStudy$betahat,
+                         sigma          = LWdata_EventStudy$sigma,
+                         numPrePeriods  = LW_numPrePeriods,
+                         numPostPeriods = LW_numPostPeriods,
+                         l_vec          = LW_l_vec,
+                         Mvec           = seq(from=0, to=0.04, by=0.005))
+Sys.time() - tt
 
 #######################################################################
 #                                                                     #

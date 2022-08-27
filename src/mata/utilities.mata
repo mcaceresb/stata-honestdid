@@ -2,7 +2,7 @@ cap mata mata drop _honestOptions()
 cap mata mata drop _honestResults()
 cap mata mata drop _honestHybridList()
 
-cap mata mata drop _honestSensitivityFLCIMatrix()
+cap mata mata drop _honestSensitivityCIMatrix()
 cap mata mata drop _honestBasis()
 cap mata mata drop _honestLinspace()
 cap mata mata drop _honestInverseIndex()
@@ -15,6 +15,8 @@ cap mata mata drop _honestPrimes()
 cap mata mata drop _honestPrimesn()
 cap mata mata drop _honestHalton()
 cap mata mata drop _honestHaltonVector()
+cap mata mata drop _honestHaltonJumble()
+cap mata mata drop _honestHaltonJumbleVector()
 cap mata mata drop _honestSummary()
 cap mata mata drop _honestVLoVUpFN()
 cap mata mata drop _honestLeeCFN()
@@ -27,6 +29,10 @@ struct _honestOptions {
     real vector Mvec
     real scalar rm
     real scalar debug
+    real scalar grid_lb
+    real scalar grid_ub
+    real scalar gridPoints
+    string scalar Delta
     string scalar method
     string scalar relativeMagnitudes
 }
@@ -49,7 +55,7 @@ struct _honestHybridList {
 }
 
 
-real matrix function _honestSensitivityFLCIMatrix(
+real matrix function _honestSensitivityCIMatrix(
     struct _honestResults colvector robustResults,
     struct _honestResults scalar originalResults,
     | real scalar rescaleFactor, real scalar maxM)
@@ -187,6 +193,36 @@ real matrix function _honestMatrixPow(real matrix X, real scalar pow) {
     return(Re((C :* (L:^pow)) * C'))
 }
 
+real matrix function _honestHaltonJumble(real scalar n, real scalar d)
+{
+    real matrix r
+    real colvector p
+    real scalar j
+    r = J(n, d, 0)
+    p = _honestPrimes(d)
+    for (j = 1; j <= d; j++) {
+        r[., j] = _honestHaltonJumbleVector(n, p[j])
+    }
+    return(r)
+}
+
+real colvector function _honestHaltonJumbleVector(real scalar n, real scalar p)
+{
+    real colvector r
+    real scalar i, k, f
+    r = J(n, 1, 0)
+    for (i = 1; i <= n; i++) {
+        k = i
+        f = 1
+        while ( k > 0 ) {
+            f    = f / p
+            r[i] = r[i] + (f * mod(k, p))
+            k    = floor(k / p)
+        }
+    }
+    return(jumble(r))
+}
+
 real matrix function _honestHalton(real scalar n, real scalar d)
 {
     real matrix r
@@ -311,5 +347,9 @@ real matrix function _honestExampleBCSigma() {
            ( 1.128708e-04,  1.804591e-04, 1.458528e-04, 0.0001334081, 0.0002478819, 0.0004263950, 2.171438e-04,  2.892748e-04) \
            ( 1.992816e-05,  3.843765e-05, 7.005197e-05, 0.0001016335, 0.0001749579, 0.0002171438, 4.886698e-04,  3.805322e-04) \
            (-1.368265e-04, -2.960422e-05, 5.952995e-05, 0.0001079052, 0.0001654257, 0.0002892748, 3.805322e-04,  7.617394e-04))
+}
+
+string scalar function _honestExampleLWCall() {
+    return("reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant")
 }
 end

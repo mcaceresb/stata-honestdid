@@ -21,9 +21,12 @@ program honestdid, sclass
         vcov(str)                          /// name of vcov matrix; default is e(V)
         l_vec(str)                         /// Vector with parameters of interest (default is first period post event)
         mvec(str)                          /// Vector or list with with M-values
+        grid_lb(str)                       /// Lower bound for grid
+        grid_ub(str)                       /// Upper bound for grid
+        gridPoints(str)                    /// Number of grid points
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
-        rm                                 /// relative magnitudes
+        norelmag                           /// relative magnitudes
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
@@ -36,6 +39,7 @@ program honestdid, sclass
         *                                  /// Options for coefplot
     ]
 
+    local rm = cond("`relmag'" == "", "rm", "")
     local relativeMagnitudes = "`rm'" != ""
     if "`matasave'" == "" local results HonestEventStudy
     else local results: copy local matasave
@@ -55,6 +59,7 @@ program honestdid, sclass
     *
     * are assumed.
 
+    local changegrid = 0
     if ( "`cached'" != "" ) {
         local results `s(HonestEventStudy)'
         cap mata mata desc `results'
@@ -71,10 +76,26 @@ program honestdid, sclass
                 disp as txt "{bf:warning:} cached results do not use relativeMagnitudes; option -rm- ignored"
             }
         }
+
+        tempname gridcached gridlbcached gridubcached
+        mata st_numscalar("`gridlbcached'", `results'.options.grid_lb)
+        mata st_numscalar("`gridubcached'", `results'.options.grid_ub)
+        mata st_numscalar("`gridcached'",   `results'.options.gridPoints)
+        if "`grid_lb'"    != "" local changegrid = `changegrid' | ("`grid_lb'"    != "`=scalar(`gridlbcached')'")
+        if "`grid_ub'"    != "" local changegrid = `changegrid' | ("`grid_ub'"    != "`=scalar(`gridubcached')'")
+        if "`gridPoints'" != "" local changegrid = `changegrid' | ("`gridPoints'" != "`=scalar(`gridcached')'")
     }
 
+    if "`grid_lb'"    == ""  local grid_lb .
+    if "`grid_ub'"    == ""  local grid_ub .
+    if "`gridPoints'" == ""  local gridPoints 1000
+
+    if "`grid_lb'"    != "." confirm number `grid_lb'
+    if "`grid_ub'"    != "." confirm number `grid_ub'
+    if "`gridPoints'" != ""  confirm number `gridPoints'
+
     local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
-    local dohonest = `dohonest' | (`referenceperiodindex' != 0)
+    local dohonest = `dohonest' | `changegrid' | (`referenceperiodindex' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
@@ -100,8 +121,11 @@ program honestdid, sclass
                                   `alpha',                ///
                                   "`method'",             ///
                                   "`debug'",              ///
-                                  `relativeMagnitudes')
-            _honestPrintFLCI(`results')
+                                  `relativeMagnitudes',   ///
+                                  `grid_lb',              ///
+                                  `grid_ub',              ///
+                                  `gridPoints')
+            _honestPrintCI(`results')
         }
     }
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
@@ -118,7 +142,7 @@ program honestdid, sclass
 
     mata {
         if ( "`coefplot'" != "" ) {
-            `plotmatrix' = `results'.FLCI
+            `plotmatrix' = `results'.CI
             `labels' = strofreal(`plotmatrix'[., 1]')
             `labels'[1] = "Original"
 
@@ -168,10 +192,10 @@ program HonestSanityChecks
             disp as err "Method must equal one of: FLCI, Conditional, C-F or C-LF"
             exit 198
         }
-        c_local method: copy local method
     }
 
     if ( "`rm'" != "" ) {
+        if "`method'" == "" local method C-LF
         if !inlist("`method'", "C-LF", "Conditional") {
             disp as err "Method '`method'' not allowed with RelativeMagnitudes"
             exit 198
@@ -266,9 +290,10 @@ program HonestSanityChecks
         if ( _rc == 0 ) c_local mvec: copy local mvec
     }
 
-    c_local alpha: copy local alpha
-    c_local b: copy local b
-    c_local vcov: copy local vcov
+    c_local alpha:  copy local alpha
+    c_local b:      copy local b
+    c_local vcov:   copy local vcov
+    c_local method: copy local method
 end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx

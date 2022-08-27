@@ -193,6 +193,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     real colvector eta_vec, sdVec
     real rowvector f, f0, A0
     real matrix _X_T, _sigma
+    string scalar rseedcache
 
     // Computes the least favorable critical value following the algorithm in
     // Section 6.2 of Andrews, Roth, Pakes (2019).
@@ -203,12 +204,19 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     //   hybrid_kappa = desired size
     //   sims  = number of simulations, default = 10000
 
-// TODO: xx For higher dimensions, some Halton sequences are highly correlated! Fix via e.g. _jumble
+    // NB: I use Halton sequences here with the intent of getting good
+    // coverage for the distribution. However, for high dimensions
+    // Halton sequences are highly correlated. Hence I use a modified
+    // algorithm where I jumble the Halton sequences, so the coverage
+    // is preserved and the correlation disappears.
+
+    rseedcache = rseed()
+    rseed(0)
     if ( args() < 5 ) sims = 1000
     if ( args() < 3 ) {
         // no nuisance parameter case; the issue is that sigma
         // may not be full-rank, so the quantile is simulated
-        xi_draws = (invnormal(_honestHalton(sims, cols(sigma))) * _honestMatrixPow(sigma, 0.5)) :/ sqrt(diagonal(sigma))'
+        xi_draws = (invnormal(_honestHaltonJumble(sims, cols(sigma))) * _honestMatrixPow(sigma, 0.5)) :/ sqrt(diagonal(sigma))'
         eta_vec  = rowmax(xi_draws)
         return(_honestQuantiles(eta_vec, 1 - hybrid_kappa))
     }
@@ -228,7 +236,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
         dimDelta = cols(_X_T)             // dimension of delta
         f        = 1, J(1, dimDelta, 0)   // Define objective function
         Cons     = (sdVec, _X_T)          // Define linear constraint
-        xi_draws = invnormal(_honestHalton(sims, cols(_sigma))) * _honestMatrixPow(_sigma, 0.5)
+        xi_draws = invnormal(_honestHaltonJumble(sims, cols(_sigma))) * _honestMatrixPow(_sigma, 0.5)
 
         // This is doing
         //
@@ -251,6 +259,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
         // We compute the 1-kappa quantile of eta_vec and return this value
         return(_honestQuantiles(eta_vec, 1-hybrid_kappa))
     }
+    rseed(rseedcache)
 }
 
 // NB: theta passed but not used
@@ -633,8 +642,8 @@ real rowvector function _honestARPDualVLO(real scalar eta,
                                           real matrix W_T) {
 
     struct ECOS_workspace_abridged scalar linprog
-    real scalar tol_c, tol_equality, sigma_B, low_initial, high_initial, maxiters
-    real scalar dif, iters, low, high, vlo, vup, mid, checksol
+    real scalar tol_c, tol_eq, sigma_B, low_initial, high_initial, maxiters, switchiters
+    real scalar iters, vlo, vup, checksol, dif, low, high, mid
     real colvector b
 
     // This function computes vlo and vup for the dual linear program for the
@@ -654,53 +663,55 @@ real rowvector function _honestARPDualVLO(real scalar eta,
 
     // Options for bisection algorithm
     tol_c        = 1e-6
-    tol_equality = 1e-6
+    tol_eq       = 1e-6
     sigma_B      = sqrt(gamma_tilde' * sigma * gamma_tilde)
     low_initial  = min((-100, eta - 20 * sigma_B))
     high_initial = max(( 100, eta + 20 * sigma_B))
     maxiters     = 10000
-    checksol     = _honestARPCheckSolHelper(eta, tol_equality, s_T, gamma_tilde, sigma, W_T)
-
+    switchiters  = 10
+    checksol     = _honestARPCheckSolHelper(eta, tol_eq, s_T, gamma_tilde, sigma, W_T)
     if ( missing(checksol) | (checksol == 0) ) {
         // errprintf("User-supplied eta is not a solution. Not rejecting automatically\n")
         return((eta, .))
     }
 
-// TODO: xx Check with J and A about this shortcut
     // Compute vup
     linprog = ECOS_workspace_abridged()
-    if ( _honestARPCheckSolHelper(high_initial, tol_equality, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+    if ( _honestARPCheckSolHelper(high_initial, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
         vup = .
     }
     else {
         // Shortcut instead of bisection search
-        b   = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
-        vup = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
-        // xx // Throughout the while loop, the high value is not a solution and the
-        // xx // low-value is a solution. If the midpoint between them is a solution,
-        // xx // then we set low to the midpoint; otherwise, we set high to the midpoint.
-        // xx dif   = tol_c + 1
-        // xx iters = 0
-        // xx low   = eta
-        // xx high  = high_initial
-        // xx while ( (dif > tol_c) & (++iters < maxiters) ) {
-        // xx     mid = (high + low)/2
-        // xx     if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
-        // xx         low = mid
-        // xx     }
-        // xx     else {
-        // xx         high = mid
-        // xx     }
-        // xx     dif = high - low
-        // xx }
-        // xx if ( iters == maxiters ) {
-        // xx     // warning("vup: Reached max iterations without a solution!")
-        // xx }
-        // xx vup = mid
+        dif   = 0
+        iters = 0
+        b     = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
+        mid   = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        while ( (++iters < maxiters) & !_honestARPCheckSolHelper(mid, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+            if ( iters >= switchiters ) {
+                dif = tol_c + 1
+                break
+            }
+            mid = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        }
+
+        // Switch back to bijection if shortcut taking too long
+        low   = eta
+        high  = mid
+        while ( (dif > tol_c) & (++iters < maxiters) ) {
+            mid = (high + low)/2
+            if ( _honestARPCheckSolHelper(mid, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+                low = mid
+            }
+            else {
+                high = mid
+            }
+            dif = high - low
+        }
+        vup = mid
     }
 
     // Compute vlo
-    if ( _honestARPCheckSolHelper(low_initial, tol_equality, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+    if ( _honestARPCheckSolHelper(low_initial, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
         // NB: -Inf, Inf are not actual concepts in Stata (missing is
         // technically equivalent to Inf but it's not always the best
         // idea to use it in that way. In any case, if either bound is
@@ -708,30 +719,32 @@ real rowvector function _honestARPDualVLO(real scalar eta,
         vlo = .
     }
     else {
-        b   = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
-        vlo = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
-        // xx // Throughout the while loop, the low value is not a solution and the
-        // xx // high-value is a solution. If the midpoint between them is a solution,
-        // xx // then we set high to the midpoint; otherwise, we set low to the midpoint.
-        // xx dif   = tol_c + 1
-        // xx iters = 0
-        // xx low   = low_initial
-        // xx high  = eta
-        // xx mid   = (high + low) / 2
-        // xx while ( (dif > tol_c) & (++iters < maxiters) ) {
-        // xx     mid = (low + high)/2
-        // xx     if ( _honestARPCheckSolHelper(mid, tol_equality, s_T, gamma_tilde, sigma, W_T) ) {
-        // xx         high = mid
-        // xx     }
-        // xx     else {
-        // xx         low = mid
-        // xx     }
-        // xx     dif = high-low
-        // xx }
-        // xx if (iters >= maxiters) {
-        // xx     errprintf("_honestARPDualVLO(): Reached max iterations; please report this as a bug.\n")
-        // xx }
-        // xx vlo = mid
+        dif   = 0
+        iters = 0
+        b     = (1/(gamma_tilde' * sigma * gamma_tilde)) * (sigma * gamma_tilde)
+        mid   = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        while ( (++iters < maxiters) & !_honestARPCheckSolHelper(mid, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+            if ( iters >= switchiters ) {
+                dif = tol_c + 1
+                break
+            }
+            mid = (linprog.solution_x * s_T) / (1 - linprog.solution_x * b)
+        }
+
+        // Switch back to bijection if shortcut taking too long
+        low   = mid
+        high  = eta
+        while ( (dif > tol_c) & (++iters < maxiters) ) {
+            mid = (low + high)/2
+            if ( _honestARPCheckSolHelper(mid, tol_eq, s_T, gamma_tilde, sigma, W_T, linprog) ) {
+                high = mid
+            }
+            else {
+                low = mid
+            }
+            dif = high - low
+        }
+        vlo = mid
     }
 
     return((vlo, vup))
@@ -742,7 +755,7 @@ real scalar function _honestARPCheckSolHelper(real scalar c,
                                               real colvector s_T,
                                               real colvector gamma_tilde,
                                               real matrix sigma,
-                                              real matrix W_T, 
+                                              real matrix W_T,
                                               | struct ECOS_workspace_abridged linprog) {
 
     if ( args() < 7 ) linprog = ECOS_workspace_abridged()
@@ -774,6 +787,7 @@ real scalar function _honestARPMaxProgram(real colvector s_T,
     // is the default lower bound in the ROI package.  Solve linear program
     // and return negative of objective because we want the max.
     linprog = ECOS(-f, -I(n), J(n, 1, 0), n, 0, 0, Aeq, beq)
+
     return(-linprog.info_obj_val)
 }
 

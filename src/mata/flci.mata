@@ -170,9 +170,9 @@ struct _flciResults scalar function _flciFindOptimalHelper(
 
         CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
-        diff = max(abs(optimal_l :- biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
+        diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
-        if ( finer & (diff <= xtol) ) {
+        if ( finer & (diff <= xtol) & (max(hGrid) - min(hGrid)) > xtol ) {
             finer = 0
             numPoints = numPoints * 10
             diff = 1
@@ -567,7 +567,7 @@ real rowvector function _flciFindWorstCaseBiasGivenH(real scalar hh,
 
     // Multiply objective by M (note that solution otherwise doesn't
     // depend on M, so no need to run many times with many different Ms)
-    biasResult.info_obj_val = biasResult.info_obj_val * M
+    biasResult.info_obj_val = (biasResult.info_obj_val + constant) * M
 
     // NB: ECOS returns missing if solver fails; I think that should be
     // equivalent to filtering if < Ifn.

@@ -24,48 +24,47 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
                                             | real colvector l_vec,
                                             real scalar Mbar,
                                             real scalar alpha,
-                                            string scalar hybrid_flag)
+                                            string scalar hybrid_flag,
+                                            real scalar grid_lb,
+                                            real scalar grid_ub,
+                                            real scalar gridPoints)
 {
 
     real matrix CIs_RM_plus_allS, CIs_RM_minus_allS, CI_s_minus, CI_s_plus, resultsGrid
-    real scalar hybrid_kappa, returnLength, postPeriodMomentsOnly
-    real scalar gridPoints, grid_ub, grid_lb, sdTheta, s_i
+    real scalar hybrid_kappa, returnLength, postPeriodMomentsOnly, sdTheta, s_i
     real colvector s_indices, sel, CIs_RM_plus_maxS, CIs_RM_minus_maxS
-    real rowvector thetaGrid, thetaDiff, gridLength
+    real rowvector thetaGrid, thetaDiff, gridLength, gridlb, gridub
 
     // This function computes the ARP CI that includes nuisance parameters
     // for Delta^{RM}(Mbar). This functions uses ARP_computeCI for all
     // of its computations.
     //
     // Inputs:
-    //   betahat             = vector of estimated event study coefficients
-    //   sigma               = covariance matrix of estimated event study coefficients
-    //   numPrePeriods       = number of pre-periods
-    //   numPostPeriods      = number of post-periods
-    //   l_vec               = vector that defines parameter of interest
-    //   Mbar                = tuning parameter for Delta^RM(Mbar), default Mbar = 0.
-    //   alpha               = desired size of CI, default alpha = 0.05
-    //   hybrid_flag         = flag for hybrid, default = "LF". Must be either "LF" or "ARP"
-    //   hybrid_kappa        = desired size of first-stage hybrid test, default = NULL
-    //   returnLength        = returns length of CI only. Otherwise, returns matrix with grid in col 1 and test result in col 2.
-    //   numGridPoints       = number of gridpoints to test over, default = 1000
+    //   betahat               = vector of estimated event study coefficients
+    //   sigma                 = covariance matrix of estimated event study coefficients
+    //   numPrePeriods         = number of pre-periods
+    //   numPostPeriods        = number of post-periods
+    //   l_vec                 = vector that defines parameter of interest
+    //   Mbar                  = tuning parameter for Delta^RM(Mbar), default Mbar = 0.
+    //   alpha                 = desired size of CI, default alpha = 0.05
+    //   hybrid_flag           = flag for hybrid, default = "LF". Must be either "LF" or "ARP"
+    //   hybrid_kappa          = desired size of first-stage hybrid test, default = NULL
+    //   returnLength          = returns length of CI only. Otherwise, returns matrix with grid in col 1 and test result in col 2.
+    //   gridPoints            = number of gridpoints to test over, default = 1000
     //   postPeriodMomentsOnly = exclude moments for delta^MB that only include pre-period coefs
     //
     //  Outputs:
     //   data_frame containing upper and lower bounds of CI.
 
-    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 7 ) Mbar = 0
-    if ( args() < 8 ) alpha = 0.05
-    if ( args() < 9 ) hybrid_flag = "LF"
+    if ( args() < 6  ) l_vec       = _honestBasis(1, numPostPeriods)
+    if ( args() < 7  ) Mbar        = 0
+    if ( args() < 8  ) alpha       = 0.05
+    if ( args() < 9  ) hybrid_flag = "LF"
 
     // TODO xx hard-coded
     hybrid_kappa          = alpha/10
     returnLength          = 0
     postPeriodMomentsOnly = 1
-    gridPoints            = 1e3
-    grid_ub               = .
-    grid_lb               = .
 
     // Create minimal s index for looping.
     s_indices = (-(numPrePeriods - 1))::0
@@ -76,8 +75,12 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     sel = (numPrePeriods+1)::(numPrePeriods+numPostPeriods)
     sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
 
-    if ( missing(grid_ub) ) grid_ub =  20*sdTheta
-    if ( missing(grid_lb) ) grid_lb = -20*sdTheta
+    if ( args() < 10 ) grid_lb     = .
+    if ( args() < 11 ) grid_ub     = .
+    if ( args() < 12 ) gridPoints  = 1e3
+
+    gridlb = missing(grid_lb)? -20*sdTheta: grid_lb
+    gridub = missing(grid_ub)?  20*sdTheta: grid_ub
 
     // Loop over s values for (+), (-), left join the resulting CIs based on the grid
     CIs_RM_plus_allS  = J(gridPoints, length(s_indices), 0)
@@ -103,8 +106,8 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
                                                  hybrid_flag,
                                                  hybrid_kappa,
                                                  postPeriodMomentsOnly,
-                                                 grid_lb,
-                                                 grid_ub,
+                                                 gridlb,
+                                                 gridub,
                                                  gridPoints)
 
         // Compute CI for s, (-) and bind it to all CI's for (-)
@@ -120,8 +123,8 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
                                                   hybrid_flag,
                                                   hybrid_kappa,
                                                   postPeriodMomentsOnly,
-                                                  grid_lb,
-                                                  grid_ub,
+                                                  gridlb,
+                                                  gridub,
                                                   gridPoints)
 
         CIs_RM_plus_allS[., s_i]  = CI_s_plus[., 2]
@@ -133,7 +136,7 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
 
     // Take the max between (+), (-) and Construct grid containing theta
     // points and whether any CI accepted
-    thetaGrid   = _honestLinspace(grid_lb, grid_ub, gridPoints)
+    thetaGrid   = _honestLinspace(gridlb, gridub, gridPoints)
     resultsGrid = thetaGrid', rowmax((CIs_RM_plus_maxS, CIs_RM_minus_maxS))
     if ( returnLength ) {
         thetaDiff  = thetaGrid[2::gridPoints] :- thetaGrid[1::(gridPoints-1)]

@@ -28,7 +28,10 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                             | real colvector l_vec,
                                             real scalar M,
                                             real scalar alpha,
-                                            string scalar hybrid_flag)
+                                            string scalar hybrid_flag,
+                                            real scalar grid_lb,
+                                            real scalar grid_ub,
+                                            real scalar gridPoints)
 {
 
     struct _honestHybridList scalar hybrid_list
@@ -37,8 +40,9 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
     struct _flciResults scalar flci
     struct OSQP_workspace_abridged scalar result
 
-    real scalar hybrid_kappa, returnLength, postPeriodMomentsOnly
-    real scalar gridPoints, grid_ub, grid_lb, sdTheta
+    // NB: If inputs are assigned the input object is changed; 
+    // hence grid_lb and grid_ub need to be local variables.
+    real scalar hybrid_kappa, returnLength, postPeriodMomentsOnly, sdTheta, gridlb, gridub
     real vector d_SD, rowsForARP, postPeriodIndices, q
     real matrix A_SD, P, CI
 
@@ -57,24 +61,24 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
     //   hybrid_flag         = flag for hybrid, default = "FLCI"
     //   hybrid_kappa        = desired size of first-stage hybrid test, default = NULL
     //   returnLength        = returns length of CI only. Otherwise, returns matrix with grid in col 1 and test result in col 2.
-    //   numGridPoints       = number of gridpoints to test over, default = 1000
+    //   gridPoints            = number of gridpoints to test over, default = 1000
     //   postPeriodMomentsOnly = exclude moments for delta^SD that only include pre-period coefs
     //
     //  Outputs:
     //   data_frame containing upper and lower bounds of CI.
 
-    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 7 ) M = 0
-    if ( args() < 8 ) alpha = 0.05
-    if ( args() < 9 ) hybrid_flag = "FLCI"
+    if ( args() < 6  ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 7  ) M = 0
+    if ( args() < 8  ) alpha = 0.05
+    if ( args() < 9  ) hybrid_flag = "FLCI"
+    if ( args() < 10 ) grid_lb     = .
+    if ( args() < 11 ) grid_ub     = .
+    if ( args() < 12 ) gridPoints  = 1e3
 
     // TODO xx hard-coded
     hybrid_kappa          = alpha/10
     returnLength          = 0
     postPeriodMomentsOnly = 1
-    gridPoints            = 1e3
-    grid_ub               = .
-    grid_lb               = .
 
     // Construct A_SD, d_SD
     A_SD = _honestSDCreateA(numPrePeriods, numPostPeriods, 0)
@@ -108,13 +112,8 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             hybrid_list.flci_halflength = flci.optimalHalfLength
 
             // compute FLCI ub and FLCI lb
-            if ( missing(grid_lb) ) {
-                grid_lb = (flci.optimalVec' * betahat') - flci.optimalHalfLength
-            }
-
-            if ( missing(grid_ub) ) {
-                grid_ub = (flci.optimalVec' * betahat') + flci.optimalHalfLength
-            }
+            gridlb = missing(grid_lb)? (flci.optimalVec' * betahat') - flci.optimalHalfLength: grid_lb
+            gridub = missing(grid_ub)? (flci.optimalVec' * betahat') + flci.optimalHalfLength: grid_ub
         }
         else if ( hybrid_flag == "LF" ) {
             if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = LF\n")
@@ -128,14 +127,9 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                 IDset = _honestSDComputeIDSet(M, J(1, numPrePeriods + numPostPeriods, 0),
                                               l_vec, numPrePeriods, numPostPeriods)
                 sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
-
-                if ( missing(grid_lb) ) {
-                    grid_lb = IDset[1] - 20 * sdTheta
-                }
-                if ( missing(grid_ub) ) {
-                    grid_ub = IDset[2] + 20 * sdTheta
-                }
             }
+            gridlb = missing(grid_lb)? IDset[1] - 20 * sdTheta: grid_lb
+            gridub = missing(grid_ub)? IDset[1] + 20 * sdTheta: grid_ub
         }
         else if ( hybrid_flag == "ARP" ) {
             if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = ARP\n")
@@ -146,14 +140,9 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                 IDset = _honestSDComputeIDSet(M, J(1, numPrePeriods + numPostPeriods, 0),
                                               l_vec, numPrePeriods, numPostPeriods)
                 sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
-
-                if ( missing(grid_lb) ) {
-                    grid_lb = IDset[1] - 20 * sdTheta
-                }
-                if ( missing(grid_ub) ) {
-                    grid_ub = IDset[2] + 20 * sdTheta
-                }
             }
+            gridlb = missing(grid_lb)? IDset[1] - 20 * sdTheta: grid_lb
+            gridub = missing(grid_ub)? IDset[2] + 20 * sdTheta: grid_ub
         }
         else {
             errprintf("_honestSDConditionalCS(): ")
@@ -173,8 +162,8 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                        hybrid_flag,
                                        hybrid_list,
                                        returnLength,
-                                       grid_lb,
-                                       grid_ub,
+                                       gridlb,
+                                       gridub,
                                        gridPoints)
 
     }
@@ -199,27 +188,19 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             hybrid_list.flci_halflength = flci.optimalHalfLength
 
             // compute FLCI ub and FLCI lb
-            if ( missing(grid_lb) ) {
-                grid_lb = (flci.optimalVec' * betahat') - flci.optimalHalfLength
-            }
-
-            if ( missing(grid_ub) ) {
-                grid_ub = (flci.optimalVec' * betahat') + flci.optimalHalfLength
-            }
+            gridlb = missing(grid_lb)? (flci.optimalVec' * betahat') - flci.optimalHalfLength: grid_lb
+            gridub = missing(grid_ub)? (flci.optimalVec' * betahat') + flci.optimalHalfLength: grid_ub
         }
         else {
-            // Compute identified set under parallel trends
-            sel = (numPrePeriods+1)::(numPrePeriods+numPostPeriods)
-            IDset = _honestSDComputeIDSet(M, J(1, numPrePeriods + numPostPeriods, 0),
-                                          l_vec, numPrePeriods, numPostPeriods)
-            sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
-
-            if ( missing(grid_lb) ) {
-                grid_lb = IDset[1] - 20 * sdTheta
+            if ( missing(grid_lb) | missing(grid_ub) ) {
+                // Compute identified set under parallel trends
+                sel = (numPrePeriods+1)::(numPrePeriods+numPostPeriods)
+                IDset = _honestSDComputeIDSet(M, J(1, numPrePeriods + numPostPeriods, 0),
+                                              l_vec, numPrePeriods, numPostPeriods)
+                sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
             }
-            if ( missing(grid_ub) ) {
-                grid_ub = IDset[2] + 20 * sdTheta
-            }
+            gridlb = missing(grid_lb)? IDset[1] - 20 * sdTheta: grid_lb
+            gridub = missing(grid_ub)? IDset[2] + 20 * sdTheta: grid_ub
         }
 
         // Compute ARP CI for l'beta using Delta^SD
@@ -235,8 +216,8 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                                  hybrid_flag,
                                  hybrid_list,
                                  returnLength,
-                                 grid_lb,
-                                 grid_ub,
+                                 gridlb,
+                                 gridub,
                                  gridPoints,
                                  rowsForARP)
 
