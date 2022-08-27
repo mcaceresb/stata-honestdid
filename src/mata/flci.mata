@@ -81,6 +81,11 @@ struct _flciResults scalar function _flciFindOptimal(
 {
     struct _flciResults scalar results
 
+    // NB: 5 is the smallest number of points for which this works.  While
+    // in theory the smallest number of points (to minimize iterations) is
+    // ~7.36, in practice it's not always smallest since the interval width
+    // is not the stopping criteria. I do 10 and call it a day.
+
     if ( args() < 7 ) l_vec = _honestBasis(1, numPostPeriods)
     if ( args() < 8 ) alpha = 0.05
     if ( args() < 9 ) numPoints = 10
@@ -115,7 +120,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     struct _flciResults scalar results
     real rowvector hGrid
     real colvector sel, selmin, CI_halflength, optimal_l
-    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter
+    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter, expected
     real matrix biasDF
 
     if ( args() < 5 ) l_vec     = _honestBasis(1, numPostPeriods)
@@ -148,8 +153,9 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
     selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
+    expected = floor(log((h0 - hMin) / xtol)/log((numPoints-1)/2))
 
-    while ( (diff > xtol) & (++iter < maxiter) ) {
+    while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
         if ( selmin == 1 ) {
             hGrid = _honestLinspace(hGrid[selmin] - (hGrid[selmin+1] - hGrid[selmin]), hGrid[selmin+1], numPoints)
         }
@@ -172,7 +178,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
         diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
-        if ( finer & (diff <= xtol) & (max(hGrid) - min(hGrid)) > xtol ) {
+        if ( finer & (iter >= expected) & ((diff < xtol) | (max(hGrid) - min(hGrid)) > xtol) ) {
             finer = 0
             numPoints = numPoints * 10
             diff = 1
