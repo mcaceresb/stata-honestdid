@@ -84,7 +84,7 @@ struct _flciResults scalar function _flciFindOptimal(
     // NB: 5 is the smallest number of points for which this works.  While
     // in theory the smallest number of points (to minimize iterations) is
     // ~7.36, in practice it's not always smallest since the interval width
-    // is not the stopping criteria. I do 10 and call it a day.
+    // is not the sole stopping criteria. I do 10 and call it a day.
 
     if ( args() < 7 ) l_vec = _honestBasis(1, numPostPeriods)
     if ( args() < 8 ) alpha = 0.05
@@ -114,8 +114,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     real scalar numPostPeriods,
     | real colvector l_vec,
     real scalar alpha,
-    real scalar numPoints,
-    real scalar finer)
+    real scalar numPoints)
 {
     struct _flciResults scalar results
     real rowvector hGrid
@@ -126,9 +125,6 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     if ( args() < 5 ) l_vec     = _honestBasis(1, numPostPeriods)
     if ( args() < 6 ) alpha     = 0.05
     if ( args() < 7 ) numPoints = 10
-    if ( args() < 8 ) finer     = 1
-
-    if ( (finer == 0) & (args() < 7) ) numPoints = 100
 
     // n   = numPrePeriods + numPostPeriods
     xtol    = sqrt(epsilon(1))
@@ -137,7 +133,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     nn      = length((n/2 + 1)::n)
     h0      = _flciFindHMinBias(sigma, numPrePeriods, numPostPeriods, l_vec)
     hMin    = _flciFindLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
-    diff    = finer
+    diff    = 1
     iter    = 0
 
     // First attempt
@@ -176,13 +172,8 @@ struct _flciResults scalar function _flciFindOptimalHelper(
 
         CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
-        diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
+        diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]') \ (max(hGrid) - min(hGrid)))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
-        if ( finer & (iter >= expected) & ((diff < xtol) | (max(hGrid) - min(hGrid)) > xtol) ) {
-            finer = 0
-            numPoints = numPoints * 10
-            diff = 1
-        }
     }
 
     results.optimalVec          = optimal_l \ l_vec
