@@ -74,15 +74,23 @@ struct _flciResults scalar function _flciFindOptimal(
     real scalar numPrePeriods,
     real scalar numPostPeriods,
     real scalar M,
+    real scalar debug,
     | real colvector l_vec,
     real scalar alpha,
     real scalar numPoints)
 {
     struct _flciResults scalar results
 
-    if ( args() < 6 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 7 ) alpha = 0.05
-    if ( args() < 8 ) numPoints = 10
+    // NB: 5 is the smallest number of points for which this works.  While
+    // in theory the smallest number of points (to minimize iterations) is
+    // ~7.36, in practice it's not always smallest since the interval width
+    // is not the sole stopping criteria. I do 10 and call it a day.
+
+    if ( args() < 7 ) l_vec = _honestBasis(1, numPostPeriods)
+    if ( args() < 8 ) alpha = 0.05
+    if ( args() < 9 ) numPoints = 10
+
+    if ( debug == 1 ) printf("\thonest debug: _flciFindOptimal()\n")
 
     results = _flciFindOptimalHelper(sigma, M, numPrePeriods, numPostPeriods, l_vec, alpha, numPoints)
     results.FLCI = (results.optimalVec' * betahat' - results.optimalHalfLength,
@@ -106,21 +114,17 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     real scalar numPostPeriods,
     | real colvector l_vec,
     real scalar alpha,
-    real scalar numPoints,
-    real scalar finer)
+    real scalar numPoints)
 {
     struct _flciResults scalar results
     real rowvector hGrid
     real colvector sel, selmin, CI_halflength, optimal_l
-    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter
+    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter, expected
     real matrix biasDF
 
-    if ( args() < 5 ) l_vec = _honestBasis(1, numPostPeriods)
-    if ( args() < 6 ) alpha = 0.05
+    if ( args() < 5 ) l_vec     = _honestBasis(1, numPostPeriods)
+    if ( args() < 6 ) alpha     = 0.05
     if ( args() < 7 ) numPoints = 10
-    if ( args() < 8 ) finer = 1
-
-    if ( (finer == 0) & (args() < 7) ) numPoints = 100
 
     // n   = numPrePeriods + numPostPeriods
     xtol    = sqrt(epsilon(1))
@@ -129,7 +133,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     nn      = length((n/2 + 1)::n)
     h0      = _flciFindHMinBias(sigma, numPrePeriods, numPostPeriods, l_vec)
     hMin    = _flciFindLowestH(sigma, numPrePeriods, numPostPeriods, l_vec)
-    diff    = finer
+    diff    = 1
     iter    = 0
 
     // First attempt
@@ -143,11 +147,11 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     hGrid   = hGrid'[sel, .]
     maxBias = biasDF[., 2] :* M
     CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
-    selmin = selectindex(min(CI_halflength) :== CI_halflength)
+    selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
+    expected = floor(log((h0 - hMin) / xtol)/log((numPoints-1)/2))
 
-    // Refinement to hedge against numerical precision (turn off with finer = 0)
-    while ( (diff > xtol) & (++iter < maxiter) ) {
+    while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
         if ( selmin == 1 ) {
             hGrid = _honestLinspace(hGrid[selmin] - (hGrid[selmin+1] - hGrid[selmin]), hGrid[selmin+1], numPoints)
         }
@@ -168,13 +172,8 @@ struct _flciResults scalar function _flciFindOptimalHelper(
 
         CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
-        diff = max(abs(optimal_l :- biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'))
+        diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]') \ (max(hGrid) - min(hGrid)))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
-        if ( finer & (diff <= xtol) ) {
-            finer = 0
-            numPoints = numPoints * 10
-            diff = 1
-        }
     }
 
     results.optimalVec          = optimal_l \ l_vec
@@ -194,25 +193,27 @@ real vector function _flciFoldedNormalQuantiles(real scalar p,
                                                 | real scalar sd) {
     if ( args() < 3 ) sd = 1
 
-    real scalar tol
+    real scalar tol, diff
     real vector left, right, exact, quant, sell, selr, miss
 
     miss  = !(mu :< .)
     tol   = epsilon(1)^(3/4)
     left  = invnormal(p/2) * sd :+ mu
-    right = invnormal(p + (1 - p)/2) * sd :+ abs(mu)
+    right = invnormal((p + 9) / 10) * sd :+ abs(mu)
     assert(all(((normal(left  :- mu) - normal(-left  :- mu)) :<= p) :| miss))
     assert(all(((normal(right :- mu) - normal(-right :- mu)) :>= p) :| miss))
 
     quant = (left :+ right) / 2
     exact = normal(quant :- mu) - normal(-quant :- mu)
-    while ( max(abs(exact :- p)) > tol ) {
+    diff  = max(abs(exact :- p))
+    while ( !missing(diff) & diff > tol ) {
         selr = selectindex(exact :> p)
         sell = selectindex(exact :< p)
         if ( length(selr) ) right[selr] = quant[selr]
         if ( length(sell) ) left[sell]  = quant[sell]
         quant = (left :+ right) / 2
         exact = normal(quant :- mu) - normal(-quant :- mu)
+        diff  = max(abs(exact :- p))
     }
 
     return(quant)
@@ -563,7 +564,7 @@ real rowvector function _flciFindWorstCaseBiasGivenH(real scalar hh,
 
     // Multiply objective by M (note that solution otherwise doesn't
     // depend on M, so no need to run many times with many different Ms)
-    biasResult.info_obj_val = biasResult.info_obj_val * M
+    biasResult.info_obj_val = (biasResult.info_obj_val + constant) * M
 
     // NB: ECOS returns missing if solver fails; I think that should be
     // equivalent to filtering if < Ifn.

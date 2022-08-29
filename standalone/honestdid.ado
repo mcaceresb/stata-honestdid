@@ -1,4 +1,4 @@
-*! version 0.1.2 17Jul2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.4.1 26Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -21,19 +21,26 @@ program honestdid, sclass
         vcov(str)                          /// name of vcov matrix; default is e(V)
         l_vec(str)                         /// Vector with parameters of interest (default is first period post event)
         mvec(str)                          /// Vector or list with with M-values
+        grid_lb(str)                       /// Lower bound for grid
+        grid_ub(str)                       /// Upper bound for grid
+        gridPoints(str)                    /// Number of grid points
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
+        norelmag                           /// relative magnitudes
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
-        method(str)                        /// FLCI (xx default), Conditional, C-F or C-LF
+        method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
         ciopts(str)                        ///
+        debug                              /// Print all the mata steps
         *                                  /// Options for coefplot
     ]
 
+    local rm = cond("`relmag'" == "", "rm", "")
+    local relativeMagnitudes = "`rm'" != ""
     if "`matasave'" == "" local results HonestEventStudy
     else local results: copy local matasave
 
@@ -52,6 +59,7 @@ program honestdid, sclass
     *
     * are assumed.
 
+    local changegrid = 0
     if ( "`cached'" != "" ) {
         local results `s(HonestEventStudy)'
         cap mata mata desc `results'
@@ -59,10 +67,35 @@ program honestdid, sclass
             disp as err "Cached results not found"
             exit 198
         }
+        mata st_local("rmcached", `results'.options.relativeMagnitudes)
+        if ( "`rm'" != "`rmcached'" ) {
+            if ( "`rmcached'" != "" ) {
+                disp as txt "{bf:note:} cached results uses relativeMagnitudes"
+            }
+            if ( "`rm'" != "" ) {
+                disp as txt "{bf:warning:} cached results do not use relativeMagnitudes; option -rm- ignored"
+            }
+        }
+
+        tempname gridcached gridlbcached gridubcached
+        mata st_numscalar("`gridlbcached'", `results'.options.grid_lb)
+        mata st_numscalar("`gridubcached'", `results'.options.grid_ub)
+        mata st_numscalar("`gridcached'",   `results'.options.gridPoints)
+        if "`grid_lb'"    != "" local changegrid = `changegrid' | ("`grid_lb'"    != "`=scalar(`gridlbcached')'")
+        if "`grid_ub'"    != "" local changegrid = `changegrid' | ("`grid_ub'"    != "`=scalar(`gridubcached')'")
+        if "`gridPoints'" != "" local changegrid = `changegrid' | ("`gridPoints'" != "`=scalar(`gridcached')'")
     }
 
+    if "`grid_lb'"    == ""  local grid_lb .
+    if "`grid_ub'"    == ""  local grid_ub .
+    if "`gridPoints'" == ""  local gridPoints 1000
+
+    if "`grid_lb'"    != "." confirm number `grid_lb'
+    if "`grid_ub'"    != "." confirm number `grid_ub'
+    if "`gridPoints'" != ""  confirm number `gridPoints'
+
     local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
-    local dohonest = `dohonest' | (`referenceperiodindex' != 0)
+    local dohonest = `dohonest' | `changegrid' | (`referenceperiodindex' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
@@ -70,7 +103,7 @@ program honestdid, sclass
 
     if ( `dohonest' | ("`cached'" == "") ) {
         HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
-            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices')
+            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
         local alpha = 0.05
@@ -86,8 +119,13 @@ program honestdid, sclass
                                   "`l_vec'",              ///
                                   "`mvec'",               ///
                                   `alpha',                ///
-                                  "`method'")
-            _honestPrintFLCI(`results')
+                                  "`method'",             ///
+                                  "`debug'",              ///
+                                  `relativeMagnitudes',   ///
+                                  `grid_lb',              ///
+                                  `grid_ub',              ///
+                                  `gridPoints')
+            _honestPrintCI(`results')
         }
     }
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
@@ -104,7 +142,7 @@ program honestdid, sclass
 
     mata {
         if ( "`coefplot'" != "" ) {
-            `plotmatrix' = `results'.FLCI
+            `plotmatrix' = `results'.CI
             `labels' = strofreal(`plotmatrix'[., 1]')
             `labels'[1] = "Original"
 
@@ -140,7 +178,8 @@ program HonestSanityChecks
         REFERENCEperiodindex(int 0) /// index for the reference period
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
-        method(str)                 /// FLCI (xx default), Conditional, C-F or C-LF
+        method(str)                 /// FLCI, Conditional, C-F or C-LF (default depends on rm)
+        rm                          /// relative magnitudes
     ]
 
     local method = lower(`"`method'"')
@@ -153,7 +192,14 @@ program HonestSanityChecks
             disp as err "Method must equal one of: FLCI, Conditional, C-F or C-LF"
             exit 198
         }
-        c_local method: copy local method
+    }
+
+    if ( "`rm'" != "" ) {
+        if "`method'" == "" local method C-LF
+        if !inlist("`method'", "C-LF", "Conditional") {
+            disp as err "Method '`method'' not allowed with RelativeMagnitudes"
+            exit 198
+        }
     }
 
     if ((`referenceperiodindex' != 0) & "`preperiodindices'`postperiodindices'" != "") {
@@ -244,9 +290,10 @@ program HonestSanityChecks
         if ( _rc == 0 ) c_local mvec: copy local mvec
     }
 
-    c_local alpha: copy local alpha
-    c_local b: copy local b
-    c_local vcov: copy local vcov
+    c_local alpha:  copy local alpha
+    c_local b:      copy local b
+    c_local vcov:   copy local vcov
+    c_local method: copy local method
 end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
