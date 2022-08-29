@@ -825,6 +825,6 @@ real scalar function _honestARPGeneralizedNorm(real scalar p,
     if ( args() < 5 ) sd = 1
     right = missing(u)? 1: normal((u-mu)/sd)
     left  = missing(l)? 0: normal((l-mu)/sd)
-    return(invnormal(p * (right - left) + left))
+    return(mu + sd * invnormal(p * (right - left) + left))
 }
 end
