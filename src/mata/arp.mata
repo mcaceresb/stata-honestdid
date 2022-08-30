@@ -131,11 +131,7 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
 
         testResultsGrid[i] = 1 - reject
     }
-
     resultsGrid = thetaGrid', testResultsGrid
-    if ( ((resultsGrid[1, 2] == 1) | (resultsGrid[gridPoints, 2] == 1)) & (hybrid_flag != "FLCI") ) {
-        errprintf("Warning: CI is open at one of the endpoints; CI length may not be accurate.\n")
-    }
 
     // Compute length, else return grid
     if ( returnLength ) {
@@ -814,17 +810,20 @@ real rowvector function _honestARPFLCIVloVup(real colvector vbar,
     return((vlo, vup))
 }
 
+// TODO: xx Precise way to compute inverse truncated normal (current
+// method falls back on numerical integration approx).
 real scalar function _honestARPGeneralizedNorm(real scalar p,
                                                real scalar l,
                                                real scalar u,
                                                | real scalar mu,
                                                real scalar sd) {
 
-    real scalar left, right
+    real scalar left, right, quant
     if ( args() < 4 ) mu = 0
     if ( args() < 5 ) sd = 1
     right = missing(u)? 1: normal((u-mu)/sd)
     left  = missing(l)? 0: normal((l-mu)/sd)
-    return(mu + sd * invnormal(p * (right - left) + left))
+    quant = mu + sd * invnormal(p * (right - left) + left)
+    return(missing(quant)? _honestTruncNormInv(p, l, u, mu, sd): quant)
 }
 end

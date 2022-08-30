@@ -46,6 +46,7 @@ struct HonestEventStudy {
     real scalar referencePeriod
     real vector prePeriodIndices
     real vector postPeriodIndices
+    real vector open
 }
 
 struct HonestEventStudy scalar HonestDiD(string scalar b,
@@ -88,8 +89,8 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     options.relativeMagnitudes = rm? "rm": ""
     options.method             = method
     options.alpha              = alpha
-    options.grid_lb            = grid_lb   
-    options.grid_ub            = grid_ub   
+    options.grid_lb            = grid_lb
+    options.grid_ub            = grid_ub
     options.gridPoints         = gridPoints
     if ( Mvec == "" ) {
         if ( rm ) {
@@ -122,6 +123,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     results.Results = HonestSensitivityResults(results, options)
     results.OG      = HonestOriginalCS(results, options)
     results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
+    results.open    = _honestSensitivityCIOpen(results.Results, results.OG)
     results.options = options
 
     return(results)
@@ -149,7 +151,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
     string scalar biasDirection, method, monotonicityDirection, Delta, hybrid_flag, bound
     real colvector l_vec
     real vector Mvec
-    real scalar m, alpha, rm, debug, grid_lb, grid_ub, gridPoints
+    real scalar m, alpha, rm, debug, grid_lb, grid_ub, gridPoints, open
     real matrix temp_mat
 
     alpha      = options.alpha
@@ -256,6 +258,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
         _error(198)
     }
 
+    open = (hybrid_flag != "FLCI")? numPostPeriods == 1: 1
     if ( method == "FLCI" ) {
         for (m = 1; m <= length(Mvec); m++) {
             temp_flci = _flciFindOptimal(betahat,
@@ -272,6 +275,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
+            Results[m].lopen  = 0
+            Results[m].uopen  = 0
         }
     }
     else if ( Delta == "DeltaSD" ) {
@@ -294,6 +299,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
+            Results[m].lopen  = open & (temp_mat[1, 2] == 1)
+            Results[m].uopen  = open & (temp_mat[gridPoints, 2] == 1)
         }
     }
     else if ( Delta == "DeltaRM" ) {
@@ -316,6 +323,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
+            Results[m].lopen  = open & (temp_mat[1, 2] == 1)
+            Results[m].uopen  = open & (temp_mat[gridPoints, 2] == 1)
         }
     }
     else {
@@ -364,6 +373,8 @@ struct _honestResults scalar function HonestOriginalCSHelper(
     OG.method = "Original"
     OG.Delta  = ""
     OG.M      = .
+    OG.lopen  = 0
+    OG.uopen  = 0
 
     return(OG)
 }
@@ -372,22 +383,40 @@ struct _honestResults scalar function HonestOriginalCSHelper(
 void function _honestPrintCI(struct HonestEventStudy scalar EventStudy)
 {
     real scalar i
+    string vector asterisks
+    asterisks = "", "(-)", "(+)", "(*)"
+
     printf("\n")
     printf("|    M    |   lb   |   ub   |\n")
     printf("| ------- | ------ | ------ |\n")
     for (i = 1; i <= rows(EventStudy.CI); i++) {
         if ( i == 1 ) {
             printf("| %7.4f | %6.3f | %6.3f | (Original)\n",
-                   EventStudy.CI[i, 1], EventStudy.CI[i, 2], EventStudy.CI[i, 3])
+                   EventStudy.CI[i, 1],
+                   EventStudy.CI[i, 2],
+                   EventStudy.CI[i, 3])
         }
         else {
-            printf("| %7.4f | %6.3f | %6.3f |\n",
-                   EventStudy.CI[i, 1], EventStudy.CI[i, 2], EventStudy.CI[i, 3])
+            printf("| %7.4f | %6.3f | %6.3f | %s\n",
+                   EventStudy.CI[i, 1],
+                   EventStudy.CI[i, 2],
+                   EventStudy.CI[i, 3],
+                   asterisks[EventStudy.open[i]+1])
         }
     }
     printf("(method = %s, Delta = %s, alpha = %5.3f)\n",
            EventStudy.options.method,
            EventStudy.options.Delta,
            EventStudy.options.alpha)
+
+    if ( any(EventStudy.open :== 1) ) {
+        errprintf("(-) CI is open at lower endpoint; CI length may not be accurate.\n")
+    }
+    if ( any(EventStudy.open :== 2) ) {
+        errprintf("(+) CI is open at upper endpoint; CI length may not be accurate.\n")
+    }
+    if ( any(EventStudy.open :== 3) ) {
+        errprintf("(*) CI is open at both endpoints; CI length may not be accurate.\n")
+    }
 }
 end

@@ -47,23 +47,23 @@ program basic_failures
         st_matrix(st_local("beta"),  _honestExampleBCBeta())
         st_matrix(st_local("sigma"), _honestExampleBCSigma())
     }
-    cap honestdid, norelmag b(`beta') vcov(`sigma')
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma')
     assert _rc == 198
-    cap honestdid, norelmag b(`beta') vcov(`sigma') reference(0)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(0)
     assert _rc == 198
-    cap honestdid, norelmag b(`beta') vcov(`sigma') reference(8)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(8)
     assert _rc == 198
-    cap honestdid, norelmag b(`beta') vcov(`sigma') reference(4) l_vec(xxx)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(4) l_vec(xxx)
     assert _rc == 111
-    cap honestdid, norelmag b(xxx) vcov(`sigma') reference(4)
+    cap honestdid, delta(sd) b(xxx) vcov(`sigma') reference(4)
     assert _rc == 111
-    cap honestdid, norelmag b(`beta') vcov(xxx) reference(4)
+    cap honestdid, delta(sd) b(`beta') vcov(xxx) reference(4)
     assert _rc == 111
-    cap honestdid, norelmag reference(4)
+    cap honestdid, delta(sd) reference(4)
     assert _rc == 198
-    cap honestdid, b(`beta') vcov(`sigma') reference(4) relmag method(FLCI)
+    cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(FLCI)
     assert _rc == 198
-    cap honestdid, b(`beta') vcov(`sigma') reference(4) relmag method(C-F)
+    cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(C-F)
     assert _rc == 198
 end
 
@@ -80,9 +80,9 @@ end
 * timer clear
 * timer on 1
 * matrix mvec = 0, 0.3, 0.4, 0.5
-* honestdid, b(`beta') vcov(`sigma') mvec(0.1) reference(4) method(Conditional) relmag debug
+* honestdid, b(`beta') vcov(`sigma') mvec(0.1) reference(4) method(Conditional) delta(rm) debug
 * * matrix lvec = 1 \ 0 \ 0 \ 0
-* * honestdid, b(`beta') vcov(`sigma') mvec(0) reference(4) l_vec(lvec) method(FLCI) norelmag debug
+* * honestdid, b(`beta') vcov(`sigma') mvec(0) reference(4) l_vec(lvec) method(FLCI) delta(sd) debug
 * timer off 1
 * timer list
 * timer clear

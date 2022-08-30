@@ -129,7 +129,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
                 sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
             }
             gridlb = missing(grid_lb)? IDset[1] - 20 * sdTheta: grid_lb
-            gridub = missing(grid_ub)? IDset[1] + 20 * sdTheta: grid_ub
+            gridub = missing(grid_ub)? IDset[2] + 20 * sdTheta: grid_ub
         }
         else if ( hybrid_flag == "ARP" ) {
             if ( debug == 1 ) printf("\thonest debug: \thybrid_flag = ARP\n")
@@ -150,6 +150,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
             _error(198)
         }
 
+        if ( debug == 1 ) printf("\thonest debug: \tgrid  = (%9.6g, %9.6g)\n", gridlb, gridub)
         CI = _honestARPComputeCINoNuis(betahat,
                                        sigma,
                                        numPrePeriods,
@@ -204,6 +205,7 @@ real matrix function _honestSDConditionalCS(real rowvector betahat,
         }
 
         // Compute ARP CI for l'beta using Delta^SD
+        if ( debug == 1 ) printf("\thonest debug: \tgrid  = (%9.6g, %9.6g)\n", gridlb, gridub)
         CI = _honestARPComputeCI(betahat,
                                  sigma,
                                  numPrePeriods,

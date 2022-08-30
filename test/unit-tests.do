@@ -14,22 +14,22 @@ program main
 
     unit_test basic_failures
 
-    unit_test basic_checks, norelmag reference(4) method(FLCI)
-    unit_test basic_checks, norelmag reference(4) method(C-F)
+    unit_test basic_checks, delta(sd) reference(4) method(FLCI)
+    unit_test basic_checks, delta(sd) reference(4) method(C-F)
     forvalues i = 0 / 2 {
-        unit_test basic_checks, norelmag reference(4) l_vec(l_vec`i') method(FLCI)
-        unit_test basic_checks, norelmag reference(4) l_vec(l_vec`i') method(C-F)
+        unit_test basic_checks, delta(sd) reference(4) l_vec(l_vec`i') method(FLCI)
+        unit_test basic_checks, delta(sd) reference(4) l_vec(l_vec`i') method(C-F)
     }
-    unit_test basic_checks, norelmag reference(1) method(FLCI)
-    unit_test basic_checks, norelmag reference(1) method(C-F)
-    unit_test basic_checks, norelmag reference(7) method(FLCI)
-    unit_test basic_checks, norelmag reference(7) method(C-F)
+    unit_test basic_checks, delta(sd) reference(1) method(FLCI)
+    unit_test basic_checks, delta(sd) reference(1) method(C-F)
+    unit_test basic_checks, delta(sd) reference(7) method(FLCI)
+    unit_test basic_checks, delta(sd) reference(7) method(C-F)
     forvalues i = 3 / 4 {
-        unit_test basic_checks, norelmag reference(1) l_vec(l_vec`i') method(FLCI)
-        unit_test basic_checks, norelmag reference(1) l_vec(l_vec`i') method(C-F)
+        unit_test basic_checks, delta(sd) reference(1) l_vec(l_vec`i') method(FLCI)
+        unit_test basic_checks, delta(sd) reference(1) l_vec(l_vec`i') method(C-F)
     }
 
-    foreach rm in norelmag relmag {
+    foreach rm in delta(sd) delta(rm) {
         unit_test basic_checks, `rm' reference(4) method(Conditional)
         unit_test basic_checks, `rm' reference(4) method(C-LF)
         forvalues i = 0 / 2 {
@@ -51,13 +51,13 @@ program main
     matrix l_vec1 = J(23, 1, 1)
     mata st_matrix("l_vec2", ((mod(1::23, 2) :* 2) :- 1) :* (1::23))
 
-    unit_test reg_checks, norelmag method(FLCI)
-    unit_test reg_checks, norelmag method(C-F)
+    unit_test reg_checks, delta(sd) method(FLCI)
+    unit_test reg_checks, delta(sd) method(C-F)
     forvalues i = 0 / 2 {
-        unit_test reg_checks, norelmag l_vec(l_vec`i') method(FLCI)
-        unit_test reg_checks, norelmag l_vec(l_vec`i') method(C-F)
+        unit_test reg_checks, delta(sd) l_vec(l_vec`i') method(FLCI)
+        unit_test reg_checks, delta(sd) l_vec(l_vec`i') method(C-F)
     }
-    foreach rm in norelmag relmag {
+    foreach rm in delta(sd) delta(rm) {
         unit_test reg_checks, `rm' method(Conditional)
         unit_test reg_checks, `rm' method(C-LF)
         forvalues i = 0 / 2 {

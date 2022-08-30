@@ -3,6 +3,7 @@ cap mata mata drop _honestResults()
 cap mata mata drop _honestHybridList()
 
 cap mata mata drop _honestSensitivityCIMatrix()
+cap mata mata drop _honestSensitivityCIOpen()
 cap mata mata drop _honestBasis()
 cap mata mata drop _honestLinspace()
 cap mata mata drop _honestInverseIndex()
@@ -21,6 +22,11 @@ cap mata mata drop _honestSummary()
 cap mata mata drop _honestVLoVUpFN()
 cap mata mata drop _honestLeeCFN()
 cap mata mata drop _honestSelectionMat()
+cap mata mata drop _honestTruncNormInv()
+cap mata mata drop _honestTruncNormCDF()
+cap mata mata drop _honestExampleBCBeta()
+cap mata mata drop _honestExampleBCSigma()
+cap mata mata drop _honestExampleLWCall()
 
 mata
 struct _honestOptions {
@@ -43,6 +49,8 @@ struct _honestResults {
     string scalar method
     string scalar Delta
     real scalar M
+    real scalar lopen
+    real scalar uopen
 }
 
 struct _honestHybridList {
@@ -88,6 +96,19 @@ real matrix function _honestSensitivityCIMatrix(
     ub = (originalResults.ub \ ub) * rescaleFactor
 
     return(M, lb, ub)
+}
+
+real vector function _honestSensitivityCIOpen(
+    struct _honestResults colvector robustResults,
+    struct _honestResults scalar originalResults)
+{
+    real scalar m
+    real vector open
+    open = (originalResults.lopen + 2 * originalResults.uopen) \ J(rows(robustResults), 1, .)
+    for (m = 1; m <= rows(robustResults); m++) {
+        open[m+1] = robustResults[m].lopen + 2 * robustResults[m].uopen
+    }
+    return(open)
 }
 
 real colvector function _honestBasis(real scalar index, real scalar size)
@@ -325,6 +346,69 @@ real vector function _honestVLoVUpFN(real colvector eta, real matrix Sigma, real
 real colvector function _honestLeeCFN(real colvector eta, real matrix Sigma)
 {
     return((Sigma * eta) :/ (eta' * Sigma * eta))
+}
+
+real scalar function _honestTruncNormCDF(real scalar z,
+                                         real scalar l,
+                                         real scalar u,
+                                         | real scalar mu,
+                                         real scalar sd,
+                                         real scalar n) {
+
+    real vector grid, width, area, odd, even
+    real scalar n1, n2, ub, lb, zn
+    if ( args() < 4 ) mu = 0
+    if ( args() < 5 ) sd = 1
+    if ( args() < 6 ) n  = 1e3
+
+    zn = (z - mu)/sd
+    lb = missing(l)? -37: (l-mu)/sd
+    ub = missing(u)?  37: (u-mu)/sd
+    n1 = floor(n * ((zn - lb) / (ub - lb)))
+    n2 = n - n1 + 1
+
+    grid  = (_honestLinspace(lb, zn, n1), _honestLinspace(zn, ub, n2)[|2 \ n2|])
+    width = grid[|2 \ n|] :- grid[|1 \ n-1|]
+    area  = width :* (normalden(grid[|1 \ n-1|]) :+ normalden(grid[|2 \ n|])) :/ 2
+    return(quadsum(area[|1 \ n1|]) :/ quadsum(area))
+}
+
+real scalar function _honestTruncNormInv(real scalar p,
+                                         real scalar l,
+                                         real scalar u,
+                                         | real scalar mu,
+                                         real scalar sd,
+                                         real scalar n) {
+    real vector grid, width, area
+    real scalar ub, lb, index, pscale, a
+    if ( args() < 4 ) mu = 0
+    if ( args() < 5 ) sd = 1
+    if ( args() < 6 ) n  = 1e3
+
+    lb = missing(l)? -37: max((min(((l-mu)/sd,  37)), -37))
+    ub = missing(u)?  37: min((max(((u-mu)/sd, -37)),  37))
+
+    if (ub <= lb) {
+        return(.)
+    }
+    else if ( lb >= 1 ) {
+        grid = exp(_honestLinspace(log(lb), log(ub), n))
+    }
+    else if ( ub <= -1 ) {
+        grid = -exp(_honestLinspace(log(-lb), log(-ub), n))
+    }
+    else {
+        return(mu + sd * invnormal(p * (normal(ub) - normal(lb)) + normal(lb)))
+    }
+
+    width  = grid[|2 \ n|] :- grid[|1 \ n-1|]
+    area   = quadrunningsum(width :* (normalden(grid[|1 \ n-1|]) :+ normalden(grid[|2 \ n|])) :/ 2)
+    index  = 0
+    pscale = p * area[n-1]
+
+    while ( (++index < n) & (pscale > area[index]) ) {}
+    a = (pscale - area[index-1]) / (area[index] - area[index-1])
+    return(index < n? mu + sd * (a * grid[index] + (1 - a) * grid[index-1]): .)
 }
 
 real rowvector function _honestExampleBCBeta() {

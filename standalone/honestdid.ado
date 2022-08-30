@@ -1,4 +1,4 @@
-*! version 0.4.2 29Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.4.4 29Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -26,7 +26,7 @@ program honestdid, sclass
         gridPoints(str)                    /// Number of grid points
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
-        norelmag                           /// relative magnitudes
+        delta(str)                         /// Delta to use (rm for relative magnitudes or sd)
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
@@ -39,7 +39,12 @@ program honestdid, sclass
         *                                  /// Options for coefplot
     ]
 
-    local rm = cond("`relmag'" == "", "rm", "")
+    if !inlist("`delta'", "rm", "sd", "") {
+        disp as err "Only delta(rm) and delta(sd) available"
+        exit 198
+    }
+
+    local rm = cond(inlist("`delta'", "rm", ""), "rm", "")
     local relativeMagnitudes = "`rm'" != ""
     if "`matasave'" == "" local results HonestEventStudy
     else local results: copy local matasave

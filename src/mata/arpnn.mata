@@ -94,10 +94,6 @@ real matrix function _honestARPComputeCINoNuis(real rowvector betahat,
         _error(198)
     }
 
-    if ( (resultsGrid[1, 2] == 1) | (resultsGrid[gridPoints, 2] == 1) ) {
-        errprintf("CI is open at one of the endpoints; CI length may not be accurate\n")
-    }
-
     // Compute length, else return grid
     if ( returnLength ) {
         if ( debug == 1 ) printf("\thonest debug: \treturnLength = 1\n")

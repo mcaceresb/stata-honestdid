@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.2 29Aug2022}{...}
+{* *! version 0.4.4 29Aug2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -34,7 +34,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opth reference:periodindex(int)}} reference period; assumed omitted from vector (required or specify pre()/post()){p_end}
 {synopt :{opth pre:periodindex(numlist)}} pre-period indices (required or specify reference()){p_end}
 {synopt :{opth post:periodindex(numlist)}} post-period indices (required or specify reference()){p_end}
-{synopt :{opt no:relmag}} (do not) use relative magnitudes (rel. mag. is default){p_end}
+{synopt :{opt delta(str)}} delta to use: rm (for relative magnitudes) or sd (second differences){p_end}
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b){p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
 {synopt :{opt l_vec(str)}} name of vector with parameters of interest (default is first period post event){p_end}
@@ -43,7 +43,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opth grid_ub(real)}} upper bound for grid search (ignored with FLCI); default is selected internally based on estimates {p_end}
 {synopt :{opt gridPoints(str)}} number of grid points for search; default 1000 {p_end}
 {synopt :{opth alpha(real)}} 1 - confidence level; default 0.05{p_end}
-{synopt :{opt method(str)}} C-LF (default unless norelmag is specified), FLCI (overrides relmag option; default with norelmag), Conditional, C-F  {p_end}
+{synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F  {p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
@@ -61,23 +61,22 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {title:Example 1: Benzarti and Carloni (2019)}
 
 {pstd}
-Construct robust confidence intervals for DeltaRM(Mbar). In the R Vignette,
-the test uses option bound set to "deviation from linear trend"; here only
-the analogue to "deviation from parallel trends" has been implemented.
+Section 6.2 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the coefficients and variance-covariance matrix used below. The referenced {cmd:beta} and {cmd:sigma} objects only contain the entries corresponding to the event study coefficients. Now we construct robust confidence intervals for DeltaRM(Mbar). In the R Vignette, the test uses option bound set to "deviation from linear trend"; here only the analogue to "deviation from parallel trends" has been implemented.
 
-{phang2}{cmd:. tempname beta sigma                                            }{p_end}
-{phang2}{cmd:. mata {c -(}                                                    }{p_end}
-{phang2}{cmd:      st_matrix(st_local("beta"),  _honestExampleBCBeta())       }{p_end}
-{phang2}{cmd:      st_matrix(st_local("sigma"), _honestExampleBCSigma())      }{p_end}
-{phang2}{cmd:  {c )-}                                                         }{p_end}
-{phang2}{cmd:. local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)}{p_end}
-{phang2}{cmd:. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'         }{p_end}
+{phang2}{cmd:. tempname beta sigma                                              }{p_end}
+{phang2}{cmd:. mata {c -(}                                                      }{p_end}
+{phang2}{cmd:      st_matrix(st_local("beta"),  _honestExampleBCBeta())         }{p_end}
+{phang2}{cmd:      st_matrix(st_local("sigma"), _honestExampleBCSigma())        }{p_end}
+{phang2}{cmd:  {c )-}                                                           }{p_end}
+{phang2}{cmd:. local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)}{p_end}
+{phang2}{cmd:. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'           }{p_end}
 
 {pstd}
-The results are printed to the Stata console and saved in a mata object. The user
-can specify the name of the mata object via the {opt mata()} option. The default
-name is HonestEventStudy and the object's name is saved in {cmd:s(HonestEventStudy)}.
-In addition to the CI, all the inputs and options are saved:
+The results are printed to the Stata console and saved in a mata
+object. The user can specify the name of the mata object via the 
+{opt mata()} option. The default name is HonestEventStudy and the
+object's name is saved in {cmd:s(HonestEventStudy)}.  In addition
+to the CI, all the inputs and options are saved:
 
 {phang2}{cmd:. mata `s(HonestEventStudy)'.CI                }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.betahat           }{p_end}
@@ -85,6 +84,7 @@ In addition to the CI, all the inputs and options are saved:
 {phang2}{cmd:. mata `s(HonestEventStudy)'.referencePeriod   }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.prePeriodIndices  }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.postPeriodIndices }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.open              }{p_end}
 
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.alpha     }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.l_vec     }{p_end}
@@ -107,7 +107,10 @@ are computed or using the results cached in mata.
 
 {title:Example 2: Lovenheim and Willen (2019)}
 
-{phang2}{cmd:. use test/LWdata_RawData.dta, clear      }{p_end}
+{pstd}
+Section 6.3 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the regression below, which is based on Equation (20) (also see p. 11 of the {browse "https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf":HonestDiD Vignette}). The data is the same one provided in the HonestDiD R package and can be downloaded by installing {cmd:honestdid} with the {cmd:all} option.
+
+{phang2}{cmd:. use LWdata_RawData.dta, clear           }{p_end}
 {phang2}{cmd:. mata stata(_honestExampleLWCall())      }{p_end}
 {phang2}{cmd:. honestdid, pre(1/9) post(10/32) coefplot}{p_end}
 
@@ -125,7 +128,7 @@ Now to mirror the Vignette:
 {phang2}{cmd:. matrix b = 100 * e(b)                                     }{p_end}
 {phang2}{cmd:. matrix V = 100^2 * e(V)                                   }{p_end}
 {phang2}{cmd:. mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))      }{p_end}
-{phang2}{cmd:. local opts norelmag mvec(0(0.005)0.04) l_vec(l_vec)       }{p_end}
+{phang2}{cmd:. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)      }{p_end}
 {phang2}{cmd:. local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)    }{p_end}
 {phang2}{cmd:. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'}{p_end}
 {phang2}{cmd:. graph export coefplot.pdf, replace                        }{p_end}
@@ -158,6 +161,9 @@ The following data are available in {cmd:s(HonestEventStudy)} (default name: Hon
 
         real vector postPeriodIndices
             post period indices of coef vector
+
+        real vector open
+            vector for whether CI is open at endpoint (0 not open, 1 at lower, 2 at upper, 3 at both)
 
         struct _honestOptions scalar options
             structure with options used in internal computations

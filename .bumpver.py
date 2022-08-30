@@ -24,7 +24,7 @@ args = vars(parser.parse_args())
 # Config
 
 config_token   = "CrossPlatformCompatibilityCookie"
-config_version = "0.4.2"
+config_version = "0.4.4"
 config_date = date(2022, 8, 29)
 config_files = [
     ('.bumpver.py', 'config_version = "{major}.{minor}.{patch}"'),

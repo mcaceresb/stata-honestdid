@@ -1,21 +1,28 @@
 * Example 1: Benzarti and Carloni (2019)
 * --------------------------------------
 
-* Construct robust confidence intervals for DeltaRM(Mbar) for first
-* post-treatment period.
+* Section 6.2 of {browse :Rambachan and Roth (2021)} explains the
+* underlying event study specification for the coefficients and
+* variance-covariance matrix used below. The referenced {cmd:beta} and
+* {cmd:sigma} objects only contain the entries corresponding to the
+* event study coefficients. Now we construct robust confidence intervals
+* for DeltaRM(Mbar). In the R Vignette, the test uses option bound set
+* to "deviation from linear trend"; here only the analogue to "deviation
+* from parallel trends" has been implemented.
 
 tempname beta sigma
 mata {
     st_matrix(st_local("beta"),  _honestExampleBCBeta())
     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 }
-local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)
+local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)
 honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
 
-* The results are printed to the Stata console and saved in a mata object. The user
-* can specify the name of the mata object via the {opt mata()} option. The default
-* name is HonestEventStudy and the object's name is saved in {cmd:s(HonestEventStudy)}.
-* In addition to the CI, all the inputs and options are saved:
+* The results are printed to the Stata console and saved in a mata
+* object. The user can specify the name of the mata object via the 
+* {opt mata()} option. The default name is HonestEventStudy and the
+* object's name is saved in {cmd:s(HonestEventStudy)}.  In addition 
+* to the CI, all the inputs and options are saved:
 
 mata `s(HonestEventStudy)'.CI
 mata `s(HonestEventStudy)'.betahat
@@ -23,6 +30,7 @@ mata `s(HonestEventStudy)'.sigma
 mata `s(HonestEventStudy)'.referencePeriod
 mata `s(HonestEventStudy)'.prePeriodIndices
 mata `s(HonestEventStudy)'.postPeriodIndices
+mata `s(HonestEventStudy)'.open
 
 mata `s(HonestEventStudy)'.options.alpha
 mata `s(HonestEventStudy)'.options.l_vec
@@ -45,8 +53,15 @@ graph export coefplot.pdf, replace
 * Example 2: Lovenheim and Willen (2019)
 * --------------------------------------
 
-use test/LWdata_RawData.dta, clear
-mata stata(_honestExampleLWCall())
+* Section 6.3 of {browse :Rambachan and Roth (2021)} explains the
+* underlying event study specification and rationale for the regression
+* below, which is based on Equation (20) (also see p. 11 of the 
+* {browse :HonestDiD Vignette}). The data is the same one provided in the
+* HonestDiD R package and can be downloaded by installing {cmd:honestdid}
+* with the {cmd:all} option.
+
+use LWdata_RawData.dta, clear           
+mata stata(_honestExampleLWCall())      
 honestdid, pre(1/9) post(10/32) coefplot
 
 * This required the user package {cmd:reghdfe}. First, you can see
@@ -60,7 +75,7 @@ honestdid, pre(1/9) post(10/32) coefplot
 matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
 mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
-local opts norelmag mvec(0(0.005)0.04) l_vec(l_vec)
+local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
 local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'
 graph export coefplot.pdf, replace
