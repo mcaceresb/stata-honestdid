@@ -1,4 +1,5 @@
 cap mata mata drop HonestDiD()
+cap mata mata drop HonestDiDParse()
 cap mata mata drop HonestSensitivityResults()
 cap mata mata drop HonestSensitivityHelper()
 cap mata mata drop HonestOriginalCS()
@@ -66,6 +67,32 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+    results = HonestDiDParse(b, V, reference, pre, post, l_vec, Mvec, alpha,
+                             method, debug, rm, grid_lb, grid_ub, gridPoints)
+    results.Results = HonestSensitivityResults(results, results.options)
+    results.OG      = HonestOriginalCS(results, results.options)
+    results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
+    results.open    = _honestSensitivityCIOpen(results.Results, results.OG)
+    return(results)
+}
+
+struct HonestEventStudy scalar HonestDiDParse(string scalar b,
+                                              string scalar V,
+                                              real scalar reference,
+                                              string scalar pre,
+                                              string scalar post,
+                                              string scalar l_vec,
+                                              string scalar Mvec,
+                                              real scalar alpha,
+                                              string scalar method,
+                                              string scalar debug,
+                                              real scalar rm,
+                                              real scalar grid_lb,
+                                              real scalar grid_ub,
+                                              real scalar gridPoints)
+{
+    struct _honestOptions scalar options
+    struct HonestEventStudy scalar results
     real scalar Mub
     real vector sel
 
@@ -129,13 +156,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         printf("Warning: M = 0 with Delta^RM imposes exact parallel trends in the\n")
         printf("post-treatment period, even if pre-treatment parallel trends is violated\n")
     }
-
-    results.Results = HonestSensitivityResults(results, options)
-    results.OG      = HonestOriginalCS(results, options)
-    results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
-    results.open    = _honestSensitivityCIOpen(results.Results, results.OG)
     results.options = options
-
     return(results)
 }
 

@@ -114,22 +114,45 @@ program honestdid, sclass
         local alpha = 0.05
     }
 
+    tempfile honestfile
+    local parallel = 0
     mata {
         if ( `dohonest' | ("`cached'" == "") ) {
-            `results' = HonestDiD("`b'",                  ///
-                                  "`vcov'",               ///
-                                  `referenceperiodindex', ///
-                                  "`preperiodindices'",   ///
-                                  "`postperiodindices'",  ///
-                                  "`l_vec'",              ///
-                                  "`mvec'",               ///
-                                  `alpha',                ///
-                                  "`method'",             ///
-                                  "`debug'",              ///
-                                  `relativeMagnitudes',   ///
-                                  `grid_lb',              ///
-                                  `grid_ub',              ///
-                                  `gridPoints')
+            if ( `parallel' ) {
+                `results' = HonestDiDParse("`b'",                  ///
+                                           "`vcov'",               ///
+                                           `referenceperiodindex', ///
+                                           "`preperiodindices'",   ///
+                                           "`postperiodindices'",  ///
+                                           "`l_vec'",              ///
+                                           "`mvec'",               ///
+                                           `alpha',                ///
+                                           "`method'",             ///
+                                           "`debug'",              ///
+                                           `relativeMagnitudes',   ///
+                                           `grid_lb',              ///
+                                           `grid_ub',              ///
+                                           `gridPoints')
+                _honestPLLSave("`honestfile'", `results')
+                stata(sprintf(`"HonestParallel `"%s"' %g"'), `"`honestfile'"', length(`results'.options.Mvec))
+                `results' = _honestPLLLoad("`honestfile'")
+            }
+            else {
+                `results' = HonestDiD("`b'",                  ///
+                                      "`vcov'",               ///
+                                      `referenceperiodindex', ///
+                                      "`preperiodindices'",   ///
+                                      "`postperiodindices'",  ///
+                                      "`l_vec'",              ///
+                                      "`mvec'",               ///
+                                      `alpha',                ///
+                                      "`method'",             ///
+                                      "`debug'",              ///
+                                      `relativeMagnitudes',   ///
+                                      `grid_lb',              ///
+                                      `grid_ub',              ///
+                                      `gridPoints')
+            }
             _honestPrintCI(`results')
         }
     }
@@ -299,6 +322,53 @@ program HonestSanityChecks
     c_local b:      copy local b
     c_local vcov:   copy local vcov
     c_local method: copy local method
+end
+
+capture program drop HonestParallel
+program HonestParallel
+    args honestfile mveclen
+    tempname results
+    forvalues p = 1 / `mveclen' {
+        tempfile pf`p'
+    }
+    mata `results' = _honestPLLLoad(st_sdata(`p', "parfile"))
+    preserve
+        clear
+        set obs `mveclen'
+        gen mindex  = _n
+        gen resfile = `"`honestfile'"'
+        gen parfile = ""
+        forvalues p = 1 / `mveclen' {
+            replace parfile = "`pf`p''"
+        }
+        sort mindex
+        parallel, prog(HonestParallelWork): HonestParallelWork
+        local nfiles = 0
+        forvalues p = 1 / `mveclen' {
+            cap confirm file `"`=parfile[`p']'"'
+            if ( _rc == 0 ) {
+                replace parfile = "`pf`p''"
+                mata _honestPLLAppendReplace(`results' , _honestPLLLoad(st_sdata(`p', "parfile")))
+                local ++nfiles
+            }
+        }
+
+        * xx this make sense?
+        if `nfiles' != ${PLL_CHILDREN} {
+            disp as err "parallelization failed; re-run without parallel option"
+            exit 1234
+        }
+    restore
+end
+
+capture program drop HonestParallelWork
+program HonestParallelWork
+    tempname results
+    mata {
+        `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+        (void) HonestDiDPLL(`results', st_data(., "mindex"))
+        _honestPLLSave(st_sdata(., "parfile")[1], `results')
+    }
 end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
