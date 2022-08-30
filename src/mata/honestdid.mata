@@ -94,7 +94,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     options.gridPoints         = gridPoints
     if ( Mvec == "" ) {
         if ( rm ) {
-            options.Mvec = _honestLinspace(0, 2, 10)
+            options.Mvec = _honestLinspace(0, 2, 10)[2..10]
         }
         else if ( length(results.prePeriodIndices) == 1) {
             options.Mvec = _honestLinspace(0, results.sigma[1, 1], 10)
@@ -120,6 +120,16 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 
     options.Mvec    = rowshape(sort(colshape(options.Mvec, 1), 1), 1)
     options.l_vec   = (l_vec == "")? _honestBasis(1, length(results.postPeriodIndices)): colshape(st_matrix(l_vec), 1)
+
+    if ( min(options.Mvec) < 0 ) {
+        errprintf("M must be greater than or equal to 0 (see mvec() option)\n")
+        _error(198)
+    }
+    else if ( (min(options.Mvec) == 0) & rm ) {
+        printf("Warning: M = 0 with Delta^RM imposes exact parallel trends in the\n")
+        printf("post-treatment period, even if pre-treatment parallel trends is violated\n")
+    }
+
     results.Results = HonestSensitivityResults(results, options)
     results.OG      = HonestOriginalCS(results, options)
     results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
@@ -258,7 +268,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
         _error(198)
     }
 
-    open = (hybrid_flag != "FLCI")? numPostPeriods == 1: 1
+    open = (hybrid_flag == "FLCI")? numPostPeriods == 1: 1
     if ( method == "FLCI" ) {
         for (m = 1; m <= length(Mvec); m++) {
             temp_flci = _flciFindOptimal(betahat,

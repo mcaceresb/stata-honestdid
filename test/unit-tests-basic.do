@@ -6,14 +6,14 @@ program basic_checks
         st_matrix(st_local("beta"),  _honestExampleBCBeta())
         st_matrix(st_local("sigma"), _honestExampleBCSigma())
     }
-    matrix mvec  = 0.3, -0.3, 0.2, -0.1, 0, -0.2, 0.1
+    matrix mvec  = 0.3, 0.2, 0, 0.1
     honestdid, b(`beta') vcov(`sigma') `options'
     honestdid, b(`beta') vcov(`sigma') `options' mvec(0) alpha(0.00123) coefplot xlabel(,angle(60))
-    honestdid, b(`beta') vcov(`sigma') `options' mvec(0.3 -0.3 0.2 -0.1 0 -0.2 0.1)
-    honestdid, b(`beta') vcov(`sigma') `options' mvec(-0.05(0.025)0.05)
+    honestdid, b(`beta') vcov(`sigma') `options' mvec(0.3 0.2 0 0.1)
+    honestdid, b(`beta') vcov(`sigma') `options' mvec(0.01(0.025)0.05)
     honestdid, b(`beta') vcov(`sigma') `options' mvec(mvec)
-    honestdid, b(`beta') vcov(`sigma') `options' mvec(-50(10)50)
-    honestdid, b(`beta') vcov(`sigma') `options' mvec(-0.3(0.1)0.3) alpha(0.01)
+    honestdid, b(`beta') vcov(`sigma') `options' mvec(10(10)50)
+    honestdid, b(`beta') vcov(`sigma') `options' mvec(0(0.1)0.3) alpha(0.01)
     honestdid, coefplot cached
     honestdid, coefplot cached xlabel(,angle(60))
 end
@@ -26,18 +26,18 @@ program reg_checks
     qui reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant
 
     honestdid, pre(1/9) post(10/32) `options'
-    honestdid, pre(1/9) post(10/32) `options' mvec(-0.3(0.1)0.3) alpha(0.01)
+    honestdid, pre(1/9) post(10/32) `options' mvec(0(0.1)0.3) alpha(0.01)
     honestdid, coefplot cached
     honestdid, coefplot cached xlabel(,angle(60))
-    * honestdid, pre(1/9) post(10/32) `options' mvec(-50(10)50)
+    * honestdid, pre(1/9) post(10/32) `options' mvec(0(10)50)
 
     matrix b = 100 * e(b)
     matrix V = 100^2 * e(V)
     honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options'
-    honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options' mvec(-0.3(0.1)0.3) alpha(0.01)
+    honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options' mvec(0.01(0.1)0.3) alpha(0.01)
     honestdid, coefplot cached
     honestdid, coefplot cached xlabel(,angle(60))
-    * honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options' mvec(-50(10)50)
+    * honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options' mvec(0(10)50)
 end
 
 capture program drop basic_failures
@@ -64,6 +64,8 @@ program basic_failures
     cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(FLCI)
     assert _rc == 198
     cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(C-F)
+    assert _rc == 198
+    cap honestdid, b(`beta') vcov(`sigma') reference(4) mvec(-1)
     assert _rc == 198
 end
 

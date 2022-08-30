@@ -40,7 +40,7 @@ results <- createSensitivityResults_relativeMagnitudes(betahat        = BCdata_E
                                                        grid.ub        = 1,
                                                        grid.lb        = -1,
                                                        bound          = "deviation from parallel trends",
-                                                       Mbarvec        = seq(from=-2, to=2, by=0.5))
+                                                       Mbarvec        = seq(from=0, to=2, by=0.5))
 print(results)
 print(Sys.time() - timer)
 
@@ -55,7 +55,7 @@ results <- createSensitivityResults_relativeMagnitudes(betahat        = BCdata_E
                                                        grid.lb        = -1,
                                                        method         = "Conditional",
                                                        bound          = "deviation from parallel trends",
-                                                       Mbarvec        = seq(from=-2, to=2, by=0.5))
+                                                       Mbarvec        = seq(from=0, to=2, by=0.5))
 print(results)
 print(Sys.time() - timer)
 
@@ -69,7 +69,7 @@ results <- createSensitivityResults_relativeMagnitudes(betahat        = BCdata_E
                                                        grid.ub        = 1,
                                                        grid.lb        = -1,
                                                        bound          = "deviation from parallel trends",
-                                                       Mbarvec        = seq(from=-2, to=2, by=0.5))
+                                                       Mbarvec        = seq(from=0, to=2, by=0.5))
 print(results)
 print(Sys.time() - timer)
 
@@ -84,7 +84,7 @@ results <- createSensitivityResults_relativeMagnitudes(betahat        = BCdata_E
                                                        grid.lb        = -1,
                                                        method         = "Conditional",
                                                        bound          = "deviation from parallel trends",
-                                                       Mbarvec        = seq(from=-2, to=2, by=0.5))
+                                                       Mbarvec        = seq(from=0, to=2, by=0.5))
 print(results)
 print(Sys.time() - timer)
 
@@ -109,7 +109,7 @@ for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
                                         numPostPeriods = BC_numPostPeriods,
                                         l_vec          = BC_l_vec,
                                         method         = meth,
-                                        Mvec           = seq(from=-0.3, to=0.3, by=0.1))
+                                        Mvec           = seq(from=0, to=0.3, by=0.1))
     print(results)
     print(Sys.time() - timer)
 }
@@ -122,7 +122,7 @@ for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
                                         numPostPeriods = BC_numPostPeriods,
                                         l_vec          = BC_l_alt,
                                         method         = meth,
-                                        Mvec           = seq(from=-0.3, to=0.3, by=0.1))
+                                        Mvec           = seq(from=0, to=0.3, by=0.1))
     print(results)
     print(Sys.time() - timer)
 }
@@ -184,7 +184,7 @@ opts <- list(betahat        = BCdata_EventStudy$betahat,
              sigma          = BCdata_EventStudy$sigma,
              numPrePeriods  = BC_numPrePeriods + BC_numPostPeriods - 1,
              numPostPeriods = 1,
-             Mvec           = seq(from=-0.3, to=0.3, by=0.1))
+             Mvec           = seq(from=0, to=0.3, by=0.1))
 for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
     timer = Sys.time()
     print(do.call(createSensitivityResults, c(opts, list(method=meth))))
@@ -195,7 +195,7 @@ opts <- list(betahat        = BCdata_EventStudy$betahat,
              sigma          = BCdata_EventStudy$sigma,
              numPrePeriods  = BC_numPrePeriods + BC_numPostPeriods - 1,
              numPostPeriods = 1,
-             Mbarvec        = seq(from=-2, to=2, by=0.5))
+             Mbarvec        = seq(from=0, to=2, by=0.5))
 for (meth in c("Conditional", "C-LF")) {
     timer = Sys.time()
     print(do.call(createSensitivityResults_relativeMagnitudes, c(opts, list(method=meth))))

@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.4 29Aug2022}{...}
+{* *! version 0.4.5 30Aug2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -38,12 +38,12 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b){p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
 {synopt :{opt l_vec(str)}} name of vector with parameters of interest (default is first period post event){p_end}
-{synopt :{opt mvec(str)}} either name of vector with M values or number list of M values{p_end}
-{synopt :{opth grid_lb(real)}} lower bound for grid search (ignored with FLCI); default is selected internally based on estimates {p_end}
-{synopt :{opth grid_ub(real)}} upper bound for grid search (ignored with FLCI); default is selected internally based on estimates {p_end}
-{synopt :{opt gridPoints(str)}} number of grid points for search; default 1000 {p_end}
+{synopt :{opt mvec(str)}} either name of vector with M values or number list of M values (must be >= 0){p_end}
+{synopt :{opth grid_lb(real)}} lower bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}
+{synopt :{opth grid_ub(real)}} upper bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}
+{synopt :{opt gridPoints(str)}} number of grid points for search; default 1000{p_end}
 {synopt :{opth alpha(real)}} 1 - confidence level; default 0.05{p_end}
-{synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F  {p_end}
+{synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F{p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
@@ -61,7 +61,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {title:Example 1: Benzarti and Carloni (2019)}
 
 {pstd}
-Section 6.2 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the coefficients and variance-covariance matrix used below. The referenced {cmd:beta} and {cmd:sigma} objects only contain the entries corresponding to the event study coefficients. Now we construct robust confidence intervals for DeltaRM(Mbar). In the R Vignette, the test uses option bound set to "deviation from linear trend"; here only the analogue to "deviation from parallel trends" has been implemented.
+Section 6.2 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the coefficients and variance-covariance matrix used below. We load the stored estimates since the underlying microdata is not available; further note the referenced {cmd:beta} and {cmd:sigma} objects only contain the entries corresponding to the event study coefficients. Now we construct robust confidence intervals for DeltaRM(Mbar). In the R Vignette, the test uses option bound set to "deviation from linear trend"; here only the analogue to "deviation from parallel trends" has been implemented.
 
 {phang2}{cmd:. tempname beta sigma                                              }{p_end}
 {phang2}{cmd:. mata {c -(}                                                      }{p_end}
@@ -108,15 +108,15 @@ are computed or using the results cached in mata.
 {title:Example 2: Lovenheim and Willen (2019)}
 
 {pstd}
-Section 6.3 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the regression below, which is based on Equation (20) (also see p. 11 of the {browse "https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf":HonestDiD Vignette}). The data is the same one provided in the HonestDiD R package and can be downloaded by installing {cmd:honestdid} with the {cmd:all} option.
+Section 6.3 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft.pdf":Rambachan and Roth (2021)} explains the underlying event study specification for the regression below, which is based on Equation (20) (also see p. 11 of the {browse "https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf":HonestDiD Vignette}). The data is the same one provided in the HonestDiD R package and can be downloaded by installing {cmd:honestdid} with the {cmd:all} option. Since the data is available, we run the regression using {cmd:reghdfe} and then use the resulting estimates.
 
 {phang2}{cmd:. use LWdata_RawData.dta, clear           }{p_end}
 {phang2}{cmd:. mata stata(_honestExampleLWCall())      }{p_end}
 {phang2}{cmd:. honestdid, pre(1/9) post(10/32) coefplot}{p_end}
 
 {pstd}
-This required the user package {cmd:reghdfe}. First, you can see
-that we did not need to specify the coefficient vector or the
+(As noted above, this requires the user package {cmd:reghdfe}.) Note
+we did not need to specify the coefficient vector or the
 variance-covariance vector, and instead the function took the stored
 results {cmd:e(b)} and {cmd:e(V)} from {cmd:reghdfe} to do the
 computations. Further, the coefficient plot was created using the
