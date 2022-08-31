@@ -67,8 +67,10 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+
     results = HonestDiDParse(b, V, reference, pre, post, l_vec, Mvec, alpha,
                              method, debug, rm, grid_lb, grid_ub, gridPoints)
+
     results.Results = HonestSensitivityResults(results, results.options)
     results.OG      = HonestOriginalCS(results, results.options)
     results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)

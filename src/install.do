@@ -1,4 +1,4 @@
-shell make all `0'
+* shell make all `0'
 cap noi ado uninstall honestdid
 mata: mata clear
 mata: mata set matastrict on
@@ -16,6 +16,7 @@ cap noi erase src/build/lhonestdid.mlib
     do src/mata/deltasd.mata
     do src/mata/deltarm.mata
     do src/mata/honestdid.mata
+    do src/mata/honestparallel.mata
 }
 mata: mata mlib create lhonestdid, dir("src/build") replace
 mata: mata mlib add lhonestdid Honest*() _honest*() _flci*() OSQP*() ECOS*(), dir("src/build") complete

@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.5 30Aug2022}{...}
+{* *! version 0.4.6 31Aug2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -45,6 +45,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opth alpha(real)}} 1 - confidence level; default 0.05{p_end}
 {synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F{p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
+{synopt :{opt parallel(int)}} number of cores for parallel execution (default 4 if {cmd:parallel} is installed){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
 
