@@ -1,4 +1,4 @@
-* shell make all `0'
+shell make all `0'
 cap noi ado uninstall honestdid
 mata: mata clear
 mata: mata set matastrict on

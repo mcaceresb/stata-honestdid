@@ -2,9 +2,7 @@ library(lfe)
 library(HonestDiD)
 data(BCdata_EventStudy)
 data(LWdata_EventStudy)
-# source('~/projects/ra/roth/honestDiD/references/HonestDiD/R/arp-nuisance.R')
 # Rscript --no-save --no-restore --verbose test/unit-tests-consistency.R > test/unit-tests-consistency.R.log 2>&1
-
 
 BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
@@ -199,6 +197,5 @@ opts <- list(betahat        = BCdata_EventStudy$betahat,
 for (meth in c("Conditional", "C-LF")) {
     timer = Sys.time()
     print(do.call(createSensitivityResults_relativeMagnitudes, c(opts, list(method=meth))))
-    print(results)
     print(Sys.time() - timer)
 }
