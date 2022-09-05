@@ -1,0 +1,1599 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdi
+> d/test/unit-tests-consistency-parallel.do.log
+  log type:  text
+ opened on:   5 Sep 2022, 14:57:45
+
+. set rmsg on
+r; t=0.00 14:57:45
+
+. tempname beta sigma
+r; t=0.00 14:57:45
+
+. mata {
+>     st_matrix(st_local("beta"),  _honestExampleBCBeta())
+>     st_matrix(st_local("sigma"), _honestExampleBCSigma())
+> }
+r; t=0.02 14:57:45
+
+. 
+. * Base relative magnitudes comparison
+. honestdid, reference(4) b(`beta') vcov(`sigma')
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 5inoyat7x1
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.2222 |  0.143 |  0.248 | 
+|  0.4444 |  0.124 |  0.266 | 
+|  0.6667 |  0.101 |  0.287 | 
+|  0.8889 |  0.079 |  0.308 | 
+|  1.1111 |  0.056 |  0.329 | 
+|  1.3333 |  0.032 |  0.351 | 
+|  1.5556 |  0.008 |  0.375 | 
+|  1.7778 | -0.016 |  0.379 | (+)
+|  2.0000 | -0.041 |  0.379 | (+)
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
+(+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=16.95 14:58:02
+
+. 
+. mata st_matrix("l_vec", _honestBasis(1, 4))
+r; t=0.00 14:58:02
+
+. mata st_matrix("l_alt", _honestBasis(3, 4))
+r; t=0.00 14:58:02
+
+. local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_vec)
+r; t=0.00 14:58:02
+
+. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 2b8vmhe9d3
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.172 |  0.232 | 
+|  0.5000 |  0.131 |  0.253 | 
+|  1.0000 |  0.071 |  0.313 | 
+|  1.5000 |  0.030 |  0.354 | 
+|  2.0000 | -0.030 |  0.414 | 
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
+r; t=4.64 14:58:07
+
+. honestdid, reference(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : hjooup5tj5
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.172 |  0.232 | 
+|  0.5000 |  0.131 |  0.253 | 
+|  1.0000 |  0.071 |  0.313 | 
+|  1.5000 |  0.030 |  0.354 | 
+|  2.0000 | -0.030 |  0.414 | 
+(method = Conditional, Delta = DeltaRM, alpha = 0.050)
+r; t=2.68 14:58:09
+
+. 
+. local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_alt)
+r; t=0.00 14:58:09
+
+. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 4s9x7zylu7
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.212 |  0.273 | 
+|  0.5000 |  0.071 |  0.414 | 
+|  1.0000 | -0.091 |  0.576 | 
+|  1.5000 | -0.253 |  0.737 | 
+|  2.0000 | -0.434 |  0.919 | 
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
+r; t=9.36 14:58:19
+
+. honestdid, reference(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 2kep1wbun9
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.212 |  0.273 | 
+|  0.5000 |  0.071 |  0.414 | 
+|  1.0000 | -0.091 |  0.576 | 
+|  1.5000 | -0.253 |  0.737 | 
+|  2.0000 | -0.434 |  0.919 | 
+(method = Conditional, Delta = DeltaRM, alpha = 0.050)
+r; t=4.72 14:58:24
+
+. 
+. * Base non-rm comparison
+. honestdid, reference(4) b(`beta') vcov(`sigma') delta(sd)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 8aw9vbe411
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.131 |  0.216 | 
+|  0.0225 |  0.183 |  0.327 | 
+|  0.0449 |  0.174 |  0.363 | 
+|  0.0674 |  0.152 |  0.386 | 
+|  0.0899 |  0.130 |  0.408 | 
+|  0.1123 |  0.107 |  0.431 | 
+|  0.1348 |  0.085 |  0.453 | 
+|  0.1572 |  0.062 |  0.476 | 
+|  0.1797 |  0.040 |  0.498 | 
+|  0.2022 |  0.017 |  0.521 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=1.06 14:58:25
+
+. 
+. local opts mvec(0(0.1)0.3) l_vec(l_vec)
+r; t=0.00 14:58:25
+
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) metho
+> d(`meth')
+  3. }
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : zex7214c13
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.131 |  0.216 | 
+|  0.1000 |  0.119 |  0.419 | 
+|  0.2000 |  0.019 |  0.519 | 
+|  0.3000 | -0.081 |  0.619 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : zex7214c15
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.210 |  0.328 | 
+|  0.1000 |  0.120 |  0.418 | 
+|  0.2000 |  0.020 |  0.518 | 
+|  0.3000 | -0.080 |  0.618 | 
+(method = Conditional, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : vrk9c7ce17
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.206 |  0.234 | 
+|  0.1000 |  0.119 |  0.419 | 
+|  0.2000 |  0.020 |  0.518 | 
+|  0.3000 | -0.080 |  0.618 | 
+(method = C-F, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : opi9zvq119
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.159 |  0.233 | (Original)
+|  0.0000 |  0.210 |  0.328 | 
+|  0.1000 |  0.120 |  0.419 | 
+|  0.2000 |  0.019 |  0.519 | 
+|  0.3000 | -0.081 |  0.618 | 
+(method = C-LF, Delta = DeltaSD, alpha = 0.050)
+r; t=9.59 14:58:34
+
+. 
+. local opts mvec(0(0.1)0.3) l_vec(l_alt)
+r; t=0.00 14:58:34
+
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) metho
+> d(`meth')
+  3. }
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : jnsil87y21
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.144 |  0.260 | 
+|  0.1000 | -0.244 |  1.161 | 
+|  0.2000 | -0.844 |  1.761 | 
+|  0.3000 | -1.444 |  2.361 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : korz87ob23
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.337 |  0.442 | (+)
+|  0.1000 | -0.243 |  1.042 | (+)
+|  0.2000 | -0.843 |  1.642 | (+)
+|  0.3000 | -1.443 |  2.242 | (+)
+(method = Conditional, Delta = DeltaSD, alpha = 0.050)
+(+) CI is open at upper endpoint; CI length may not be accurate.
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : j4vz8gfu25
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.270 |  0.286 | 
+|  0.1000 | -0.242 |  1.160 | 
+|  0.2000 | -0.842 |  1.759 | 
+|  0.3000 | -1.443 |  2.360 | 
+(method = C-F, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : lvtgnfoa27
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.196 |  0.283 | (Original)
+|  0.0000 |  0.339 |  0.442 | (+)
+|  0.1000 | -0.243 |  1.042 | (+)
+|  0.2000 | -0.843 |  1.642 | (+)
+|  0.3000 | -1.443 |  2.242 | (+)
+(method = C-LF, Delta = DeltaSD, alpha = 0.050)
+(+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=7.85 14:58:42
+
+. 
+. * Large non-rm comparison
+. * -----------------------
+. 
+. use test/LWdata_RawData.dta, clear
+r; t=0.01 14:58:42
+
+. mata stata(_honestExampleLWCall())
+(MWFE estimator converged in 4 iterations)
+
+HDFE Linear regression                            Number of obs   =  2,071,260
+Absorbing 3 HDFE groups                           F(  40,     49) =      48.42
+Statistics robust to heteroskedasticity           Prob > F        =     0.0000
+                                                  R-squared       =     0.5134
+                                                  Adj R-squared   =     0.5133
+                                                  Within R-sq.    =     0.0240
+Number of clusters (BIRTHSTATE) =         50      Root MSE        =     0.0299
+
+                            (Std. Err. adjusted for 50 clusters in BIRTHSTATE)
+------------------------------------------------------------------------------
+             |               Robust
+         emp |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     rtESV13 |   .0218326   .0150761     1.45   0.154    -.0084639    .0521292
+     rtESV14 |   .0155924   .0163458     0.95   0.345    -.0172557    .0484405
+     rtESV15 |    .002349   .0100346     0.23   0.816    -.0178162    .0225143
+     rtESV16 |    .009295   .0080027     1.16   0.251     -.006787    .0253769
+     rtESV17 |   .0080775   .0046505     1.74   0.089    -.0012679     .017423
+     rtESV18 |   .0096308   .0051837     1.86   0.069    -.0007862    .0200478
+     rtESV19 |   .0014553   .0043947     0.33   0.742    -.0073762    .0102868
+    rtESV110 |  -.0034589   .0051169    -0.68   0.502    -.0137418     .006824
+    rtESV111 |  -.0046198   .0020348    -2.27   0.028     -.008709   -.0005307
+    rtESV113 |  -.0047816   .0038844    -1.23   0.224    -.0125876    .0030244
+    rtESV114 |   -.009562   .0045469    -2.10   0.041    -.0186994   -.0004246
+    rtESV115 |  -.0136362   .0040365    -3.38   0.001     -.021748   -.0055245
+    rtESV116 |  -.0131881   .0048604    -2.71   0.009    -.0229554   -.0034208
+    rtESV117 |  -.0117635   .0050816    -2.31   0.025    -.0219754   -.0015517
+    rtESV118 |  -.0140831   .0051842    -2.72   0.009    -.0245011   -.0036652
+    rtESV119 |  -.0085938   .0051869    -1.66   0.104    -.0190174    .0018298
+    rtESV120 |  -.0124379   .0057466    -2.16   0.035    -.0239862   -.0008895
+    rtESV121 |   -.013811   .0049909    -2.77   0.008    -.0238405   -.0037814
+    rtESV122 |   -.013069   .0054242    -2.41   0.020    -.0239693   -.0021686
+    rtESV123 |  -.0152452   .0054238    -2.81   0.007    -.0261448   -.0043456
+    rtESV124 |  -.0162461   .0052979    -3.07   0.004    -.0268926   -.0055995
+    rtESV125 |  -.0171394   .0056009    -3.06   0.004    -.0283949   -.0058839
+    rtESV126 |  -.0249014   .0062585    -3.98   0.000    -.0374783   -.0123246
+    rtESV127 |  -.0242801   .0062522    -3.88   0.000    -.0368443   -.0117158
+    rtESV128 |  -.0246493   .0071115    -3.47   0.001    -.0389404   -.0103582
+    rtESV129 |  -.0315922   .0062608    -5.05   0.000    -.0441737   -.0190108
+    rtESV130 |  -.0296503   .0066966    -4.43   0.000    -.0431077   -.0161929
+    rtESV131 |  -.0326207   .0071235    -4.58   0.000    -.0469358   -.0183055
+    rtESV132 |  -.0331873   .0074197    -4.47   0.000    -.0480978   -.0182769
+    rtESV133 |  -.0327007   .0079775    -4.10   0.000    -.0487321   -.0166693
+    rtESV134 |  -.0312616   .0091758    -3.41   0.001     -.049701   -.0128222
+    rtESV135 |  -.0354356   .0091431    -3.88   0.000    -.0538093    -.017062
+   yearsfcor |  -.0014109   .0003749    -3.76   0.000    -.0021642   -.0006576
+    yearsflr |  -.0003817   .0004227    -0.90   0.371    -.0012312    .0004678
+      aveitc |   .0435799   .0199526     2.18   0.034     .0034836    .0836762
+   fscontrol |  -.1424124    .083087    -1.71   0.093     -.309382    .0245573
+       asian |   .1729234   .0504397     3.43   0.001      .071561    .2742857
+       black |  -.0289535   .0202055    -1.43   0.158     -.069558    .0116509
+    hispanic |    .010012   .0298186     0.34   0.738    -.0499107    .0699347
+       other |  -.1014796   .0319118    -3.18   0.003    -.1656087   -.0373505
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+---------------------------------------------------------------------+
+                 Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-----------------------------+---------------------------------------|
+             PUS_SURVEY_YEAR |         8           1           7     |
+                  BIRTHSTATE |        50          50           0    *|
+   PUS_SURVEY_YEAR#BIRTHYEAR |       120           8         112     |
+---------------------------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+r; t=0.52 14:58:43
+
+. matrix b = 100 * e(b)
+r; t=0.00 14:58:43
+
+. matrix V = 100^2 * e(V) * 1.038349
+r; t=0.00 14:58:43
+
+. mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
+r; t=0.00 14:58:43
+
+. mata st_matrix("l_alt", _honestBasis(15 - (-1), 23))
+r; t=0.00 14:58:43
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : ydwqtxff29
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -1.254 |  0.298 | (Original)
+|  0.0000 |  0.794 |  1.762 | 
+|  0.4432 | -2.253 |  0.193 | 
+|  0.8863 | -2.678 |  0.759 | 
+|  1.3295 | -3.107 |  1.227 | 
+|  1.7726 | -3.551 |  1.670 | 
+|  2.2158 | -3.994 |  2.113 | 
+|  2.6590 | -4.437 |  2.557 | 
+|  3.1021 | -4.880 |  3.000 | 
+|  3.5453 | -5.323 |  3.443 | 
+|  3.9884 | -5.766 |  3.886 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=1.09 14:58:44
+
+. 
+. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
+r; t=0.00 14:58:44
+
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
+  3. }
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : w4mxehpb31
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -4.410 | -1.909 | (Original)
+|  0.0000 |  3.878 |  8.342 | 
+|  0.0050 |  2.124 |  8.178 | 
+|  0.0100 | -0.083 |  8.194 | 
+|  0.0150 | -2.382 |  8.036 | 
+|  0.0200 | -4.942 |  7.514 | 
+|  0.0250 | -8.120 |  6.236 | 
+|  0.0300 | -10.555 |  5.558 | 
+|  0.0350 | -12.772 |  5.047 | 
+|  0.0400 | -14.104 |  5.390 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 9vhkwfdw33
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -4.410 | -1.909 | (Original)
+|  0.0000 | -12.759 | -3.947 | (-)
+|  0.0050 | -13.524 | -3.371 | (-)
+|  0.0100 | -14.289 | -2.761 | (-)
+|  0.0150 | -15.054 | -2.125 | (-)
+|  0.0200 | -15.819 | -1.473 | (-)
+|  0.0250 | -16.584 | -0.813 | (-)
+|  0.0300 | -17.349 | -0.156 | (-)
+|  0.0350 | -18.114 |  0.562 | (-)
+|  0.0400 | -18.879 |  1.266 | (-)
+(method = Conditional, Delta = DeltaSD, alpha = 0.050)
+(-) CI is open at lower endpoint; CI length may not be accurate.
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : o9xtbvq735
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -4.410 | -1.909 | (Original)
+|  0.0000 |  2.920 |  3.208 | 
+|  0.0050 |  1.418 |  1.811 | 
+|  0.0100 | -0.374 |  0.202 | 
+|  0.0150 | -2.173 | -1.234 | 
+|  0.0200 | -4.003 | -1.300 | 
+|  0.0250 | -5.894 | -0.636 | 
+|  0.0300 | -7.892 |  0.031 | 
+|  0.0350 | -10.082 |  0.732 | 
+|  0.0400 | -12.632 |  1.419 | 
+(method = C-F, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : uhg44vyx37
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -4.410 | -1.909 | (Original)
+|  0.0000 | -12.759 | -3.895 | (-)
+|  0.0050 | -13.524 | -3.290 | (-)
+|  0.0100 | -14.289 | -2.675 | (-)
+|  0.0150 | -15.054 | -2.034 | (-)
+|  0.0200 | -15.819 | -1.378 | (-)
+|  0.0250 | -16.584 | -0.714 | (-)
+|  0.0300 | -17.349 | -0.052 | (-)
+|  0.0350 | -18.114 |  0.671 | (-)
+|  0.0400 | -18.879 |  1.342 | (-)
+(method = C-LF, Delta = DeltaSD, alpha = 0.050)
+(-) CI is open at lower endpoint; CI length may not be accurate.
+r; t=54.14 14:59:38
+
+. 
+. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_alt)
+r; t=0.00 14:59:38
+
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
+  3. }
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : cbn9eh4239
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -3.885 | -1.045 | (Original)
+|  0.0000 |  4.686 |  9.223 | 
+|  0.0050 |  3.014 |  8.949 | 
+|  0.0100 |  0.869 |  8.837 | 
+|  0.0150 | -1.358 |  8.565 | 
+|  0.0200 | -3.848 |  7.923 | 
+|  0.0250 | -6.967 |  6.513 | 
+|  0.0300 | -9.085 |  5.979 | 
+|  0.0350 | -11.254 |  5.345 | 
+|  0.0400 | -12.416 |  5.686 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : y4xjchot41
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -3.885 | -1.045 | (Original)
+|  0.0000 | -14.493 | -3.090 | (-)
+|  0.0050 | -15.173 | -2.567 | (-)
+|  0.0100 | -15.853 | -2.015 | (-)
+|  0.0150 | -16.533 | -1.473 | (-)
+|  0.0200 | -17.213 | -0.913 | (-)
+|  0.0250 | -17.893 | -0.304 | (-)
+|  0.0300 | -18.573 |  0.279 | (-)
+|  0.0350 | -19.253 |  0.867 | (-)
+|  0.0400 | -19.933 |  1.496 | (-)
+(method = Conditional, Delta = DeltaSD, alpha = 0.050)
+(-) CI is open at lower endpoint; CI length may not be accurate.
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : atkx84yn43
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -3.885 | -1.045 | (Original)
+|  0.0000 |  3.705 |  4.017 | 
+|  0.0050 |  2.283 |  2.689 | 
+|  0.0100 |  0.572 |  1.153 | 
+|  0.0150 | -1.146 | -0.229 | 
+|  0.0200 | -2.895 | -0.735 | 
+|  0.0250 | -4.706 | -0.158 | 
+|  0.0300 | -6.626 |  0.439 | 
+|  0.0350 | -8.741 |  1.052 | 
+|  0.0400 | -11.146 |  1.676 | 
+(method = C-F, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : wn8taezy45
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . | -3.885 | -1.045 | (Original)
+|  0.0000 | -14.493 | -3.032 | (-)
+|  0.0050 | -15.173 | -2.506 | (-)
+|  0.0100 | -15.853 | -1.952 | (-)
+|  0.0150 | -16.533 | -1.407 | (-)
+|  0.0200 | -17.213 | -0.810 | (-)
+|  0.0250 | -17.893 | -0.233 | (-)
+|  0.0300 | -18.573 |  0.353 | (-)
+|  0.0350 | -19.253 |  0.983 | (-)
+|  0.0400 | -19.933 |  1.616 | (-)
+(method = C-LF, Delta = DeltaSD, alpha = 0.050)
+(-) CI is open at lower endpoint; CI length may not be accurate.
+r; t=57.30 15:00:35
+
+. 
+. * One post-period
+. * ---------------
+. 
+. local opts mvec(0(0.1)0.3) delta(sd) reference(7)
+r; t=0.00 15:00:35
+
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
+  3. }
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 5qognjfs47
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 | -0.182 | -0.106 | 
+|  0.1000 |  0.192 |  0.539 | 
+|  0.2000 |  0.092 |  0.639 | 
+|  0.3000 | -0.008 |  0.739 | 
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : xwsxv5so49
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 |  0.080 |  0.130 | 
+|  0.1000 |  0.100 |  0.623 | 
+|  0.2000 |  0.079 |  0.659 | 
+|  0.3000 | -0.008 |  0.741 | 
+(method = Conditional, Delta = DeltaSD, alpha = 0.050)
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : xwsxv5so51
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 | -0.092 | -0.090 | (+)
+|  0.1000 |  0.150 |  0.581 | (-)
+|  0.2000 |  0.081 |  0.656 | 
+|  0.3000 | -0.008 |  0.741 | 
+(method = C-F, Delta = DeltaSD, alpha = 0.050)
+(-) CI is open at lower endpoint; CI length may not be accurate.
+(+) CI is open at upper endpoint; CI length may not be accurate.
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : 5xsz78tq53
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 |      . |      . | 
+|  0.1000 |  0.117 |  0.614 | 
+|  0.2000 |  0.078 |  0.662 | 
+|  0.3000 | -0.009 |  0.743 | 
+(method = C-LF, Delta = DeltaSD, alpha = 0.050)
+r; t=2.70 15:00:38
+
+. 
+. local opts mvec(0(0.5)2) delta(rm) reference(7)
+r; t=0.00 15:00:38
+
+. foreach meth in Conditional C-LF {
+  2.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
+  3. }
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : zjuhy6in55
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 | -0.293 |  0.550 | 
+|  0.5000 | -0.295 |  0.418 | 
+|  1.0000 | -0.316 |  0.454 | 
+|  1.5000 | -0.365 |  0.552 | (+)
+|  2.0000 | -0.459 |  0.552 | (+)
+(method = Conditional, Delta = DeltaRM, alpha = 0.050)
+(+) CI is open at upper endpoint; CI length may not be accurate.
+Warning: M = 0 with Delta^RM imposes exact parallel trends in the
+post-treatment period, even if pre-treatment parallel trends is violated
+-------------------------------------------------------------------------------
+> -
+Exporting the following program(s): honestdid.HonestParallelWork
+
+honestdid.HonestParallelWork:
+  1.     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") 
+> ) local c_os_ macosx
+  2.     else local c_os_: di lower("`c(os)'")
+  3.     program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+  4.     program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+  5.     tempname results
+  6.     mata {
+  7.         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+  8.         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+  9.         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+ 10.     }
+-------------------------------------------------------------------------------
+> -
+-------------------------------------------------------------------------------
+Parallel Computing with Stata
+Child processes: 4
+pll_id         : w4o94z2a57
+Running at     : /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-hone
+> stdid
+Randtype       : datetime
+
+Waiting for the child processes to finish...
+child process 0001 has exited without error...
+child process 0002 has exited without error...
+child process 0003 has exited without error...
+child process 0004 has exited without error...
+-------------------------------------------------------------------------------
+Enter -parallel printlog #- to checkout logfiles.
+-------------------------------------------------------------------------------
+Note: -honestdid- runs -parallel clean- to delete files created by -parallel-
+-------------------------------------------------------------------------------
+
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.072 |  0.180 | (Original)
+|  0.0000 |  0.071 |  0.181 | 
+|  0.5000 | -0.031 |  0.306 | 
+|  1.0000 | -0.151 |  0.441 | 
+|  1.5000 | -0.278 |  0.552 | (+)
+|  2.0000 | -0.411 |  0.552 | (+)
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
+(+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=4.39 15:00:42
+
+. 
+end of do-file
+r; t=0.00 15:00:42

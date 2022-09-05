@@ -1,7 +1,7 @@
 * stata14-mp -b do test/unit-tests-consistency.do
 clear all
 log close _all
-log using test/unit-tests-consistency-xx.do.log, replace
+log using test/unit-tests-consistency.do.log, replace
 set rmsg on
 tempname beta sigma
 mata {
@@ -26,14 +26,16 @@ honestdid, reference(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 honestdid, reference(4) b(`beta') vcov(`sigma') delta(sd)
 
 local opts mvec(0(0.1)0.3) l_vec(l_vec)
-foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(`meth')
-}
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditional)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
 
 local opts mvec(0(0.1)0.3) l_vec(l_alt)
-foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(`meth')
-}
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditional)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+honestdid, reference(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
 
 * Large non-rm comparison
 * -----------------------
@@ -47,24 +49,26 @@ mata st_matrix("l_alt", _honestBasis(15 - (-1), 23))
 honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd)
 
 local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
-}
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
 
 local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_alt)
-foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
-}
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
 
 * One post-period
 * ---------------
 
 local opts mvec(0(0.1)0.3) delta(sd) reference(7)
-foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
-}
+honestdid, b(`beta') vcov(`sigma') `opts' method(FLCI)
+honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
+honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
+honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
 
 local opts mvec(0(0.5)2) delta(rm) reference(7)
-foreach meth in Conditional C-LF {
-    honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
-}
+honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
+honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
