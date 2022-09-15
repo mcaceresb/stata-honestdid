@@ -24,14 +24,20 @@ cap mata mata drop _honestPrintCI()
 * createSensitivityPlot_relativeMagnitudes()
 * createSensitivityResults_relativeMagnitudes()
 
-* b         = "`b'"
-* V         = "`vcov'"
-* reference = `referenceperiodindex'
-* pre       = "`preperiodindices'"
-* post      = "`postperiodindices'"
-* l_vec     = "`l_vec'"
-* Mvec      = "`mvec'"
-* alpha     = 0.05
+* b          = "`b'"
+* V          = "`vcov'"
+* reference  = `referenceperiodindex'
+* pre        = "`preperiodindices'"
+* post       = "`postperiodindices'"
+* l_vec      = "`l_vec'"
+* Mvec       = "`mvec'"
+* alpha      = `alpha'
+* method     = "`method'"
+* debug      = "`debug'"
+* rm         = `relativeMagnitudes'
+* grid_lb    = `grid_lb'
+* grid_ub    = `grid_ub'
+* gridPoints = `gridPoints'
 
 mata
 struct HonestEventStudy {
@@ -59,6 +65,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          real scalar alpha,
                                          string scalar method,
                                          string scalar debug,
+                                         string scalar omit,
                                          real scalar rm,
                                          real scalar grid_lb,
                                          real scalar grid_ub,
@@ -66,13 +73,33 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+    real vector selomit, sel
     real scalar Mub
-    real vector sel
+
+    stata(sprintf("_ms_omit_info %s", b))
+    selomit = selectindex(!editvalue(st_matrix("r(omit)"), omit == "", 0))
+    if ( omit != "" ) {
+        if ( rows(st_matrix(b)) > cols(st_matrix(b)) ) {
+            printf("-omit- requires b() to be a cow vector; option ignored\n")
+            omit    = ""
+            selomit = 1..length(st_matrix(b))
+        }
+    }
+
+    if ( rows(st_matrix(V)) != cols(st_matrix(V)) ) {
+        errprintf("vcov() is not a square matrix\n")
+        _error(198)
+    }
+
+    if ( max((rows(st_matrix(b)), cols(st_matrix(b)))) != rows(st_matrix(V)) ) {
+        errprintf("b() and vcov() not conformable\n")
+        _error(198)
+    }
 
     results = HonestEventStudy()
     if ( reference > 0 ) {
-        results.betahat = rowshape(st_matrix(b), 1)
-        results.sigma   = st_matrix(V)
+        results.betahat = rowshape(st_matrix(b), 1)[selomit]
+        results.sigma   = st_matrix(V)[selomit, selomit]
         results.prePeriodIndices  = 1..reference
         results.postPeriodIndices = (reference+1)..length(results.betahat)
     }
@@ -80,10 +107,11 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         results.prePeriodIndices  = strtoreal(tokens(pre))
         results.postPeriodIndices = strtoreal(tokens(post))
         sel = results.prePeriodIndices, results.postPeriodIndices
-        results.betahat = rowshape(st_matrix(b), 1)[sel]
-        results.sigma   = st_matrix(V)[sel, sel]
+        results.betahat = rowshape(st_matrix(b), 1)[selomit][sel]
+        results.sigma   = st_matrix(V)[selomit, selomit][sel, sel]
     }
 
+    options.omit               = (omit != "")
     options.debug              = debug != ""
     options.rm                 = rm
     options.relativeMagnitudes = rm? "rm": ""
