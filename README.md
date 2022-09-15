@@ -156,12 +156,10 @@ We are now ready to apply the HonestDiD package to do sensitivity
 analysis. Suppose we’re interested in assessing the sensitivity of
 the estimate for 2014, the first year after treatment. The `reference`
 option specifies the index before treatment. In this case there are 5
-pre-treatment periods and 2 post-treatment periods.
+pre-treatment periods and 2 post-treatment periods. `mvec()` specifies
+the values of $\bar{M}$.
 
 ```stata
-* pre  - num. of pre-treatment coefs
-* post - num. of post-treatment coefs
-* mbar - values of Mbar
 honestdid, reference(5) mvec(0.5(0.5)2) omit
 ```
 
