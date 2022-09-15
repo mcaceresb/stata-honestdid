@@ -18,12 +18,12 @@ means.
 to say that the violations of parallel trends in the post-treatment
 period cannot be much bigger than those in the pre-treatment period.
 This can be formalized by imposing that the post-treatment violation of
-parallel trends is no more than some constant <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" /> larger than the
+parallel trends is no more than some constant $\bar{M}$ larger than the
 maximum violation of parallel trends in the pre-treatment period. The
-value of <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" />$ = 1$, for instance, imposes that the post-treatment
+value of $\bar{M} = 1$, for instance, imposes that the post-treatment
 violation of parallel trends is no longer than the worst pre-treatment
 violation of parallel trends (between consecutive periods). Likewise,
-setting <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" />$ = 2$ implies that the post-treatment violation of
+setting $\bar{M} = 2$ implies that the post-treatment violation of
 parallel trends is no more than twice that in the pre-treatment period.
 
 **Smoothness restrictions.** A second way of formalizing this is to say
@@ -43,7 +43,7 @@ values of $M$ allow for more non-linearity.
 variety of other restrictions on the differences in trends as well. For
 example, the smoothness restrictions and relative magnitudes ideas can
 be combined to impose that the non-linearity in the post-treatment
-period is no more than <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" /> times larger than that in the
+period is no more than $\bar{M}$ times larger than that in the
 pre-treatment periods. The researcher can also impose monotonicity or
 sign restrictions on the differences in trends as well.
 
@@ -59,16 +59,16 @@ pre-trends.
 itself to sensitivity analysis. That is, the researcher can report
 confidence intervals under different assumptions about how bad the
 post-treatment violation of parallel trends can be (e.g., different
-values of <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" /> or $M$.) They can also report the "breakdown value"
-of <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" /> (or $M$) for a particular conclusion---e.g. the largest
-value of <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" /> for which the effect is still significant.
+values of $\bar{M}$ or $M$.) They can also report the "breakdown value"
+of $\bar{M}$ (or $M$) for a particular conclusion---e.g. the largest
+value of $\bar{M}$ for which the effect is still significant.
 
 ## Package installation
 
 The package may be installed by using `net install`:
 
 ```stata
-local github "https://raw.githubusercontent.com"
+local github https://raw.githubusercontent.com
 net install multe, from(`github'/mcaceresb/stata-honestdid/main) replace
 ```
 
@@ -80,11 +80,13 @@ derived from the ACS. We first load the data and packages relevant for
 the analysis.
 
 ```stata
-
-* Install here coefplot, ftools, reghdfe
-ssc install coefplot, replace
-ssc install ftools,   replace
-ssc install reghdfe,  replace
+* Install here coefplot, ftools, reghdfe, plot scheme
+local github https://raw.githubusercontent.com
+ssc install coefplot,      replace
+ssc install ftools,        replace
+ssc install reghdfe,       replace
+net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
+set scheme modern
 
 * Load data
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
@@ -122,8 +124,6 @@ dataset where some units are first treated in 2014 and the remaining
 units are not treated during the sample period. We can then estimate the
 effects of Medicaid expansion using a canonical two-way fixed effects
 event-study specification,
-
-<img src="https://latex.codecogs.com/svg.image?Y_%7Bit%7D%20=%20%5Calpha_i%20&plus;%20%5Clambda_t%20&plus;%20%5Csum_%7Bs%20%5Cne%202013%7D%201%5Bs%20=%20t%5D%20%5Ctimes%20D_i%20%5Ctimes%20%5Cbeta_s%20&plus;%20u_%7Bit%7D#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%5Ccolor%7Bwhite%7DY_%7Bit%7D%20=%20%5Calpha_i%20&plus;%20%5Clambda_t%20&plus;%20%5Csum_%7Bs%20%5Cne%202013%7D%201%5Bs%20=%20t%5D%20%5Ctimes%20D_i%20%5Ctimes%20%5Cbeta_s%20&plus;%20u_%7Bit%7D#gh-dark-mode-only" title="Mbar" />
 
 $$
 Y_{it} = \alpha_i + \lambda_t + \sum_{s \ne 2013} 1[s = t] \times D_i \times \beta_s + u_{it}
@@ -199,8 +199,8 @@ honestdid, b(b) vcov(V) pre(1/5) post(7/8) mvec(0.5(0.5)2)
 ```
 
 In all cases, the output of the `honestdid` command shows a robust
-confidence interval for different values of <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" />. We see that the
-"breakdown value" for a significant effect is <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" />$ \approx 2$,
+confidence interval for different values of $\bar{M}$. We see that the
+"breakdown value" for a significant effect is $\bar{M} \approx 2$,
 meaning that the significant result is robust to allowing for violations
 of parallel trends up to twice as big as the max violation in the
 pre-treatment period.
@@ -236,7 +236,7 @@ honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopt
 <!-- -->
 ![fig](doc/readme_deltasd_ex1.pdf)
 
-We see that the breakdown value for a significant effect is <img src="https://latex.codecogs.com/svg.image?%5Cbar%7BM%7D%20#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Cbar%7BM%7D%7D#gh-dark-mode-only" title="Mbar" />$ \approx 0.03$,
+We see that the breakdown value for a significant effect is $\bar{M} \approx 0.03$,
 meaning that we can reject a null effect unless we are willing to allow
 for the linear extrapolation across consecutive periods to be off by
 more than 0.03 percentage points.
@@ -248,7 +248,7 @@ period, which is the default in HonestDiD. If we are instead interested
 in the average over the two post-treatment periods, we can use the
 option `l_vec()`. More generally, the package accommodates inference on
 any scalar parameter of the form $\theta = l_{vec}'\tau_{post}$, where
-<img src="https://latex.codecogs.com/svg.image?%5Ctau_%7Bpost%7D%20=%20(%5Ctau_1,...,%5Ctau_%7B%5Cbar%7BT%7D%7D)'#gh-light-mode-only" title="Mbar" /> <img src="https://latex.codecogs.com/svg.image?%7B%5Ccolor%7Bwhite%7D%5Ctau_%7Bpost%7D%20=%20(%5Ctau_1,...,%5Ctau_%7B%5Cbar%7BT%7D%7D)'%7D#gh-dark-mode-only" title="Mbar" /> is the vector of dynamic
+$\tau_{post} = (\tau_1,...,\tau_{\bar{T}})'$ is the vector of dynamic
 treatment effects. Thus, for example, creating `matrix l_vec = 0 \ 1`
 and setting `l_vec(l_vec)` allows us to do inference on the effect for
 the second period after treatment.
