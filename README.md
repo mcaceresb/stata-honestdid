@@ -5,7 +5,7 @@ The HonestDiD package implements the tools for robust inference and
 sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 
-`version 0.4.5 30Aug2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage-medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 0.4.5 30Aug2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 
@@ -131,25 +131,147 @@ where $D$ is 1 if a unit is first treated in 2014 and 0 otherwise.
 
 
 ```stata
-local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
-use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
-
 * Keep years before 2016. Drop the 2016 cohort
 keep if (year < 2016) & (missing(yexp2) | (yexp2 != 2015))
 
 * Create a treatment dummy
-gen byte D = yexp2 == 2014
+gen byte D = (yexp2 == 2014)
+gen `:type year' Dyear = cond(D, year, 2013)
 
 * Run the TWFE spec
-reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
+reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips) noconstant
 
 local plotopts ytitle("Estimate and 95% Conf. Int.") title("Effect on dins")
 coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
 ```
 
+<!-- -->
+![fig](doc/readme_coefplot.pdf)
+
 ## Sensitivity analysis using relative magnitudes restrictions
 
-xx
+We are now ready to apply the HonestDiD package to do sensitivity
+analysis. Suppose we’re interested in assessing the sensitivity of
+the estimate for 2014, the first year after treatment. The `reference`
+option specifies the index before treatment. In this case there are 5
+pre-treatment periods and 2 post-treatment periods.
+
+```stata
+* pre  - num. of pre-treatment coefs
+* post - num. of post-treatment coefs
+* mbar - values of Mbar
+honestdid, reference(5) mvec(0.5(0.5)2) omit
+```
+
+```
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.029 |  0.064 | (Original)
+|  0.5000 |  0.024 |  0.067 |
+|  1.0000 |  0.017 |  0.072 |
+|  1.5000 |  0.008 |  0.080 |
+|  2.0000 | -0.001 |  0.088 |
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
+```
+
+Note the `omit` option specifies `honestdid` should ignore omitted
+regressors (in this case `2013` is included in the output but omitted
+from the regression). This can be specially useful if there are
+many omitted variables. For example,
+
+```stata
+reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
+honestdid, reference(5) mvec(0.5(0.5)2) omit
+```
+
+gives the same result. Finally, it is possible to specify the pre and
+post period indices manually or pass a custom vector:
+
+```stata
+reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips)
+honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2)
+
+matrix b = e(b)
+matrix V = e(V)
+honestdid, b(b) vcov(V) pre(1/5) post(7/8) mvec(0.5(0.5)2)
+```
+
+In all cases, the output of the `honestdid` command shows a robust
+confidence interval for different values of $\bar{M}$. We see that the
+"breakdown value" for a significant effect is $\bar{M} \approx 2$,
+meaning that the significant result is robust to allowing for violations
+of parallel trends up to twice as big as the max violation in the
+pre-treatment period.
+
+We can also visualize the sensitivity analysis using the `coefplot`
+option. We can pass the option at the time of the CI computation or we
+can use the last results from `honestdid` (which are cached in memory).
+
+```stata
+honestdid, coefplot cached
+```
+
+Additional options are passed to `coefplot`
+
+```stata
+local plotopts xtitle(Mbar) ytitle(95% Robust CI)
+honestdid, cached coefplot `plotopts'
+```
+
+<!-- -->
+![fig](doc/readme_deltarm_ex1.pdf)
+
+## Sensitivity Analysis Using Smoothness Restrictions
+
+We can also do a sensitivity analysis based on smoothness
+restrictions---i.e. imposing that the slope of the difference in trends
+changes by no more than $M$ between periods.
+
+```stata
+honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopts'
+```
+
+<!-- -->
+![fig](doc/readme_deltasd_ex1.pdf)
+
+We see that the breakdown value for a significant effect is $\bar{M} \approx 0.03$,
+meaning that we can reject a null effect unless we are willing to allow
+for the linear extrapolation across consecutive periods to be off by
+more than 0.03 percentage points.
+
+## Sensitivity Analysis for Average Effects or Other Periods
+
+So far we have focused on the effect for the first post-treatment
+period, which is the default in HonestDiD. If we are instead interested
+in the average over the two post-treatment periods, we can use the
+option `l_vec()`. More generally, the package accommodates inference on
+any scalar parameter of the form $\theta = l_{vec}'\tau_{post}$, where
+$\tau_{post} = (\tau_1,...,\tau_{\bar{T}})'$ is the vector of dynamic
+treatment effects. Thus, for example, creating `matrix l_vec = 0 \ 1`
+and setting `l_vec(l_vec)` allows us to do inference on the effect for
+the second period after treatment.
+
+```stata
+matrix l_vec = 0.5 \ 0.5
+honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
+```
+
+<!-- -->
+![fig](doc/readme_deltarm_ex2.pdf)
+
+## Staggered timing
+
+So far we have focused on a simple case without staggered
+timing.  Fortunately, the HonestDiD approach works well with
+recently-introduced methods for DiD under staggered treatment
+timing. Below, we show how the package can be used with the
+[did package](https://github.com/bcallaway11/did#difference-in-differences-)
+implementing Callaway and Sant’Anna. (See, also, the example on the
+did package [website](https://github.com/pedrohcgs/CS_RR)). We are
+hoping to more formally integrate the did and HonestDiD packages in the
+future---stay tuned!
+
+<!-- TODO: xx port this at some point -->
 
 ## Additional options and resources
 

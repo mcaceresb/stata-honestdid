@@ -43,6 +43,8 @@ mata `s(HonestEventStudy)'.options.grid_lb
 mata `s(HonestEventStudy)'.options.grid_ub
 mata `s(HonestEventStudy)'.options.gridPoints
 
+mata _honestPrintCI(`s(HonestEventStudy)')
+
 * For ease of use, the package also provides a way to plot the CIs
 * using the {cmd:coefplot} package. This can be done when the CIs
 * are computed or using the results cached in mata.
