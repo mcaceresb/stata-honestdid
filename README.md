@@ -233,6 +233,19 @@ changes by no more than $M$ between periods.
 honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopts'
 ```
 
+```
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.029 |  0.064 | (Original)
+|  0.0000 |  0.026 |  0.061 |
+|  0.0100 |  0.013 |  0.079 |
+|  0.0200 |  0.003 |  0.091 |
+|  0.0300 | -0.007 |  0.101 |
+|  0.0400 | -0.017 |  0.111 |
+|  0.0500 | -0.027 |  0.121 |
+(method = FLCI, Delta = DeltaSD, alpha = 0.050)
+```
+
 <!-- -->
 ![fig](doc/readme_deltasd_ex1.png)
 
@@ -256,6 +269,18 @@ the second period after treatment.
 ```stata
 matrix l_vec = 0.5 \ 0.5
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
+```
+
+```
+|    M    |   lb   |   ub   |
+| ------- | ------ | ------ |
+|       . |  0.040 |  0.075 | (Original)
+|  0.0000 |  0.029 |  0.064 |
+|  0.5000 |  0.024 |  0.067 |
+|  1.0000 |  0.017 |  0.072 |
+|  1.5000 |  0.008 |  0.080 |
+|  2.0000 | -0.001 |  0.088 |
+(method = C-LF, Delta = DeltaRM, alpha = 0.050)
 ```
 
 <!-- -->
