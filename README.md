@@ -148,7 +148,7 @@ coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
 ```
 
 <!-- -->
-![fig](doc/readme_coefplot.pdf)
+![fig](doc/readme_coefplot.png)
 
 ## Sensitivity analysis using relative magnitudes restrictions
 
@@ -221,7 +221,7 @@ honestdid, cached coefplot `plotopts'
 ```
 
 <!-- -->
-![fig](doc/readme_deltarm_ex1.pdf)
+![fig](doc/readme_deltarm_ex1.png)
 
 ## Sensitivity Analysis Using Smoothness Restrictions
 
@@ -234,7 +234,7 @@ honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopt
 ```
 
 <!-- -->
-![fig](doc/readme_deltasd_ex1.pdf)
+![fig](doc/readme_deltasd_ex1.png)
 
 We see that the breakdown value for a significant effect is $\bar{M} \approx 0.03$,
 meaning that we can reject a null effect unless we are willing to allow
@@ -259,7 +259,7 @@ honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts
 ```
 
 <!-- -->
-![fig](doc/readme_deltarm_ex2.pdf)
+![fig](doc/readme_deltarm_ex2.png)
 
 ## Staggered timing
 
