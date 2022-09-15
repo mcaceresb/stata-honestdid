@@ -65,10 +65,7 @@ value of $\bar{M}$ for which the effect is still significant.
 
 ## Package installation
 
-The package may be installed by using the function `install_github()`
-from the `remotes` package:
-
-For now, you can change directory to the standalone sub-folder and test out honestdid from there.
+The package may be installed by using `net install`:
 
 ```stata
 local github "https://raw.githubusercontent.com"
@@ -81,6 +78,78 @@ As an illustration of the package, we will examine the effects of
 Medicaid expansions on insurance coverage using publicly-available data
 derived from the ACS. We first load the data and packages relevant for
 the analysis.
+
+```stata
+
+* Install here coefplot, ftools, reghdfe
+ssc install coefplot, replace
+ssc install ftools,   replace
+ssc install reghdfe,  replace
+
+* Load data
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+l in 1/5
+```
+
+```
+     +--------------------------------------------+
+     |  stfips   year       dins   yexp2        W |
+     |--------------------------------------------|
+  1. | alabama   2008   .6814122       .   613156 |
+  2. | alabama   2009   .6580621       .   613156 |
+  3. | alabama   2010   .6313651       .   613156 |
+  4. | alabama   2011   .6563886       .   613156 |
+  5. | alabama   2012   .6708115       .   613156 |
+     +--------------------------------------------+
+```
+
+The data is a state-level panel with information on health insurance
+coverage and Medicaid expansion. The variable `dins` shows the share of
+low-income childless adults with health insurance in the state. The
+variable `yexp2` gives the year that a state expanded Medicaid coverage
+under the Affordable Care Act, and is missing if the state never
+expanded.
+
+### Estimate the baseline DiD
+
+For simplicity, we will first focus on assessing sensitivity to
+violations of parallel trends in a non-staggered DiD (see below
+regarding methods for staggered timing). We therefore restrict the
+sample to the years 2015 and earlier, and drop the small number of
+states who are first treated in 2015. We are now left with a panel
+dataset where some units are first treated in 2014 and the remaining
+units are not treated during the sample period. We can then estimate the
+effects of Medicaid expansion using a canonical two-way fixed effects
+event-study specification,
+
+$$
+Y_{it} = \alpha_i + \lambda_t + \sum_{s \ne 2013} 1[s = t] \times D_i \times \beta_s + u_{it}
+$$
+
+where $D$ is 1 if a unit is first treated in 2014 and 0 otherwise.
+
+
+```stata
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+
+* Keep years before 2016. Drop the 2016 cohort
+keep if (year < 2016) & (missing(yexp2) | (yexp2 != 2015))
+
+* Create a treatment dummy
+gen byte D = yexp2 == 2014
+
+* Run the TWFE spec
+reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
+
+local plotopts ytitle("Estimate and 95% Conf. Int.") title("Effect on dins")
+coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
+```
+
+## Sensitivity analysis using relative magnitudes restrictions
+
+xx
 
 ## Additional options and resources
 
