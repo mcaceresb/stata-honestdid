@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.5 30Aug2022}{...}
+{* *! version 0.4.6 15Sep2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -37,6 +37,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opt delta(str)}} delta to use: rm (for relative magnitudes) or sd (second differences){p_end}
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b){p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
+{synopt :{opt omit}} omit dropped levels from {cmd:b} and {cmd:vcov} parsing names of {cmd:b} (e.g. omitted variables in regression) {p_end}
 {synopt :{opt l_vec(str)}} name of vector with parameters of interest (default is first period post event){p_end}
 {synopt :{opt mvec(str)}} either name of vector with M values or number list of M values (must be >= 0){p_end}
 {synopt :{opth grid_lb(real)}} lower bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}

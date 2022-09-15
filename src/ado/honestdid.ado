@@ -1,4 +1,4 @@
-*! version 0.4.5 30Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.4.6 15Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -26,6 +26,7 @@ program honestdid, sclass
         gridPoints(str)                    /// Number of grid points
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
+        omit                               /// Omit levels parsing b vector column names
         delta(str)                         /// Delta to use (rm for relative magnitudes or sd)
         REFERENCEperiodindex(int 0)        /// index for the reference period
         PREperiodindices(numlist)          /// pre-period indices
@@ -126,6 +127,7 @@ program honestdid, sclass
                                   `alpha',                ///
                                   "`method'",             ///
                                   "`debug'",              ///
+                                  "`omit'",               ///
                                   `relativeMagnitudes',   ///
                                   `grid_lb',              ///
                                   `grid_ub',              ///
