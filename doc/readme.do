@@ -41,11 +41,11 @@ honestdid, coefplot cached
 
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, cached coefplot `plotopts'
-graph export doc/readme_deltarm_ex1.png, replace
+graph export doc/readme_deltarm_ex1.png, replace width(1600)
 
 honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopts'
-graph export doc/readme_deltasd_ex1.png, replace
+graph export doc/readme_deltasd_ex1.png, replace width(1600)
 
 matrix l_vec = 0.5 \ 0.5
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
-graph export doc/readme_deltarm_ex2.png, replace
+graph export doc/readme_deltarm_ex2.png, replace width(1600)
