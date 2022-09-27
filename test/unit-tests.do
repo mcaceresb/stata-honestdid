@@ -1,5 +1,7 @@
 version 14.1
 
+* qui do doc/examples.do
+* qui do doc/readme.do
 * qui do test/unit-tests-consistency.do
 qui do test/unit-tests-basic.do
 
@@ -14,35 +16,35 @@ program main
 
     unit_test basic_failures
 
-    unit_test basic_checks, delta(sd) reference(4) method(FLCI)
-    unit_test basic_checks, delta(sd) reference(4) method(C-F)
+    unit_test basic_checks, delta(sd) numpre(4) method(FLCI)
+    unit_test basic_checks, delta(sd) numpre(4) method(C-F)
     forvalues i = 0 / 2 {
-        unit_test basic_checks, delta(sd) reference(4) l_vec(l_vec`i') method(FLCI)
-        unit_test basic_checks, delta(sd) reference(4) l_vec(l_vec`i') method(C-F)
+        unit_test basic_checks, delta(sd) numpre(4) l_vec(l_vec`i') method(FLCI)
+        unit_test basic_checks, delta(sd) numpre(4) l_vec(l_vec`i') method(C-F)
     }
-    unit_test basic_checks, delta(sd) reference(1) method(FLCI)
-    unit_test basic_checks, delta(sd) reference(1) method(C-F)
-    unit_test basic_checks, delta(sd) reference(7) method(FLCI)
-    unit_test basic_checks, delta(sd) reference(7) method(C-F)
+    unit_test basic_checks, delta(sd) numpre(1) method(FLCI)
+    unit_test basic_checks, delta(sd) numpre(1) method(C-F)
+    unit_test basic_checks, delta(sd) numpre(7) method(FLCI)
+    unit_test basic_checks, delta(sd) numpre(7) method(C-F)
     forvalues i = 3 / 4 {
-        unit_test basic_checks, delta(sd) reference(1) l_vec(l_vec`i') method(FLCI)
-        unit_test basic_checks, delta(sd) reference(1) l_vec(l_vec`i') method(C-F)
+        unit_test basic_checks, delta(sd) numpre(1) l_vec(l_vec`i') method(FLCI)
+        unit_test basic_checks, delta(sd) numpre(1) l_vec(l_vec`i') method(C-F)
     }
 
     foreach rm in delta(sd) delta(rm) {
-        unit_test basic_checks, `rm' reference(4) method(Conditional)
-        unit_test basic_checks, `rm' reference(4) method(C-LF)
+        unit_test basic_checks, `rm' numpre(4) method(Conditional)
+        unit_test basic_checks, `rm' numpre(4) method(C-LF)
         forvalues i = 0 / 2 {
-            unit_test basic_checks, `rm' reference(4) l_vec(l_vec`i') method(Conditional)
-            unit_test basic_checks, `rm' reference(4) l_vec(l_vec`i') method(C-LF)
+            unit_test basic_checks, `rm' numpre(4) l_vec(l_vec`i') method(Conditional)
+            unit_test basic_checks, `rm' numpre(4) l_vec(l_vec`i') method(C-LF)
         }
-        unit_test basic_checks, `rm' reference(1) method(Conditional)
-        unit_test basic_checks, `rm' reference(1) method(C-LF)
-        unit_test basic_checks, `rm' reference(7) method(Conditional)
-        unit_test basic_checks, `rm' reference(7) method(C-LF)
+        unit_test basic_checks, `rm' numpre(1) method(Conditional)
+        unit_test basic_checks, `rm' numpre(1) method(C-LF)
+        unit_test basic_checks, `rm' numpre(7) method(Conditional)
+        unit_test basic_checks, `rm' numpre(7) method(C-LF)
         forvalues i = 3 / 4 {
-            unit_test basic_checks, `rm' reference(1) l_vec(l_vec`i') method(Conditional)
-            unit_test basic_checks, `rm' reference(1) l_vec(l_vec`i') method(C-LF)
+            unit_test basic_checks, `rm' numpre(1) l_vec(l_vec`i') method(Conditional)
+            unit_test basic_checks, `rm' numpre(1) l_vec(l_vec`i') method(C-LF)
         }
     }
 

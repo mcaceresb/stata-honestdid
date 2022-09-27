@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.6 15Sep2022}{...}
+{* *! version 0.5.0 27Sep2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -24,16 +24,16 @@ Stata version of the HonestDiD R package, which implements robust inference for 
 [{it:{help honestdid##table_options:options}} {it:{help coefplot:coefplot_options}}]
 
 {pstd}
-Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are required options.
+Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are required options.
 
 {synoptset 27 tabbed}{...}
 {marker table_options}{...}
 {synopthdr}
 {synoptline}
 {syntab :Options}
-{synopt :{opth reference:periodindex(int)}} reference period; assumed omitted from vector (required or specify pre()/post()){p_end}
-{synopt :{opth pre:periodindex(numlist)}} pre-period indices (required or specify reference()){p_end}
-{synopt :{opth post:periodindex(numlist)}} post-period indices (required or specify reference()){p_end}
+{synopt :{opth numpre:periods(int)}} number of pre-treatment periods; rest vector entries are assumed to be post-treatment (required or specify pre()/post()){p_end}
+{synopt :{opth pre:periodindex(numlist)}} pre-period indices (required or specify numpreperiods()){p_end}
+{synopt :{opth post:periodindex(numlist)}} post-period indices (required or specify numpreperiods()){p_end}
 {synopt :{opt delta(str)}} delta to use: rm (for relative magnitudes) or sd (second differences){p_end}
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b){p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
@@ -70,7 +70,7 @@ Section 6.2 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft
 {phang2}{cmd:      st_matrix(st_local("sigma"), _honestExampleBCSigma())        }{p_end}
 {phang2}{cmd:  {c )-}                                                           }{p_end}
 {phang2}{cmd:. local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)}{p_end}
-{phang2}{cmd:. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'           }{p_end}
+{phang2}{cmd:. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'              }{p_end}
 
 {pstd}
 The results are printed to the Stata console and saved in a mata
@@ -82,7 +82,8 @@ to the CI, all the inputs and options are saved:
 {phang2}{cmd:. mata `s(HonestEventStudy)'.CI                }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.betahat           }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.sigma             }{p_end}
-{phang2}{cmd:. mata `s(HonestEventStudy)'.referencePeriod   }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.numPrePeriods     }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.numPostPeriods    }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.prePeriodIndices  }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.postPeriodIndices }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.open              }{p_end}

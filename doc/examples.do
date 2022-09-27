@@ -17,7 +17,7 @@ mata {
     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 }
 local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 
 * The results are printed to the Stata console and saved in a mata
 * object. The user can specify the name of the mata object via the 
@@ -28,7 +28,8 @@ honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
 mata `s(HonestEventStudy)'.CI
 mata `s(HonestEventStudy)'.betahat
 mata `s(HonestEventStudy)'.sigma
-mata `s(HonestEventStudy)'.referencePeriod
+mata `s(HonestEventStudy)'.numPrePeriods
+mata `s(HonestEventStudy)'.numPostPeriods
 mata `s(HonestEventStudy)'.prePeriodIndices
 mata `s(HonestEventStudy)'.postPeriodIndices
 mata `s(HonestEventStudy)'.open

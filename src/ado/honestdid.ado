@@ -1,4 +1,4 @@
-*! version 0.4.6 15Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.5.0 27Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -28,7 +28,7 @@ program honestdid, sclass
                                            ///
         omit                               /// Omit levels parsing b vector column names
         delta(str)                         /// Delta to use (rm for relative magnitudes or sd)
-        REFERENCEperiodindex(int 0)        /// index for the reference period
+        NUMPREperiods(int 0)               /// number of pre-treatment periods
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
         method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
@@ -52,16 +52,16 @@ program honestdid, sclass
 
     * Specify only ONE of
     *
-    *     referenceperiodindex()
+    *     numpreperiods()
     *
     * OR
     *
     *     preperiodindices() and postperiodindices()
     *
-    * If referenceperiodindex() is specified, then
+    * If numpreperiods() is specified, then
     *
-    *     preperiodindices(1 to referenceperiodindex)
-    *     postperiodindices(referenceperiodindex+1 to length(e(b)))
+    *     preperiodindices(1 to numpreperiods)
+    *     postperiodindices(numpreperiods+1 to length(e(b)))
     *
     * are assumed.
 
@@ -101,7 +101,7 @@ program honestdid, sclass
     if "`gridPoints'" != ""  confirm number `gridPoints'
 
     local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
-    local dohonest = `dohonest' | `changegrid' | (`referenceperiodindex' != 0)
+    local dohonest = `dohonest' | `changegrid' | (`numpreperiods' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
@@ -109,7 +109,7 @@ program honestdid, sclass
 
     if ( `dohonest' | ("`cached'" == "") ) {
         HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
-            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices') `rm'
+            numpre(`numpreperiods') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
         local alpha = 0.05
@@ -119,7 +119,7 @@ program honestdid, sclass
         if ( `dohonest' | ("`cached'" == "") ) {
             `results' = HonestDiD("`b'",                  ///
                                   "`vcov'",               ///
-                                  `referenceperiodindex', ///
+                                  `numpreperiods',        ///
                                   "`preperiodindices'",   ///
                                   "`postperiodindices'",  ///
                                   "`l_vec'",              ///
@@ -182,7 +182,7 @@ program HonestSanityChecks
         l_vec(str)                  /// Vector with parameters of interest (default is first period post event)
         mvec(str)                   /// Vector or list with with M-values
         alpha(real 0.05)            /// 1 - level of CI
-        REFERENCEperiodindex(int 0) /// index for the reference period
+        NUMPREperiods(int 0)        /// number of pre-treatment periods
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
         method(str)                 /// FLCI, Conditional, C-F or C-LF (default depends on rm)
@@ -209,18 +209,18 @@ program HonestSanityChecks
         }
     }
 
-    if ((`referenceperiodindex' != 0) & "`preperiodindices'`postperiodindices'" != "") {
-        disp as err "Specify only one of reference() or pre() and post()"
+    if ((`numpreperiods' != 0) & "`preperiodindices'`postperiodindices'" != "") {
+        disp as err "Specify only one of numpre() or pre() and post()"
         exit 198
     }
 
-    if ((`referenceperiodindex' == 0) & (("`preperiodindices'" == "") | ("`postperiodindices'" == "")) ) {
-        disp as err "Specify either reference() or both pre() and post()"
+    if ((`numpreperiods' == 0) & (("`preperiodindices'" == "") | ("`postperiodindices'" == "")) ) {
+        disp as err "Specify either numpre() or both pre() and post()"
         exit 198
     }
 
-    if ( `referenceperiodindex' < 0 ) {
-        disp as err "reference() must be positive"
+    if ( `numpreperiods' < 0 ) {
+        disp as err "numpre() must be positive"
         exit 198
     }
 
@@ -274,7 +274,7 @@ program HonestSanityChecks
         exit 198
     }
 
-    if ( (`referenceperiodindex' == 0) & ("`preperiodindices'" != "") & ("`postperiodindices'" != "") ) {
+    if ( (`numpreperiods' == 0) & ("`preperiodindices'" != "") & ("`postperiodindices'" != "") ) {
         local npre:  list sizeof preperiodindices
         local npost: list sizeof postperiodindices
         if ( max(`rowsb', `colsb') < (`npre' + `npost') ) {
@@ -283,9 +283,9 @@ program HonestSanityChecks
         }
     }
 
-    if ( `referenceperiodindex' > 0 ) {
-        if ( max(`rowsb', `colsb') <= `referenceperiodindex' ) {
-            disp as err "Coefficient vector must be at least 1 + reference period index"
+    if ( `numpreperiods' > 0 ) {
+        if ( max(`rowsb', `colsb') <= `numpreperiods' ) {
+            disp as err "Coefficient vector must be at least 1 + number of pre-treatment periods"
             exit 198
         }
     }

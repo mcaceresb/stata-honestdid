@@ -49,29 +49,29 @@ program basic_failures
     }
     cap honestdid, delta(sd) b(`beta') vcov(`sigma')
     assert _rc == 198
-    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(0)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') numpre(0)
     assert _rc == 198
-    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(8)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') numpre(8)
     assert _rc == 198
-    cap honestdid, delta(sd) b(`beta') vcov(`sigma') reference(4) l_vec(xxx)
+    cap honestdid, delta(sd) b(`beta') vcov(`sigma') numpre(4) l_vec(xxx)
     assert _rc == 111
-    cap honestdid, delta(sd) b(xxx) vcov(`sigma') reference(4)
+    cap honestdid, delta(sd) b(xxx) vcov(`sigma') numpre(4)
     assert _rc == 111
-    cap honestdid, delta(sd) b(`beta') vcov(xxx) reference(4)
+    cap honestdid, delta(sd) b(`beta') vcov(xxx) numpre(4)
     assert _rc == 111
-    cap honestdid, delta(sd) reference(4)
+    cap honestdid, delta(sd) numpre(4)
     assert _rc == 198
-    cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(FLCI)
+    cap honestdid, b(`beta') vcov(`sigma') numpre(4) delta(rm) method(FLCI)
     assert _rc == 198
-    cap honestdid, b(`beta') vcov(`sigma') reference(4) delta(rm) method(C-F)
+    cap honestdid, b(`beta') vcov(`sigma') numpre(4) delta(rm) method(C-F)
     assert _rc == 198
-    cap honestdid, b(`beta') vcov(`sigma') reference(4) mvec(-1)
+    cap honestdid, b(`beta') vcov(`sigma') numpre(4) mvec(-1)
     assert _rc == 198
 end
 
 * qui do src/install.do
 * qui do src/ado/honestdid.ado
-* local 0 basic_checks, reference(4) method(FLCI)
+* local 0 basic_checks, numpre(4) method(FLCI)
 * syntax namelist(min=1 max=1), [NOIsily tab(int 4) *]
 * local 0 , `options'
 * tempname beta sigma
@@ -82,9 +82,9 @@ end
 * timer clear
 * timer on 1
 * matrix mvec = 0, 0.3, 0.4, 0.5
-* honestdid, b(`beta') vcov(`sigma') mvec(0.1) reference(4) method(Conditional) delta(rm) debug
+* honestdid, b(`beta') vcov(`sigma') mvec(0.1) numpre(4) method(Conditional) delta(rm) debug
 * * matrix lvec = 1 \ 0 \ 0 \ 0
-* * honestdid, b(`beta') vcov(`sigma') mvec(0) reference(4) l_vec(lvec) method(FLCI) delta(sd) debug
+* * honestdid, b(`beta') vcov(`sigma') mvec(0) numpre(4) l_vec(lvec) method(FLCI) delta(sd) debug
 * timer off 1
 * timer list
 * timer clear

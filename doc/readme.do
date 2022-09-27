@@ -26,26 +26,46 @@ local plotopts ytitle("Estimate and 95% Conf. Int.") title("Effect on dins")
 coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
 graph export doc/readme_coefplot.png, replace width(1600)
 
-honestdid, reference(5) mvec(0.5(0.5)2) omit
-
-qui reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
-honestdid, reference(5) mvec(0.5(0.5)2) omit
-
-qui reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips)
 honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2)
+honestdid, pre(1 2 3 4 5) post(7 8) mvec(0.5(0.5)2)
 
-matrix b = e(b)
-matrix V = e(V)
-honestdid, b(b) vcov(V) pre(1/5) post(7/8) mvec(0.5(0.5)2)
+reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
+matrix list e(b)
+honestdid, pre(1/5) post(6/7) mvec(0.5(0.5)2) omit
+
+reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips) noconstant
+honestdid, numpre(5) mvec(0.5(0.5)2) omit
+
+mata index = 1..5, 7..8
+mata st_matrix("b", st_matrix("e(b)")[index])
+mata st_matrix("V", st_matrix("e(V)")[index, index])
+matrix list b
+matrix list V
+honestdid, b(b) vcov(V) numpre(5) mvec(0.5(0.5)2)
 honestdid, coefplot cached
 
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, cached coefplot `plotopts'
 graph export doc/readme_deltarm_ex1.png, replace width(1600)
 
+local plotopts xtitle(M) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopts'
 graph export doc/readme_deltasd_ex1.png, replace width(1600)
 
 matrix l_vec = 0.5 \ 0.5
+local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
 graph export doc/readme_deltarm_ex2.png, replace width(1600)
+
+
+TODO: xx
+1. Done
+2. Done
+3. Pending
+4. Done
+5. That mirrors [this section](https://github.com/asheshrambachan/HonestDiD#sensitivity-analysis-for-average-effects-or-other-periods) where c(0.5, 0.5) is used (whereas l_vec(0(0.5)0.5), which is not syntax that the package takes btw, would be c(0, 0.5)). LMK if I'm miss-reading or something.
+6. Ok.
+7. Pending.
+
+    honestdid, coefplot ciopts(recast(rcap) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue)) cached `plotopts'
+    graph export coefplot.pdf, replace

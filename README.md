@@ -5,7 +5,7 @@ The HonestDiD package implements the tools for robust inference and
 sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 
-`version 0.4.6 15Sep2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 0.5.0 27Sep2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 
@@ -40,12 +40,9 @@ counterfactual difference in trends is exactly linear, whereas larger
 values of $M$ allow for more non-linearity.
 
 **Other restrictions**. The Rambachan and Roth framework allows for a
-variety of other restrictions on the differences in trends as well. For
-example, the smoothness restrictions and relative magnitudes ideas can
-be combined to impose that the non-linearity in the post-treatment
-period is no more than $\bar{M}$ times larger than that in the
-pre-treatment periods. The researcher can also impose monotonicity or
-sign restrictions on the differences in trends as well.
+variety of other restrictions on the differences in trends as well.
+However, not all these have yet been implemented in this Stata version
+of the package. This functionality is planned for a future release.
 
 **Robust confidence intervals**. Given restrictions of the type
 described above, Rambachan and Roth provide methods for creating robust
@@ -154,13 +151,14 @@ coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
 
 We are now ready to apply the HonestDiD package to do sensitivity
 analysis. Suppose we’re interested in assessing the sensitivity of
-the estimate for 2014, the first year after treatment. The `reference`
-option specifies the index before treatment. In this case there are 5
-pre-treatment periods and 2 post-treatment periods. `mvec()` specifies
-the values of $\bar{M}$.
+the estimate for 2014, the first year after treatment. The `pre()` and
+`post()` options specify the pre- and post-treatment indices in the
+coefficient vector (and corresponding variance-covariance matrix);
+Stata's `numlist` notation is allowed. Finally, `mvec()` specifies the
+values of $\bar{M}$.
 
 ```stata
-honestdid, reference(5) mvec(0.5(0.5)2) omit
+honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2)
 ```
 
 ```
@@ -174,26 +172,56 @@ honestdid, reference(5) mvec(0.5(0.5)2) omit
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
 ```
 
-Note the `omit` option specifies `honestdid` should ignore omitted
-regressors (in this case `2013` is included in the output but omitted
-from the regression). This can be specially useful if there are
-many omitted variables. For example,
+First, note in this case the coefficients are ordered and mostly
+contiguous, so `pre(1/5)` refers to entries 1 through 5 and `post(7/8)`
+refers to entries 7 through 8. If the coefficients happen to be in
+different orders, positions, or if there are controls included in the
+regression, the user can pass an arbitrary list of indices to `pre()`
+and `post()`. For instance,
+
+```stata
+honestdid, pre(1 2 3 4 5) post(7 8) mvec(0.5(0.5)2)
+```
+
+gives the same result. Second, note the coefficient vector returned by
+`reghdfe` includes an entry for `2013`, the reference period, which was
+omitted from the regression but is included in the vector of estimates.
+It is possible to tell `honestdid` to ignore omitted regressors when
+specifying variable indices; this can be specially useful when there
+are many such covariates. For example,
 
 ```stata
 reghdfe dins b2013.year##D, absorb(stfips year) cluster(stfips) noconstant
-honestdid, reference(5) mvec(0.5(0.5)2) omit
+matrix list e(b)
+honestdid, pre(1/5) post(6/7) mvec(0.5(0.5)2) omit
 ```
 
-gives the same result. Finally, it is possible to specify the pre and
-post period indices manually or pass a custom vector:
+gives the same results (i.e. the coefficient vector contains several
+zeros from omitted regressors, but with the `omit` option we only needed
+to specify the indices for the included regressors). It's important that
+here the post-period indices are 6 and 7, since the reference period is
+no longer included. Further, the `ommit` option does **not** exclude
+zeros; rather, it excludes vector entries indicated to have been omitted
+from a regression (based on the column names of the coefficient vector;
+see `help _ms_omit_info` for more).
+
+Finally, in the special case where there are no controls or where the
+user has gathered the pre- and post-treatment coefficients into a custom
+vector, it is also possible to specify just the number of pre-treatment
+periods via `numpre()` and `honestdid` will automatically assume the
+first `numpre` entries are pre-treatment coefficients and the rest are
+post-treatment coefficients.
 
 ```stata
-reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips)
-honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2)
+reghdfe dins b2013.Dyear, absorb(stfips year) cluster(stfips) noconstant
+honestdid, numpre(5) mvec(0.5(0.5)2) omit
 
-matrix b = e(b)
-matrix V = e(V)
-honestdid, b(b) vcov(V) pre(1/5) post(7/8) mvec(0.5(0.5)2)
+mata index = 1..5, 7..8
+mata st_matrix("b", st_matrix("e(b)")[index])
+mata st_matrix("V", st_matrix("e(V)")[index, index])
+matrix list b
+matrix list V
+honestdid, numpre(5) mvec(0.5(0.5)2)
 ```
 
 In all cases, the output of the `honestdid` command shows a robust
@@ -228,6 +256,7 @@ restrictions---i.e. imposing that the slope of the difference in trends
 changes by no more than $M$ between periods.
 
 ```stata
+local plotopts xtitle(M) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopts'
 ```
 
@@ -247,7 +276,7 @@ honestdid, pre(1/5) post(6/7) mvec(0(0.01)0.05) delta(sd) omit coefplot `plotopt
 <!-- -->
 ![fig](doc/readme_deltasd_ex1.png)
 
-We see that the breakdown value for a significant effect is $\bar{M} \approx 0.03$,
+We see that the breakdown value for a significant effect is $M \approx 0.03$,
 meaning that we can reject a null effect unless we are willing to allow
 for the linear extrapolation across consecutive periods to be off by
 more than 0.03 percentage points.
@@ -266,6 +295,7 @@ the second period after treatment.
 
 ```stata
 matrix l_vec = 0.5 \ 0.5
+local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
 ```
 
