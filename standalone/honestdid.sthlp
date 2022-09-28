@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.5.0 27Sep2022}{...}
+{* *! version 0.5.1 28Sep2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -47,6 +47,7 @@ Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are req
 {synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F{p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
+{synopt :{opt colorspec(str)}} colors for CIs. The first color is taken as the color of the original CI and the second as the color of the other CIs; this option can be overriden by passing {cmd:ciopts(lcolor())}.{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
 
 {p2colreset}{...}
@@ -131,7 +132,7 @@ Now to mirror the Vignette:
 {phang2}{cmd:. matrix V = 100^2 * e(V)                                   }{p_end}
 {phang2}{cmd:. mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))      }{p_end}
 {phang2}{cmd:. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)      }{p_end}
-{phang2}{cmd:. local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)    }{p_end}
+{phang2}{cmd:. local plot coefplot xtitle(M) ytitle(95% Robust CI)       }{p_end}
 {phang2}{cmd:. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'}{p_end}
 {phang2}{cmd:. graph export coefplot.pdf, replace                        }{p_end}
 

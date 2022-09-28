@@ -56,16 +56,3 @@ matrix l_vec = 0.5 \ 0.5
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
 graph export doc/readme_deltarm_ex2.png, replace width(1600)
-
-
-TODO: xx
-1. Done
-2. Done
-3. Pending
-4. Done
-5. That mirrors [this section](https://github.com/asheshrambachan/HonestDiD#sensitivity-analysis-for-average-effects-or-other-periods) where c(0.5, 0.5) is used (whereas l_vec(0(0.5)0.5), which is not syntax that the package takes btw, would be c(0, 0.5)). LMK if I'm miss-reading or something.
-6. Ok.
-7. Pending.
-
-    honestdid, coefplot ciopts(recast(rcap) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue) color(red blue blue blue blue blue)) cached `plotopts'
-    graph export coefplot.pdf, replace

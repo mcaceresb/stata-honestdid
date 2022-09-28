@@ -1,4 +1,4 @@
-*! version 0.5.0 27Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.5.1 28Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -35,6 +35,7 @@ program honestdid, sclass
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
+        colorspec(str asis)                /// special color handling
         ciopts(str)                        ///
         debug                              /// Print all the mata steps
         *                                  /// Options for coefplot
@@ -78,7 +79,7 @@ program honestdid, sclass
             if ( "`rmcached'" != "" ) {
                 disp as txt "{bf:note:} cached results uses relativeMagnitudes"
             }
-            if ( "`rm'" != "" ) {
+            if ( "`rm'" != "" & "`delta'" != "" ) {
                 disp as txt "{bf:warning:} cached results do not use relativeMagnitudes; option -rm- ignored"
             }
         }
@@ -160,13 +161,44 @@ program honestdid, sclass
     }
 
     if ( "`coefplot'" != "" ) {
-        if ( `"`ciopts'"' == "" ) local ciopts ciopts(recast(rcap))
-        else local ciopts ciopts(recast(rcap) `ciopts')
-
         matrix colnames `cimatrix'  = `cimatlab'
         matrix rownames `cimatrix'  = lb ub
         matrix colnames `dummycoef' = `cimatlab'
-        coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
+
+        if `"`colorspec'"' == "" local colorspec `""183 28 28" "13 71 161""'
+        local optionsbak: copy local options
+        local 0, `ciopts'
+        syntax, [LColor(str) Color(str) *]
+        local options: copy local optionsbak
+
+        if ( `"`ciopts'"' == "" ) local ciopts recast(rcap)
+        else local ciopts recast(rcap) `ciopts'
+
+        tempname fullmatrix coefcall coefs
+        matrix `fullmatrix' = `dummycoef' \ `cimatrix'
+        mata `coefs' = J(1, `=colsof(`fullmatrix')', "")
+        if ( "`lcolor'`color'" == "" ) {
+            mata `coefcall' = `"(matrix(%s[1]), ci((2 3)) ciopt(lcolor("%s") `ciopts'))"'
+        }
+        else {
+            mata `coefcall' = `"(matrix(%s[1]), ci((2 3)) ciopt(`ciopts'))"'
+        }
+
+        forvalues i = 1 / `=colsof(`fullmatrix')' {
+            tempname x`i'
+            local ix = min(`i', `:list sizeof colorspec')
+            if ( "`lcolor'`color'" == "" ) {
+                mata `coefs'[`i'] = sprintf(`coefcall', "`x`i''", tokens(st_local("colorspec"))[`ix'])
+            }
+            else {
+                mata `coefs'[`i'] = sprintf(`coefcall', "`x`i''")
+            }
+            matrix `x`i'' = `fullmatrix'[1..rowsof(`fullmatrix'), `i']
+        }
+        mata st_local("matrices", invtokens(`coefs'))
+        coefplot `matrices', vertical cionly yline(0) `options'
+
+        * coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
         disp as err "({bf:warning:} horizontal distance in plot needn't be to scale)"
     }
 

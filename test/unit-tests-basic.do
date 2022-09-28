@@ -33,7 +33,6 @@ program reg_checks
 
     matrix b = 100 * e(b)
     matrix V = 100^2 * e(V)
-    honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options'
     honestdid, b(b) vcov(V) pre(1/9) post(10/32) `options' mvec(0.01(0.1)0.3) alpha(0.01)
     honestdid, coefplot cached
     honestdid, coefplot cached xlabel(,angle(60))

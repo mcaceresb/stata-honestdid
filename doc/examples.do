@@ -81,6 +81,6 @@ matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
 mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
 local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)
+local plot coefplot xtitle(M) ytitle(95% Robust CI)
 honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'
 graph export coefplot.pdf, replace

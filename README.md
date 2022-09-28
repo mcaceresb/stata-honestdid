@@ -5,7 +5,7 @@ The HonestDiD package implements the tools for robust inference and
 sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 
-`version 0.5.0 27Sep2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 0.5.1 28Sep2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 
@@ -151,11 +151,12 @@ coefplot, vertical yline(0) ciopts(recast(rcap)) xlabel(,angle(45)) `plotopts'
 
 We are now ready to apply the HonestDiD package to do sensitivity
 analysis. Suppose we’re interested in assessing the sensitivity of
-the estimate for 2014, the first year after treatment. The `pre()` and
-`post()` options specify the pre- and post-treatment indices in the
-coefficient vector (and corresponding variance-covariance matrix);
-Stata's `numlist` notation is allowed. Finally, `mvec()` specifies the
-values of $\bar{M}$.
+the estimate for 2014, the first year after treatment.  The `pre()` and
+`post()` options specify the indices of the coefficients corresponding
+with pre-treatment and post-treatment event-study coefficients
+(excluding the one for 2013, which is normalized to zero) Stata's
+`numlist` notation is allowed. Finally, `mvec()` specifies the values of
+$\bar{M}$.
 
 ```stata
 honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2)
@@ -286,17 +287,11 @@ more than 0.03 percentage points.
 So far we have focused on the effect for the first post-treatment
 period, which is the default in HonestDiD. If we are instead interested
 in the average over the two post-treatment periods, we can use the
-option `l_vec()`. More generally, the package accommodates inference on
-any scalar parameter of the form $\theta = l_{vec}'\tau_{post}$, where
-$\tau_{post} = (\tau_1,...,\tau_{\bar{T}})'$ is the vector of dynamic
-treatment effects. Thus, for example, creating `matrix l_vec = 0 \ 1`
-and setting `l_vec(l_vec)` allows us to do inference on the effect for
-the second period after treatment.
-
-```stata
+option `l_vec(matrix_name)`:
+```
 matrix l_vec = 0.5 \ 0.5
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
-honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
+honestdid, l_vec(l_vec) pre(1/5) post(6/7) mvec(0(0.5)2) omit coefplot `plotopts'
 ```
 
 ```
@@ -313,6 +308,13 @@ honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts
 
 <!-- -->
 ![fig](doc/readme_deltarm_ex2.png)
+
+More generally, the package accommodates inference on any scalar
+parameter of the form $\theta = l_{vec}'\tau_{post}$, where
+$\tau_{post} = (\tau_1,...,\tau_{\bar{T}})'$ is the vector of dynamic
+treatment effects. Thus, for example, creating `matrix l_vec = 0 \ 1`
+and setting `l_vec(l_vec)` allows us to do inference on the effect for
+the second period after treatment.
 
 ## Staggered timing
 
