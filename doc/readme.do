@@ -3,7 +3,6 @@ local github https://raw.githubusercontent.com
 ssc install coefplot,      replace
 ssc install ftools,        replace
 ssc install reghdfe,       replace
-net install multe,         replace from(`github'/mcaceresb/stata-honestdid/main)
 net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
 set scheme modern
 
