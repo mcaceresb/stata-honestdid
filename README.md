@@ -338,7 +338,6 @@ estimates restore csdid
 
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
-graph export doc/readme_deltarm_csdid.png, replace width(1600)
 ```
 
 <!-- -->
