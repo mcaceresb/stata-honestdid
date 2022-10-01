@@ -55,3 +55,15 @@ matrix l_vec = 0.5 \ 0.5
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(1/5) post(6/7) mvec(0(0.5)2) l_vec(l_vec) omit coefplot `plotopts'
 graph export doc/readme_deltarm_ex2.png, replace width(1600)
+
+* CS
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+replace yexp2 = cond(mi(yexp2), 3000, yexp2)
+qui csdid dins, time(year) ivar(stfips) gvar(yexp2) long2 notyet
+csdid_estat event, window(-4 5) estore(csdid)
+estimates restore csdid
+
+local plotopts xtitle(Mbar) ytitle(95% Robust CI)
+honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
+graph export doc/readme_deltarm_csdid.png, replace width(1600)
