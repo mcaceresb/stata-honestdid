@@ -1,10 +1,10 @@
 * Install here coefplot, ftools, reghdfe, plot scheme
-local github https://raw.githubusercontent.com
-ssc install coefplot,      replace
-ssc install ftools,        replace
-ssc install reghdfe,       replace
-net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
-set scheme modern
+* local github https://raw.githubusercontent.com
+* ssc install coefplot,      replace
+* ssc install ftools,        replace
+* ssc install reghdfe,       replace
+* net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
+* set scheme modern
 
 * Load data
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
