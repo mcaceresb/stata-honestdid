@@ -34,6 +34,7 @@ cap mata mata drop _honestPrintCI()
 * alpha         = `alpha'
 * method        = "`method'"
 * debug         = "`debug'"
+* omit          = "`omit'"
 * rm            = `relativeMagnitudes'
 * grid_lb       = `grid_lb'
 * grid_ub       = `grid_ub'

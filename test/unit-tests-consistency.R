@@ -2,6 +2,7 @@ library(lfe)
 library(HonestDiD)
 data(BCdata_EventStudy)
 data(LWdata_EventStudy)
+# install.packages(".", repos=NULL, type="source")
 # source('~/projects/ra/roth/honestDiD/references/HonestDiD/R/arp-nuisance.R')
 # Rscript --no-save --no-restore --verbose test/unit-tests-consistency.R > test/unit-tests-consistency.R.log 2>&1
 
@@ -10,11 +11,11 @@ BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
 BC_l_vec          <- basisVector(index = 1, size = BC_numPostPeriods)
 BC_l_vec          <- cbind(c(1, 0, 0, 0))
-BC_l_alt          <- cbind(c(0, 0, 1, 0))
+BC_l_alt          <- cbind(rep(1, BC_numPostPeriods)/BC_numPostPeriods)
 LW_numPrePeriods  <- length(LWdata_EventStudy$prePeriodIndices)
 LW_numPostPeriods <- length(LWdata_EventStudy$postPeriodIndices)
 LW_l_vec          <- basisVector(15 - (-2), LW_numPostPeriods)
-LW_l_alt          <- basisVector(15 - (-1), LW_numPostPeriods)
+LW_l_alt          <- cbind(rep(1,LW_numPostPeriods)/LW_numPostPeriods)
 
 cat("\n")
 cat("Base relative magnitudes comparison\n")
@@ -114,6 +115,9 @@ for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
     print(Sys.time() - timer)
 }
 
+xx ok, you need to check because these are suddetly suspiciously fast...what?
+xx also they differ from Stata results
+
 for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
     timer = Sys.time()
     results <- createSensitivityResults(betahat        = BCdata_EventStudy$betahat,
@@ -199,6 +203,5 @@ opts <- list(betahat        = BCdata_EventStudy$betahat,
 for (meth in c("Conditional", "C-LF")) {
     timer = Sys.time()
     print(do.call(createSensitivityResults_relativeMagnitudes, c(opts, list(method=meth))))
-    print(results)
     print(Sys.time() - timer)
 }
