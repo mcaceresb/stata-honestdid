@@ -331,7 +331,8 @@ future---stay tuned!
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
 use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
-replace yexp2 = cond(mi(yexp2), 3000, yexp2)
+qui sum year, meanonly
+replace yexp2 = cond(mi(yexp2), r(max) + 1, yexp2)
 qui csdid dins, time(year) ivar(stfips) gvar(yexp2) long2 notyet
 csdid_estat event, window(-4 5) estore(csdid)
 estimates restore csdid
