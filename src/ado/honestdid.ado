@@ -1,4 +1,4 @@
-*! version 0.4.5 30Aug2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.5.2 02Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -26,14 +26,16 @@ program honestdid, sclass
         gridPoints(str)                    /// Number of grid points
         alpha(passthru)                    /// 1 - level of the CI
                                            ///
+        omit                               /// Omit levels parsing b vector column names
         delta(str)                         /// Delta to use (rm for relative magnitudes or sd)
-        REFERENCEperiodindex(int 0)        /// index for the reference period
+        NUMPREperiods(int 0)               /// number of pre-treatment periods
         PREperiodindices(numlist)          /// pre-period indices
         POSTperiodindices(numlist)         /// post-period indices
         method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
         MATAsave(str)                      /// Save resulting mata object
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
+        colorspec(str asis)                /// special color handling
         ciopts(str)                        ///
         debug                              /// Print all the mata steps
         *                                  /// Options for coefplot
@@ -51,16 +53,16 @@ program honestdid, sclass
 
     * Specify only ONE of
     *
-    *     referenceperiodindex()
+    *     numpreperiods()
     *
     * OR
     *
     *     preperiodindices() and postperiodindices()
     *
-    * If referenceperiodindex() is specified, then
+    * If numpreperiods() is specified, then
     *
-    *     preperiodindices(1 to referenceperiodindex)
-    *     postperiodindices(referenceperiodindex+1 to length(e(b)))
+    *     preperiodindices(1 to numpreperiods)
+    *     postperiodindices(numpreperiods+1 to length(e(b)))
     *
     * are assumed.
 
@@ -77,7 +79,7 @@ program honestdid, sclass
             if ( "`rmcached'" != "" ) {
                 disp as txt "{bf:note:} cached results uses relativeMagnitudes"
             }
-            if ( "`rm'" != "" ) {
+            if ( "`rm'" != "" & "`delta'" != "" ) {
                 disp as txt "{bf:warning:} cached results do not use relativeMagnitudes; option -rm- ignored"
             }
         }
@@ -100,7 +102,7 @@ program honestdid, sclass
     if "`gridPoints'" != ""  confirm number `gridPoints'
 
     local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
-    local dohonest = `dohonest' | `changegrid' | (`referenceperiodindex' != 0)
+    local dohonest = `dohonest' | `changegrid' | (`numpreperiods' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
         local cached
@@ -108,7 +110,7 @@ program honestdid, sclass
 
     if ( `dohonest' | ("`cached'" == "") ) {
         HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
-            reference(`referenceperiodindex') pre(`preperiodindices') post(`postperiodindices') `rm'
+            numpre(`numpreperiods') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
         local alpha = 0.05
@@ -118,7 +120,7 @@ program honestdid, sclass
         if ( `dohonest' | ("`cached'" == "") ) {
             `results' = HonestDiD("`b'",                  ///
                                   "`vcov'",               ///
-                                  `referenceperiodindex', ///
+                                  `numpreperiods',        ///
                                   "`preperiodindices'",   ///
                                   "`postperiodindices'",  ///
                                   "`l_vec'",              ///
@@ -126,6 +128,7 @@ program honestdid, sclass
                                   `alpha',                ///
                                   "`method'",             ///
                                   "`debug'",              ///
+                                  "`omit'",               ///
                                   `relativeMagnitudes',   ///
                                   `grid_lb',              ///
                                   `grid_ub',              ///
@@ -158,13 +161,44 @@ program honestdid, sclass
     }
 
     if ( "`coefplot'" != "" ) {
-        if ( `"`ciopts'"' == "" ) local ciopts ciopts(recast(rcap))
-        else local ciopts ciopts(recast(rcap) `ciopts')
-
         matrix colnames `cimatrix'  = `cimatlab'
         matrix rownames `cimatrix'  = lb ub
         matrix colnames `dummycoef' = `cimatlab'
-        coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
+
+        if `"`colorspec'"' == "" local colorspec `""183 28 28" "13 71 161""'
+        local optionsbak: copy local options
+        local 0, `ciopts'
+        syntax, [LColor(str) Color(str) *]
+        local options: copy local optionsbak
+
+        if ( `"`ciopts'"' == "" ) local ciopts recast(rcap)
+        else local ciopts recast(rcap) `ciopts'
+
+        tempname fullmatrix coefcall coefs
+        matrix `fullmatrix' = `dummycoef' \ `cimatrix'
+        mata `coefs' = J(1, `=colsof(`fullmatrix')', "")
+        if ( "`lcolor'`color'" == "" ) {
+            mata `coefcall' = `"(matrix(%s[1]), ci((2 3)) ciopt(lcolor("%s") `ciopts'))"'
+        }
+        else {
+            mata `coefcall' = `"(matrix(%s[1]), ci((2 3)) ciopt(`ciopts'))"'
+        }
+
+        forvalues i = 1 / `=colsof(`fullmatrix')' {
+            tempname x`i'
+            local ix = min(`i', `:list sizeof colorspec')
+            if ( "`lcolor'`color'" == "" ) {
+                mata `coefs'[`i'] = sprintf(`coefcall', "`x`i''", tokens(st_local("colorspec"))[`ix'])
+            }
+            else {
+                mata `coefs'[`i'] = sprintf(`coefcall', "`x`i''")
+            }
+            matrix `x`i'' = `fullmatrix'[1..rowsof(`fullmatrix'), `i']
+        }
+        mata st_local("matrices", invtokens(`coefs'))
+        coefplot `matrices', vertical cionly yline(0) `options'
+
+        * coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
         disp as err "({bf:warning:} horizontal distance in plot needn't be to scale)"
     }
 
@@ -180,7 +214,7 @@ program HonestSanityChecks
         l_vec(str)                  /// Vector with parameters of interest (default is first period post event)
         mvec(str)                   /// Vector or list with with M-values
         alpha(real 0.05)            /// 1 - level of CI
-        REFERENCEperiodindex(int 0) /// index for the reference period
+        NUMPREperiods(int 0)        /// number of pre-treatment periods
         PREperiodindices(numlist)   /// pre-period indices
         POSTperiodindices(numlist)  /// post-period indices
         method(str)                 /// FLCI, Conditional, C-F or C-LF (default depends on rm)
@@ -207,18 +241,18 @@ program HonestSanityChecks
         }
     }
 
-    if ((`referenceperiodindex' != 0) & "`preperiodindices'`postperiodindices'" != "") {
-        disp as err "Specify only one of reference() or pre() and post()"
+    if ((`numpreperiods' != 0) & "`preperiodindices'`postperiodindices'" != "") {
+        disp as err "Specify only one of numpre() or pre() and post()"
         exit 198
     }
 
-    if ((`referenceperiodindex' == 0) & (("`preperiodindices'" == "") | ("`postperiodindices'" == "")) ) {
-        disp as err "Specify either reference() or both pre() and post()"
+    if ((`numpreperiods' == 0) & (("`preperiodindices'" == "") | ("`postperiodindices'" == "")) ) {
+        disp as err "Specify either numpre() or both pre() and post()"
         exit 198
     }
 
-    if ( `referenceperiodindex' < 0 ) {
-        disp as err "reference() must be positive"
+    if ( `numpreperiods' < 0 ) {
+        disp as err "numpre() must be positive"
         exit 198
     }
 
@@ -272,7 +306,7 @@ program HonestSanityChecks
         exit 198
     }
 
-    if ( (`referenceperiodindex' == 0) & ("`preperiodindices'" != "") & ("`postperiodindices'" != "") ) {
+    if ( (`numpreperiods' == 0) & ("`preperiodindices'" != "") & ("`postperiodindices'" != "") ) {
         local npre:  list sizeof preperiodindices
         local npost: list sizeof postperiodindices
         if ( max(`rowsb', `colsb') < (`npre' + `npost') ) {
@@ -281,9 +315,9 @@ program HonestSanityChecks
         }
     }
 
-    if ( `referenceperiodindex' > 0 ) {
-        if ( max(`rowsb', `colsb') <= `referenceperiodindex' ) {
-            disp as err "Coefficient vector must be at least 1 + reference period index"
+    if ( `numpreperiods' > 0 ) {
+        if ( max(`rowsb', `colsb') <= `numpreperiods' ) {
+            disp as err "Coefficient vector must be at least 1 + number of pre-treatment periods"
             exit 198
         }
     }

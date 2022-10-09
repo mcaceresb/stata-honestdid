@@ -34,6 +34,7 @@ struct _honestOptions {
     real vector l_vec
     real vector Mvec
     real scalar rm
+    real scalar omit
     real scalar debug
     real scalar grid_lb
     real scalar grid_ub

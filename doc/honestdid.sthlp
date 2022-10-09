@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.4.5 30Aug2022}{...}
+{* *! version 0.5.2 02Oct2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -24,19 +24,20 @@ Stata version of the HonestDiD R package, which implements robust inference for 
 [{it:{help honestdid##table_options:options}} {it:{help coefplot:coefplot_options}}]
 
 {pstd}
-Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are required options.
+Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are required options.
 
 {synoptset 27 tabbed}{...}
 {marker table_options}{...}
 {synopthdr}
 {synoptline}
 {syntab :Options}
-{synopt :{opth reference:periodindex(int)}} reference period; assumed omitted from vector (required or specify pre()/post()){p_end}
-{synopt :{opth pre:periodindex(numlist)}} pre-period indices (required or specify reference()){p_end}
-{synopt :{opth post:periodindex(numlist)}} post-period indices (required or specify reference()){p_end}
+{synopt :{opth numpre:periods(int)}} number of pre-treatment periods; rest vector entries are assumed to be post-treatment (required or specify pre()/post()){p_end}
+{synopt :{opth pre:periodindex(numlist)}} pre-period indices (required or specify numpreperiods()){p_end}
+{synopt :{opth post:periodindex(numlist)}} post-period indices (required or specify numpreperiods()){p_end}
 {synopt :{opt delta(str)}} delta to use: rm (for relative magnitudes) or sd (second differences){p_end}
 {synopt :{opt b(str)}} name of coefficient matrix; default is e(b){p_end}
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
+{synopt :{opt omit}} omit dropped levels from {cmd:b} and {cmd:vcov} parsing names of {cmd:b} (e.g. omitted variables in regression) {p_end}
 {synopt :{opt l_vec(str)}} name of vector with parameters of interest (default is first period post event){p_end}
 {synopt :{opt mvec(str)}} either name of vector with M values or number list of M values (must be >= 0){p_end}
 {synopt :{opth grid_lb(real)}} lower bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}
@@ -46,6 +47,7 @@ Typically at least one of {opt reference()} or {opt pre()} and {opt post()} are 
 {synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F{p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
+{synopt :{opt colorspec(str)}} colors for CIs. The first color is taken as the color of the original CI and the second as the color of the other CIs; this option can be overriden by passing {cmd:ciopts(lcolor())}.{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
 
 {p2colreset}{...}
@@ -69,7 +71,7 @@ Section 6.2 of {browse "https://asheshrambachan.github.io/assets/files/hpt-draft
 {phang2}{cmd:      st_matrix(st_local("sigma"), _honestExampleBCSigma())        }{p_end}
 {phang2}{cmd:  {c )-}                                                           }{p_end}
 {phang2}{cmd:. local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)}{p_end}
-{phang2}{cmd:. honestdid, reference(4) b(`beta') vcov(`sigma') `opts'           }{p_end}
+{phang2}{cmd:. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'              }{p_end}
 
 {pstd}
 The results are printed to the Stata console and saved in a mata
@@ -81,7 +83,8 @@ to the CI, all the inputs and options are saved:
 {phang2}{cmd:. mata `s(HonestEventStudy)'.CI                }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.betahat           }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.sigma             }{p_end}
-{phang2}{cmd:. mata `s(HonestEventStudy)'.referencePeriod   }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.numPrePeriods     }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.numPostPeriods    }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.prePeriodIndices  }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.postPeriodIndices }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.open              }{p_end}
@@ -129,7 +132,7 @@ Now to mirror the Vignette:
 {phang2}{cmd:. matrix V = 100^2 * e(V)                                   }{p_end}
 {phang2}{cmd:. mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))      }{p_end}
 {phang2}{cmd:. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)      }{p_end}
-{phang2}{cmd:. local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)    }{p_end}
+{phang2}{cmd:. local plot coefplot xtitle(M) ytitle(95% Robust CI)       }{p_end}
 {phang2}{cmd:. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'}{p_end}
 {phang2}{cmd:. graph export coefplot.pdf, replace                        }{p_end}
 

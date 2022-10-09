@@ -24,14 +24,20 @@ cap mata mata drop _honestPrintCI()
 * createSensitivityPlot_relativeMagnitudes()
 * createSensitivityResults_relativeMagnitudes()
 
-* b         = "`b'"
-* V         = "`vcov'"
-* reference = `referenceperiodindex'
-* pre       = "`preperiodindices'"
-* post      = "`postperiodindices'"
-* l_vec     = "`l_vec'"
-* Mvec      = "`mvec'"
-* alpha     = 0.05
+* b             = "`b'"
+* V             = "`vcov'"
+* numPrePeriods = `numpreperiods'
+* pre           = "`preperiodindices'"
+* post          = "`postperiodindices'"
+* l_vec         = "`l_vec'"
+* Mvec          = "`mvec'"
+* alpha         = `alpha'
+* method        = "`method'"
+* debug         = "`debug'"
+* rm            = `relativeMagnitudes'
+* grid_lb       = `grid_lb'
+* grid_ub       = `grid_ub'
+* gridPoints    = `gridPoints'
 
 mata
 struct HonestEventStudy {
@@ -43,7 +49,8 @@ struct HonestEventStudy {
     real vector betahat
     real matrix sigma
     real vector timeVec
-    real scalar referencePeriod
+    real scalar numPrePeriods
+    real scalar numPostPeriods
     real vector prePeriodIndices
     real vector postPeriodIndices
     real vector open
@@ -51,7 +58,7 @@ struct HonestEventStudy {
 
 struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          string scalar V,
-                                         real scalar reference,
+                                         real scalar numPrePeriods,
                                          string scalar pre,
                                          string scalar post,
                                          string scalar l_vec,
@@ -59,6 +66,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          real scalar alpha,
                                          string scalar method,
                                          string scalar debug,
+                                         string scalar omit,
                                          real scalar rm,
                                          real scalar grid_lb,
                                          real scalar grid_ub,
@@ -66,24 +74,49 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+    real vector selomit, sel
     real scalar Mub
-    real vector sel
+
+    stata(sprintf("_ms_omit_info %s", b))
+    selomit = selectindex(!editvalue(st_matrix("r(omit)"), omit == "", 0))
+    if ( omit != "" ) {
+        if ( rows(st_matrix(b)) > cols(st_matrix(b)) ) {
+            printf("-omit- requires b() to be a cow vector; option ignored\n")
+            omit    = ""
+            selomit = 1..length(st_matrix(b))
+        }
+    }
+
+    if ( rows(st_matrix(V)) != cols(st_matrix(V)) ) {
+        errprintf("vcov() is not a square matrix\n")
+        _error(198)
+    }
+
+    if ( max((rows(st_matrix(b)), cols(st_matrix(b)))) != rows(st_matrix(V)) ) {
+        errprintf("b() and vcov() not conformable\n")
+        _error(198)
+    }
 
     results = HonestEventStudy()
-    if ( reference > 0 ) {
-        results.betahat = rowshape(st_matrix(b), 1)
-        results.sigma   = st_matrix(V)
-        results.prePeriodIndices  = 1..reference
-        results.postPeriodIndices = (reference+1)..length(results.betahat)
+    if ( numPrePeriods > 0 ) {
+        results.betahat = rowshape(st_matrix(b), 1)[selomit]
+        results.sigma   = st_matrix(V)[selomit, selomit]
+        results.numPrePeriods     = numPrePeriods
+        results.numPostPeriods    = length(results.betahat)-numPrePeriods
+        results.prePeriodIndices  = 1..numPrePeriods
+        results.postPeriodIndices = (numPrePeriods+1)..length(results.betahat)
     }
     else {
         results.prePeriodIndices  = strtoreal(tokens(pre))
         results.postPeriodIndices = strtoreal(tokens(post))
         sel = results.prePeriodIndices, results.postPeriodIndices
-        results.betahat = rowshape(st_matrix(b), 1)[sel]
-        results.sigma   = st_matrix(V)[sel, sel]
+        results.betahat = rowshape(st_matrix(b), 1)[selomit][sel]
+        results.sigma   = st_matrix(V)[selomit, selomit][sel, sel]
+        results.numPrePeriods  = length(results.prePeriodIndices)
+        results.numPostPeriods = length(results.postPeriodIndices)
     }
 
+    options.omit               = (omit != "")
     options.debug              = debug != ""
     options.rm                 = rm
     options.relativeMagnitudes = rm? "rm": ""
@@ -96,11 +129,11 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
         if ( rm ) {
             options.Mvec = _honestLinspace(0, 2, 10)[2..10]
         }
-        else if ( length(results.prePeriodIndices) == 1) {
+        else if ( results.numPrePeriods == 1) {
             options.Mvec = _honestLinspace(0, results.sigma[1, 1], 10)
         }
         else {
-            Mub = _honestSDUpperBoundMpre(results.betahat, results.sigma, length(results.prePeriodIndices), options.alpha)
+            Mub = _honestSDUpperBoundMpre(results.betahat, results.sigma, results.numPrePeriods, options.alpha)
             options.Mvec = _honestLinspace(0, Mub, 10)
         }
     }
@@ -119,7 +152,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
     }
 
     options.Mvec    = rowshape(sort(colshape(options.Mvec, 1), 1), 1)
-    options.l_vec   = (l_vec == "")? _honestBasis(1, length(results.postPeriodIndices)): colshape(st_matrix(l_vec), 1)
+    options.l_vec   = (l_vec == "")? _honestBasis(1, results.numPostPeriods): colshape(st_matrix(l_vec), 1)
 
     if ( min(options.Mvec) < 0 ) {
         errprintf("M must be greater than or equal to 0 (see mvec() option)\n")
@@ -144,8 +177,8 @@ struct _honestResults colvector function HonestSensitivityResults(
 {
     return(HonestSensitivityHelper(EventStudy.betahat,
                                    EventStudy.sigma,
-                                   length(EventStudy.prePeriodIndices),
-                                   length(EventStudy.postPeriodIndices),
+                                   EventStudy.numPrePeriods,
+                                   EventStudy.numPostPeriods,
                                    options))
 }
 
