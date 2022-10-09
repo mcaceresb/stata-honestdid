@@ -4,6 +4,7 @@ HonestDiD
 The HonestDiD package implements the tools for robust inference and
 sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
+This is the Stata version of the [R package of the same name](https://github.com/asheshrambachan/HonestDiD).
 
 `version 0.5.2 02Oct2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
@@ -154,7 +155,7 @@ analysis. Suppose we’re interested in assessing the sensitivity of
 the estimate for 2014, the first year after treatment.  The `pre()` and
 `post()` options specify the indices of the coefficients corresponding
 with pre-treatment and post-treatment event-study coefficients
-(excluding the one for 2013, which is normalized to zero) Stata's
+(excluding the one for 2013, which is normalized to zero); Stata's
 `numlist` notation is allowed. Finally, `mvec()` specifies the values of
 $\bar{M}$.
 
@@ -201,7 +202,7 @@ gives the same results (i.e. the coefficient vector contains several
 zeros from omitted regressors, but with the `omit` option we only needed
 to specify the indices for the included regressors). It's important that
 here the post-period indices are 6 and 7, since the reference period is
-no longer included. Further, the `ommit` option does **not** exclude
+no longer included. Further, the `omit` option does **not** exclude
 zeros; rather, it excludes vector entries indicated to have been omitted
 from a regression (based on the column names of the coefficient vector;
 see `help _ms_omit_info` for more).
@@ -323,10 +324,8 @@ timing.  Fortunately, the HonestDiD approach works well with
 recently-introduced methods for DiD under staggered treatment
 timing. Below, we show how the package can be used with the
 [did package](https://github.com/bcallaway11/did#difference-in-differences-)
-implementing Callaway and Sant’Anna. (See, also, the example on the
-did package [website](https://github.com/pedrohcgs/CS_RR)). We are
-hoping to more formally integrate the did and HonestDiD packages in the
-future---stay tuned!
+implementing Callaway and Sant’Anna. We are hoping to more formally
+integrate the did and HonestDiD packages in the future---stay tuned!
 
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
@@ -348,9 +347,14 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 
 See the [vignette](https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf) for the R package. You can also view a video presentation about this paper [here](https://www.youtube.com/watch?v=6-NkiA2jN7U).
 
+## Authors
+
+- [Mauricio Cáceres Bravo](https://mcaceresb.github.io)
+- [Ashesh Rambachan](https://asheshrambachan.github.io)
+- [Jonathan Roth](https://jonathandroth.github.io)
+
 ## Acknowledgements
 
 This software package is based upon work supported by the National
 Science Foundation Graduate Research Fellowship under Grant DGE1745303
-(Rambachan) and Grant DGE1144152 (Roth). We thank Mauricio Cáceres Bravo
-for his help in developing the package.
+(Rambachan) and Grant DGE1144152 (Roth).
