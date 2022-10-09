@@ -115,7 +115,7 @@ There were 50 or more warnings (use warnings() to see the first 50)
  8  0.00722 0.376 C-LF   DeltaRM 1.56 
  9 -0.0171  0.379 C-LF   DeltaRM 1.78 
 10 -0.0422  0.379 C-LF   DeltaRM 2    
-Time difference of 1.819946 mins
+Time difference of 1.808198 mins
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -124,7 +124,7 @@ Time difference of 1.819946 mins
 3  0.0707 0.313 C-LF   DeltaRM   1  
 4  0.0303 0.354 C-LF   DeltaRM   1.5
 5 -0.0303 0.414 C-LF   DeltaRM   2  
-Time difference of 18.78579 secs
+Time difference of 18.88231 secs
 # A tibble: 5 × 5
        lb    ub method      Delta    Mbar
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -133,25 +133,25 @@ Time difference of 18.78579 secs
 3  0.0707 0.313 Conditional DeltaRM   1  
 4  0.0303 0.354 Conditional DeltaRM   1.5
 5 -0.0303 0.414 Conditional DeltaRM   2  
-Time difference of 11.95273 secs
+Time difference of 11.89411 secs
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
-1  0.212  0.273 C-LF   DeltaRM   0  
-2  0.0707 0.414 C-LF   DeltaRM   0.5
-3 -0.0909 0.576 C-LF   DeltaRM   1  
-4 -0.253  0.737 C-LF   DeltaRM   1.5
-5 -0.434  0.919 C-LF   DeltaRM   2  
-Time difference of 19.17 secs
+1  0.192  0.253 C-LF   DeltaRM   0  
+2  0.0707 0.354 C-LF   DeltaRM   0.5
+3 -0.0505 0.495 C-LF   DeltaRM   1  
+4 -0.192  0.636 C-LF   DeltaRM   1.5
+5 -0.333  0.778 C-LF   DeltaRM   2  
+Time difference of 17.50653 secs
 # A tibble: 5 × 5
        lb    ub method      Delta    Mbar
     <dbl> <dbl> <chr>       <chr>   <dbl>
-1  0.212  0.273 Conditional DeltaRM   0  
-2  0.0707 0.414 Conditional DeltaRM   0.5
-3 -0.0909 0.576 Conditional DeltaRM   1  
-4 -0.253  0.737 Conditional DeltaRM   1.5
-5 -0.434  0.919 Conditional DeltaRM   2  
-Time difference of 10.7165 secs
+1  0.192  0.253 Conditional DeltaRM   0  
+2  0.0707 0.354 Conditional DeltaRM   0.5
+3 -0.0505 0.495 Conditional DeltaRM   1  
+4 -0.192  0.636 Conditional DeltaRM   1.5
+5 -0.333  0.778 Conditional DeltaRM   2  
+Time difference of 3.100529 secs
 
 Base non-rm comparison
 ----------------------
@@ -169,7 +169,7 @@ Base non-rm comparison
  8 0.0622 0.476 FLCI   DeltaSD 0.157 
  9 0.0397 0.498 FLCI   DeltaSD 0.180 
 10 0.0173 0.521 FLCI   DeltaSD 0.202 
-Time difference of 27.47389 secs
+Time difference of 28.42638 secs
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -177,7 +177,7 @@ Time difference of 27.47389 secs
 2  0.119  0.419 FLCI   DeltaSD   0.1
 3  0.0194 0.519 FLCI   DeltaSD   0.2
 4 -0.0806 0.619 FLCI   DeltaSD   0.3
-Time difference of 7.115787 secs
+Time difference of 6.763421 secs
 # A tibble: 4 × 5
        lb    ub method      Delta       M
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -185,7 +185,7 @@ Time difference of 7.115787 secs
 2  0.120  0.418 Conditional DeltaSD   0.1
 3  0.0203 0.518 Conditional DeltaSD   0.2
 4 -0.0796 0.618 Conditional DeltaSD   0.3
-Time difference of 11.16553 secs
+Time difference of 11.22588 secs
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -193,7 +193,7 @@ Time difference of 11.16553 secs
 2  0.120  0.418 C-F    DeltaSD   0.1
 3  0.0195 0.518 C-F    DeltaSD   0.2
 4 -0.0801 0.618 C-F    DeltaSD   0.3
-Time difference of 18.05662 secs
+Time difference of 18.11686 secs
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -201,40 +201,40 @@ Time difference of 18.05662 secs
 2  0.119  0.419 C-LF   DeltaSD   0.1
 3  0.0191 0.519 C-LF   DeltaSD   0.2
 4 -0.0809 0.618 C-LF   DeltaSD   0.3
-Time difference of 7.019123 secs
+Time difference of 7.239159 secs
 There were 24 warnings (use warnings() to see them)
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
-1  0.144 0.260 FLCI   DeltaSD   0  
-2 -0.244 1.16  FLCI   DeltaSD   0.1
-3 -0.844 1.76  FLCI   DeltaSD   0.2
-4 -1.44  2.36  FLCI   DeltaSD   0.3
-Time difference of 6.658301 secs
+1  0.133 0.230 FLCI   DeltaSD   0  
+2 -0.186 0.988 FLCI   DeltaSD   0.1
+3 -0.686 1.49  FLCI   DeltaSD   0.2
+4 -1.19  1.99  FLCI   DeltaSD   0.3
+Time difference of 6.811325 secs
 # A tibble: 4 × 5
       lb    ub method      Delta       M
    <dbl> <dbl> <chr>       <chr>   <dbl>
-1  0.337 0.442 Conditional DeltaSD   0  
-2 -0.243 1.04  Conditional DeltaSD   0.1
-3 -0.843 1.64  Conditional DeltaSD   0.2
-4 -1.44  2.24  Conditional DeltaSD   0.3
-Time difference of 10.87122 secs
+1  0.297 0.353 Conditional DeltaSD   0  
+2 -0.185 0.853 Conditional DeltaSD   0.1
+3 -0.684 1.35  Conditional DeltaSD   0.2
+4 -1.19  1.85  Conditional DeltaSD   0.3
+Time difference of 3.01206 secs
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
-1  0.270 0.285 C-F    DeltaSD   0  
-2 -0.243 1.16  C-F    DeltaSD   0.1
-3 -0.842 1.76  C-F    DeltaSD   0.2
-4 -1.44  2.36  C-F    DeltaSD   0.3
-Time difference of 45.14368 secs
+1  0.239 0.251 C-F    DeltaSD   0  
+2 -0.185 0.987 C-F    DeltaSD   0.1
+3 -0.736 1.49  C-F    DeltaSD   0.2
+4 -1.24  1.99  C-F    DeltaSD   0.3
+Time difference of 11.48606 secs
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
-1  0.338 0.442 C-LF   DeltaSD   0  
-2 -0.243 1.04  C-LF   DeltaSD   0.1
-3 -0.843 1.64  C-LF   DeltaSD   0.2
-4 -1.44  2.24  C-LF   DeltaSD   0.3
-Time difference of 10.31217 secs
+1  0.297 0.353 C-LF   DeltaSD   0  
+2 -0.187 0.853 C-LF   DeltaSD   0.1
+3 -0.687 1.35  C-LF   DeltaSD   0.2
+4 -1.19  1.85  C-LF   DeltaSD   0.3
+Time difference of 4.981331 secs
 There were 32 warnings (use warnings() to see them)
 
 Large non-rm comparison
@@ -253,7 +253,7 @@ Large non-rm comparison
  8 -4.88  3.00  FLCI   DeltaSD 3.10 
  9 -5.32  3.44  FLCI   DeltaSD 3.55 
 10 -5.77  3.89  FLCI   DeltaSD 3.99 
-Time difference of 36.81249 secs
+Time difference of 39.5303 secs
 # A tibble: 9 × 5
         lb    ub method Delta       M
      <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -266,7 +266,7 @@ Time difference of 36.81249 secs
 7 -10.6     5.55 FLCI   DeltaSD 0.03 
 8 -12.8     5.04 FLCI   DeltaSD 0.035
 9 -14.1     5.38 FLCI   DeltaSD 0.04 
-Time difference of 1.607398 mins
+Time difference of 1.721807 mins
 # A tibble: 9 × 5
      lb     ub method      Delta       M
   <dbl>  <dbl> <chr>       <chr>   <dbl>
@@ -279,7 +279,7 @@ Time difference of 1.607398 mins
 7 -17.3 -0.156 Conditional DeltaSD 0.03 
 8 -18.1  0.562 Conditional DeltaSD 0.035
 9 -18.9  1.27  Conditional DeltaSD 0.04 
-Time difference of 52.33784 secs
+Time difference of 54.96887 secs
 # A tibble: 9 × 5
        lb      ub method Delta       M
     <dbl>   <dbl> <chr>  <chr>   <dbl>
@@ -292,7 +292,7 @@ Time difference of 52.33784 secs
 7  -7.90   0.0285 C-F    DeltaSD 0.03 
 8 -10.1    0.719  C-F    DeltaSD 0.035
 9 -12.6    1.42   C-F    DeltaSD 0.04 
-Time difference of 2.906039 mins
+Time difference of 3.110065 mins
 # A tibble: 9 × 5
      lb      ub method Delta       M
   <dbl>   <dbl> <chr>  <chr>   <dbl>
@@ -305,60 +305,60 @@ Time difference of 2.906039 mins
 7 -17.3 -0.0868 C-LF   DeltaSD 0.03 
 8 -18.1  0.598  C-LF   DeltaSD 0.035
 9 -18.9  1.30   C-LF   DeltaSD 0.04 
-Time difference of 45.77384 secs
+Time difference of 52.26269 secs
 There were 50 or more warnings (use warnings() to see the first 50)
 # A tibble: 9 × 5
-       lb    ub method Delta       M
-    <dbl> <dbl> <chr>  <chr>   <dbl>
-1   4.70   9.24 FLCI   DeltaSD 0    
-2   2.56   8.50 FLCI   DeltaSD 0.005
-3   0.868  8.83 FLCI   DeltaSD 0.01 
-4  -1.36   8.56 FLCI   DeltaSD 0.015
-5  -3.85   7.91 FLCI   DeltaSD 0.02 
-6  -6.98   6.50 FLCI   DeltaSD 0.025
-7  -9.09   5.97 FLCI   DeltaSD 0.03 
-8 -11.3    5.34 FLCI   DeltaSD 0.035
-9 -12.4    5.68 FLCI   DeltaSD 0.04 
-Time difference of 1.861647 mins
+      lb    ub method Delta       M
+   <dbl> <dbl> <chr>  <chr>   <dbl>
+1  3.47   6.90 FLCI   DeltaSD 0    
+2  2.20   6.66 FLCI   DeltaSD 0.005
+3  0.619  6.59 FLCI   DeltaSD 0.01 
+4 -1.05   6.37 FLCI   DeltaSD 0.015
+5 -2.92   5.88 FLCI   DeltaSD 0.02 
+6 -5.27   4.80 FLCI   DeltaSD 0.025
+7 -7.03   4.20 FLCI   DeltaSD 0.03 
+8 -8.53   3.83 FLCI   DeltaSD 0.035
+9 -9.61   3.85 FLCI   DeltaSD 0.04 
+Time difference of 1.73358 mins
 # A tibble: 9 × 5
-     lb     ub method      Delta       M
-  <dbl>  <dbl> <chr>       <chr>   <dbl>
-1 -14.5 -3.09  Conditional DeltaSD 0    
-2 -15.2 -2.57  Conditional DeltaSD 0.005
-3 -15.9 -2.02  Conditional DeltaSD 0.01 
-4 -16.5 -1.47  Conditional DeltaSD 0.015
-5 -17.2 -0.913 Conditional DeltaSD 0.02 
-6 -17.9 -0.304 Conditional DeltaSD 0.025
-7 -18.6  0.279 Conditional DeltaSD 0.03 
-8 -19.3  0.867 Conditional DeltaSD 0.035
-9 -19.9  1.50  Conditional DeltaSD 0.04 
-Time difference of 52.25971 secs
+     lb      ub method      Delta       M
+  <dbl>   <dbl> <chr>       <chr>   <dbl>
+1 -10.5 -2.39   Conditional DeltaSD 0    
+2 -11.0 -2.02   Conditional DeltaSD 0.005
+3 -11.5 -1.60   Conditional DeltaSD 0.01 
+4 -12.0 -1.21   Conditional DeltaSD 0.015
+5 -12.5 -0.789  Conditional DeltaSD 0.02 
+6 -13.0 -0.352  Conditional DeltaSD 0.025
+7 -13.5  0.0676 Conditional DeltaSD 0.03 
+8 -14.0  0.519  Conditional DeltaSD 0.035
+9 -14.5  0.973  Conditional DeltaSD 0.04 
+Time difference of 17.54321 secs
 # A tibble: 9 × 5
-       lb     ub method Delta       M
-    <dbl>  <dbl> <chr>  <chr>   <dbl>
-1   3.72   4.03  C-F    DeltaSD 0    
-2   2.90   3.25  C-F    DeltaSD 0.005
-3   0.557  1.15  C-F    DeltaSD 0.01 
-4  -1.16  -0.230 C-F    DeltaSD 0.015
-5  -2.91  -0.733 C-F    DeltaSD 0.02 
-6  -4.72  -0.149 C-F    DeltaSD 0.025
-7  -6.64   0.437 C-F    DeltaSD 0.03 
-8  -8.74   1.04  C-F    DeltaSD 0.035
-9 -11.2    1.67  C-F    DeltaSD 0.04 
-Time difference of 2.744591 mins
+      lb     ub method Delta       M
+   <dbl>  <dbl> <chr>  <chr>   <dbl>
+1  2.73   2.96  C-F    DeltaSD 0    
+2  2.12   2.39  C-F    DeltaSD 0.005
+3  0.384  0.829 C-F    DeltaSD 0.01 
+4 -0.902 -0.213 C-F    DeltaSD 0.015
+5 -2.21  -0.666 C-F    DeltaSD 0.02 
+6 -3.57  -0.232 C-F    DeltaSD 0.025
+7 -5.00   0.206 C-F    DeltaSD 0.03 
+8 -6.59   0.641 C-F    DeltaSD 0.035
+9 -8.44   1.11  C-F    DeltaSD 0.04 
+Time difference of 2.30983 mins
 # A tibble: 9 × 5
-     lb     ub method Delta       M
-  <dbl>  <dbl> <chr>  <chr>   <dbl>
-1 -14.5 -3.12  C-LF   DeltaSD 0    
-2 -15.2 -2.57  C-LF   DeltaSD 0.005
-3 -15.9 -2.02  C-LF   DeltaSD 0.01 
-4 -16.5 -1.47  C-LF   DeltaSD 0.015
-5 -17.2 -0.879 C-LF   DeltaSD 0.02 
-6 -17.9 -0.304 C-LF   DeltaSD 0.025
-7 -18.6  0.316 C-LF   DeltaSD 0.03 
-8 -19.3  0.906 C-LF   DeltaSD 0.035
-9 -19.9  1.54  C-LF   DeltaSD 0.04 
-Time difference of 46.40107 secs
+     lb      ub method Delta       M
+  <dbl>   <dbl> <chr>  <chr>   <dbl>
+1 -10.5 -2.43   C-LF   DeltaSD 0    
+2 -11.0 -2.02   C-LF   DeltaSD 0.005
+3 -11.5 -1.62   C-LF   DeltaSD 0.01 
+4 -12.0 -1.19   C-LF   DeltaSD 0.015
+5 -12.5 -0.764  C-LF   DeltaSD 0.02 
+6 -13.0 -0.352  C-LF   DeltaSD 0.025
+7 -13.5  0.0947 C-LF   DeltaSD 0.03 
+8 -14.0  0.547  C-LF   DeltaSD 0.035
+9 -14.5  1.00   C-LF   DeltaSD 0.04 
+Time difference of 2.092718 mins
 There were 50 or more warnings (use warnings() to see the first 50)
 
 One post-period
@@ -371,7 +371,7 @@ One post-period
 2  0.192    0.539 FLCI   DeltaSD   0.1
 3  0.0919   0.639 FLCI   DeltaSD   0.2
 4 -0.00812  0.739 FLCI   DeltaSD   0.3
-Time difference of 6.385322 secs
+Time difference of 7.032053 secs
 # A tibble: 4 × 5
         lb    ub method      Delta       M
      <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -379,7 +379,7 @@ Time difference of 6.385322 secs
 2  0.0999  0.623 Conditional DeltaSD   0.1
 3  0.0790  0.659 Conditional DeltaSD   0.2
 4 -0.00768 0.741 Conditional DeltaSD   0.3
-Time difference of 0.6796813 secs
+Time difference of 0.6709762 secs
 # A tibble: 4 × 5
         lb      ub method Delta       M
      <dbl>   <dbl> <chr>  <chr>   <dbl>
@@ -387,7 +387,7 @@ Time difference of 0.6796813 secs
 2  0.150    0.581  C-F    DeltaSD   0.1
 3  0.0807   0.656  C-F    DeltaSD   0.2
 4 -0.00781  0.741  C-F    DeltaSD   0.3
-Time difference of 31.53543 secs
+Time difference of 33.48792 secs
 # A tibble: 4 × 5
          lb       ub method Delta       M
       <dbl>    <dbl> <chr>  <chr>   <dbl>
@@ -395,7 +395,7 @@ Time difference of 31.53543 secs
 2   0.125      0.606 C-LF   DeltaSD   0.1
 3   0.0775     0.662 C-LF   DeltaSD   0.2
 4  -0.00938    0.743 C-LF   DeltaSD   0.3
-Time difference of 0.4585414 secs
+Time difference of 0.4652054 secs
 There were 26 warnings (use warnings() to see them)
 # A tibble: 5 × 5
       lb    ub method      Delta    Mbar
@@ -405,7 +405,7 @@ There were 26 warnings (use warnings() to see them)
 3 -0.316 0.454 Conditional DeltaRM   1  
 4 -0.365 0.552 Conditional DeltaRM   1.5
 5 -0.459 0.552 Conditional DeltaRM   2  
-Time difference of 12.07265 secs
+Time difference of 12.23678 secs
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -414,5 +414,5 @@ Time difference of 12.07265 secs
 3 -0.151  0.441 C-LF   DeltaRM   1  
 4 -0.278  0.552 C-LF   DeltaRM   1.5
 5 -0.411  0.552 C-LF   DeltaRM   2  
-Time difference of 5.918919 secs
+Time difference of 6.527547 secs
 There were 50 or more warnings (use warnings() to see the first 50)

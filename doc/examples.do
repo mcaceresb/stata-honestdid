@@ -17,7 +17,7 @@ mata {
     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 }
 local opts mvec(0.5(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1)
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 
 * The results are printed to the Stata console and saved in a mata
 * object. The user can specify the name of the mata object via the 
@@ -28,7 +28,8 @@ honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
 mata `s(HonestEventStudy)'.CI
 mata `s(HonestEventStudy)'.betahat
 mata `s(HonestEventStudy)'.sigma
-mata `s(HonestEventStudy)'.referencePeriod
+mata `s(HonestEventStudy)'.numPrePeriods
+mata `s(HonestEventStudy)'.numPostPeriods
 mata `s(HonestEventStudy)'.prePeriodIndices
 mata `s(HonestEventStudy)'.postPeriodIndices
 mata `s(HonestEventStudy)'.open
@@ -42,6 +43,8 @@ mata `s(HonestEventStudy)'.options.Delta
 mata `s(HonestEventStudy)'.options.grid_lb
 mata `s(HonestEventStudy)'.options.grid_ub
 mata `s(HonestEventStudy)'.options.gridPoints
+
+mata _honestPrintCI(`s(HonestEventStudy)')
 
 * For ease of use, the package also provides a way to plot the CIs
 * using the {cmd:coefplot} package. This can be done when the CIs
@@ -78,6 +81,6 @@ matrix b = 100 * e(b)
 matrix V = 100^2 * e(V)
 mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
 local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-local plot coefplot xtitle(Mbar) ytitle(95% Robust CI)
+local plot coefplot xtitle(M) ytitle(95% Robust CI)
 honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' `plot'
 graph export coefplot.pdf, replace

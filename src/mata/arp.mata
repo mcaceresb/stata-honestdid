@@ -1,5 +1,6 @@
 cap mata mata drop _honestARPComputeCI()
 cap mata mata drop _honestARPConstructGamma()
+cap mata mata drop _honestReducedRowEchelon()
 cap mata mata drop _honestARPLeastFavorableCV()
 cap mata mata drop _honestARPDeltaLPWrapper()
 cap mata mata drop _honestARPConditionalTest()
@@ -159,23 +160,66 @@ real matrix function _honestARPConstructGamma(real vector l) {
     // This function is used in the change of basis to transform Delta into
     // a MI of the form that can be used by the ARP method.
 
-    real scalar tol
     real matrix R, B, Gamma
-    real vector leading_ones, D, p
-    B = colshape(l, 1), I(length(l))
+    real vector leading_ones
+    R = B = colshape(l, 1), I(length(l))
 
     // Drop collinear columns
-    qrdp(cross(B, B),., R=., p=.)
-    D   = abs(diagonal(R))
-    tol = epsilon(max((rows(B), cols(B))))
-    leading_ones = selectindex((D[order(p', 1)] :/ max(1 \ D)) :>= tol)
+    leading_ones = _honestReducedRowEchelon(R)
     Gamma = B[., leading_ones]'
-
     if (rank(Gamma) < max((cols(Gamma), rows(Gamma)))) {
         errprintf("Something went wrong in QR algorithm.\n")
         _error(198)
     }
     return(Gamma)
+}
+
+real rowvector function _honestReducedRowEchelon(real matrix M)
+{
+    real scalar i, r, pivot, nrow, ncol
+    real rowvector row, pivots
+
+    pivots = pivot = 1
+    nrow = rows(M)
+    ncol = cols(M)
+
+    if ( min((nrow, ncol)) == 0 ) {
+        return
+    }
+    else {
+        for(r = 1; r <= nrow; r++) {
+            if ( pivot >= ncol ) {
+                pivots = (r == 1)? pivot: (pivots, pivot)
+                return(pivots)
+            }
+            i = r
+            while ( M[i, pivot] == 0 ) {
+                if ( i == nrow ) {
+                    i = r
+                    pivot = pivot + 1
+                    if ( ncol == pivot ) {
+                        pivots = (r == 1)? pivot: (pivots, pivot)
+                        return(pivots)
+                    }
+                }
+                else {
+                    i = i + 1
+                }
+            }
+            row     = M[i, .]
+            M[i, .] = M[r, .]
+            M[r, .] = row
+            M[r, .] = M[r, .] / M[r, pivot]
+            for (i = 1; i <= nrow; i++) {
+                if (i != r) {
+                    M[i, .] = M[i, .] :- M[r, .] :* M[i, pivot]
+                }
+            }
+            pivots = (r == 1)? pivot: (pivots, pivot)
+            pivot = pivot + 1
+        }
+    }
+    return(pivots)
 }
 
 real scalar function _honestARPLeastFavorableCV(real matrix sigma,

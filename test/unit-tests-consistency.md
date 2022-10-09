@@ -14,7 +14,7 @@ Stata call:
 tempname beta sigma
 mata st_matrix(st_local("beta"),  _honestExampleBCBeta())
 mata st_matrix(st_local("sigma"), _honestExampleBCSigma())
-honestdid, reference(4) b(`beta') vcov(`sigma')
+honestdid, numpre(4) b(`beta') vcov(`sigma')
 ```
 
 R call:
@@ -54,8 +54,8 @@ Stata call:
 ```stata
 mata st_matrix("l_vec", _honestBasis(1, 4))
 local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_vec)
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 ```
 
 R call:
@@ -91,8 +91,8 @@ Stata call:
 ```stata
 mata st_matrix("l_alt", _honestBasis(3, 4))
 local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_alt)
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts'
-honestdid, reference(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
+honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 ```
 
 R call:
@@ -119,7 +119,7 @@ Results (same for both methods):
 Stata call:
 
 ```stata
-honestdid, reference(4) b(`beta') vcov(`sigma') norelmag
+honestdid, numpre(4) b(`beta') vcov(`sigma') norelmag
 ```
 
 R call:
@@ -154,12 +154,12 @@ Stata call:
 ```stata
 local opts mvec(0(0.1)0.3) l_vec(l_vec)
 foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, reference(4) b(`beta') vcov(`sigma') `opts' norelmag method(`meth')
+    honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' norelmag method(`meth')
 }
 
 local opts mvec(0(0.1)0.3) l_vec(l_alt)
 foreach meth in FLCI Conditional C-F C-LF {
-    honestdid, reference(4) b(`beta') vcov(`sigma') `opts' norelmag method(`meth')
+    honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' norelmag method(`meth')
 }
 ```
 

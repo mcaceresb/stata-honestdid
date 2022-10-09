@@ -52,29 +52,29 @@ st_matrix("sigma", sigma)
 end
 
 matrix mvec = 0.3, 0.4, 0.5
-honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)
-honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01) coefplot xlabel(,angle(60))
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) coefplot
+honestdid, b(betahat) vcov(sigma) numpre(4) alpha(0.01)
+honestdid, b(betahat) vcov(sigma) numpre(4) alpha(0.01) coefplot xlabel(,angle(60))
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0 0.2 0.4)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(mvec)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0(0.1)0.3) coefplot
 * graph export ../../test/coefplot.pdf, replace
 
-honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(Conditional)
+honestdid, b(betahat) vcov(sigma) numpre(4) alpha(0.01)     method(Conditional)
 honestdid, coefplot cached
 honestdid, coefplot cached xlabel(,angle(60))
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(Conditional)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(Conditional)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(Conditional)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0 0.2 0.4) method(Conditional)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(mvec)      method(Conditional)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0(0.1)0.3) method(Conditional)
 
-honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(C-F)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(C-F)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(C-F)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(C-F)
+honestdid, b(betahat) vcov(sigma) numpre(4) alpha(0.01)     method(C-F)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0 0.2 0.4) method(C-F)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(mvec)      method(C-F)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0(0.1)0.3) method(C-F)
 
-honestdid, b(betahat) vcov(sigma) reference(4) alpha(0.01)     method(C-LF)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0 0.2 0.4) method(C-LF)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(mvec)      method(C-LF)
-honestdid, b(betahat) vcov(sigma) reference(4) mvec(0(0.1)0.3) method(C-LF)
+honestdid, b(betahat) vcov(sigma) numpre(4) alpha(0.01)     method(C-LF)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0 0.2 0.4) method(C-LF)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(mvec)      method(C-LF)
+honestdid, b(betahat) vcov(sigma) numpre(4) mvec(0(0.1)0.3) method(C-LF)
 
 ***********************************************************************
 *                                                                     *
