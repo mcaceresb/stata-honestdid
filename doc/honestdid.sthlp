@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.5.2 02Oct2022}{...}
+{* *! version 0.5.3 09Oct2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -94,6 +94,7 @@ to the CI, all the inputs and options are saved:
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.l_vec     }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.Mvec      }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.rm        }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.options.omit      }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.method    }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.Delta     }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.grid_lb   }{p_end}

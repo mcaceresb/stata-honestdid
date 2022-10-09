@@ -38,6 +38,7 @@ mata `s(HonestEventStudy)'.options.alpha
 mata `s(HonestEventStudy)'.options.l_vec
 mata `s(HonestEventStudy)'.options.Mvec
 mata `s(HonestEventStudy)'.options.rm
+mata `s(HonestEventStudy)'.options.omit
 mata `s(HonestEventStudy)'.options.method
 mata `s(HonestEventStudy)'.options.Delta
 mata `s(HonestEventStudy)'.options.grid_lb
