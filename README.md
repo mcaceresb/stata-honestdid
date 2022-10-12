@@ -67,7 +67,7 @@ The package may be installed by using `net install`:
 
 ```stata
 local github https://raw.githubusercontent.com
-net install multe, from(`github'/mcaceresb/stata-honestdid/main) replace
+net install honestdid, from(`github'/mcaceresb/stata-honestdid/main) replace
 ```
 
 ## Example usage -- Medicaid expansions
