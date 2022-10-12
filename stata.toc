@@ -1,0 +1,2 @@
+v 0.5.3
+p 'HONESTDID': Honest DiD
