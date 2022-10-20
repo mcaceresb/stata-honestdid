@@ -59,7 +59,7 @@ jobs:
           cd build
           sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''\
               set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
-          head  ../CMakeLists.txt -n40
+          head -n40 ../CMakeLists.txt
           cmake -G "Unix Makefiles" ..
           cmake --build .
           cd ../..
