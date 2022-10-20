@@ -46,6 +46,7 @@ jobs:
           otool -L src/build/honestosqp_macosx.plugin
           otool -L src/build/honestecos_macosx.plugin
       - name: dependencies and compile arm64
+        run: |
           cd ecos
           sed -i 's/^CFLAGS\(.*\)/CFLAGS\1 -arch amd64/g' Makefile
           make
