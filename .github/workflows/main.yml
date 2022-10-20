@@ -1,7 +1,9 @@
 name: compile-macosx-plugin
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - parallel
     paths:
       - 'src/plugin'
   pull_request:
@@ -65,10 +67,10 @@ jobs:
           git config --global user.name 'Mauricio Caceres'
           git config --global user.email 'mauricio.caceres.bravo@gmail.com'
           git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
-          git add src/build/honestosqp_macosx.plugin
-          git add src/build/honestecos_macosx.plugin
-          git add src/build/honestosqp_macosxarm64.plugin
-          git add src/build/honestecos_macosxarm64.plugin
+          git add -f src/build/honestosqp_macosx.plugin
+          git add -f src/build/honestecos_macosx.plugin
+          git add -f src/build/honestosqp_macosxarm64.plugin
+          git add -f src/build/honestecos_macosxarm64.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
           git fetch
