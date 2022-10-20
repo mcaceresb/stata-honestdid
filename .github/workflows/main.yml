@@ -57,7 +57,7 @@ jobs:
           git restore .
           mkdir  build
           cd build
-          sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\ \ \ \ set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
+          sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''    set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
           cmake -G "Unix Makefiles" ..
           cmake --build .
           cd ../..
