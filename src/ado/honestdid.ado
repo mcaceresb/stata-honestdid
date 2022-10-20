@@ -6,12 +6,12 @@ program honestdid, sclass
     version 14.1
     cap plugin call honestosqp_plugin, _plugin_check
     if ( _rc ) {
-        disp as err "Failed to load ECOS plugin"
+        disp as err "Failed to load OSQP plugin"
         exit _rc
     }
     cap plugin call honestecos_plugin, _plugin_check
     if ( _rc ) {
-        disp as err "Failed to load OSQP plugin"
+        disp as err "Failed to load ECOS plugin"
         exit _rc
     }
 
@@ -119,8 +119,15 @@ program honestdid, sclass
 
     tempfile honestfile
     if ( "`parallel'" == "" ) {
-        cap which parallel
-        local parallel = cond(_rc, 0, 4)
+        local parallel = 0
+        * TODO: xx bring back parallel as default if verbosity subsides
+        * cap which parallel
+        * local parallel = cond(_rc, 0, 4)
+
+        cap parallel numprocessors
+        if ( _rc == 0 ) {
+            disp as txt "(suggestion: you can specify a number of cores via parallel() for faster runtimes)"
+        }
     }
     else {
         cap confirm number `parallel'
@@ -443,10 +450,25 @@ end
 
 capture program drop HonestParallelWork
 program HonestParallelWork
-    if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
-    else local c_os_: di lower("`c(os)'")
-    program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-    program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
+        local c_os_ macosx
+        local rc = 0
+        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        local rc = _rc | `rc'
+        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+        local rc = _rc | `rc'
+        if `rc' {
+            local c_os_ macosxarm64
+            cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+            cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+        }
+    }
+    else {
+        local c_os_: di lower("`c(os)'")
+        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    }
+
     tempname results
     mata {
         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
@@ -455,11 +477,30 @@ program HonestParallelWork
     }
 end
 
-if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
-else local c_os_: di lower("`c(os)'")
+if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
+    local c_os_ macosx
 
-cap program drop honestosqp_plugin
-cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+    cap program drop honestosqp_plugin
+    cap program drop honestecos_plugin
 
-cap program drop honestecos_plugin
-cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    local rc = 0
+    cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+    local rc = _rc | `rc'
+    cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    local rc = _rc | `rc'
+
+    if `rc' {
+        local c_os_ macosxarm64
+        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    }
+}
+else {
+    local c_os_: di lower("`c(os)'")
+
+    cap program drop honestosqp_plugin
+    cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+
+    cap program drop honestecos_plugin
+    cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+}

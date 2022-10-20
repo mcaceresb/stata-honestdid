@@ -343,6 +343,24 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
+## Speeding up with the parallel package
+
+`honestdid` has built-in support for the user-written
+[parallel](https://github.com/gvegayon/parallel) package (latest
+stable version required). `parallel(#)` can be specified as an option with `#`
+signifying the number of cores (parallel processes). Each core processes
+an $M$ in parallel. For example,
+
+```stata
+net install parallel, from(https://raw.github.com/gvegayon/parallel/stable) replace
+mata mata mlib index
+honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2) parallel(4)
+```
+
+processes each entry of `mvec` in a different core (with 8 values, 2
+would be processed per core and so on; further, if more cores than $M$
+are requested, the additional cores are not used).
+
 ## Additional options and resources
 
 See the [vignette](https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf) for the R package. You can also view a video presentation about this paper [here](https://www.youtube.com/watch?v=6-NkiA2jN7U).

@@ -27,7 +27,7 @@ jobs:
           repository: embotech/ecos
           path: './ecos'
           submodules: recursive
-      - name: dependencies and compile
+      - name: dependencies and compile x86_64
         run: |
           cd ecos
           make
@@ -43,6 +43,23 @@ jobs:
           shasum src/build/honestecos_macosx.plugin
           otool -L src/build/honestosqp_macosx.plugin
           otool -L src/build/honestecos_macosx.plugin
+      - name: dependencies and compile arm64
+          cd ecos
+          sed -i 's/^CFLAGS\(.*\)/CFLAGS\1 -arch amd64/g' Makefile
+          make
+          cd ..
+          cd osqp
+          mkdir  build
+          cd build
+          sed -i '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\ \ \ \ set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' CMakeLists.txt
+          cmake -G "Unix Makefiles" ..
+          cmake --build .
+          cd ../..
+          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin
+          shasum src/build/honestosqp_macosxarm64.plugin
+          shasum src/build/honestecos_macosxarm64.plugin
+          otool -L src/build/honestosqp_macosxarm64.plugin
+          otool -L src/build/honestecos_macosxarm64.plugin
       - name: commit plugin
         run: |
           git config --global user.name 'Mauricio Caceres'
@@ -50,6 +67,8 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
           git add src/build/honestosqp_macosx.plugin
           git add src/build/honestecos_macosx.plugin
+          git add src/build/honestosqp_macosxarm64.plugin
+          git add src/build/honestecos_macosxarm64.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
           git fetch
