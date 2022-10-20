@@ -16,7 +16,8 @@ cd ecos
 make
 cd ../osqp
 if [[ $(uname -m) == 'arm64' && $(uname -s) == 'Darwin' ]]; then
-    sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''    set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
+    sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''\
+        set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
 fi
 mkdir build
 cd build
