@@ -45,29 +45,6 @@ jobs:
           shasum src/build/honestecos_macosx.plugin
           otool -L src/build/honestosqp_macosx.plugin
           otool -L src/build/honestecos_macosx.plugin
-      - name: dependencies and compile arm64
-        run: |
-          cd ecos
-          git restore .
-          sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch arm64/g' Makefile
-          make clean
-          make
-          cd ..
-          cd osqp
-          rm -rf build
-          git restore .
-          mkdir  build
-          cd build
-          sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)\
-              ' ../CMakeLists.txt
-          cmake -G "Unix Makefiles" ..
-          cmake --build .
-          cd ../..
-          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin OSFLAGS="-bundle -DSYSTEM=APPLEMAC -arch arm64"
-          shasum src/build/honestosqp_macosxarm64.plugin
-          shasum src/build/honestecos_macosxarm64.plugin
-          otool -L src/build/honestosqp_macosxarm64.plugin
-          otool -L src/build/honestecos_macosxarm64.plugin
       - name: commit plugin
         run: |
           git config --global user.name 'Mauricio Caceres'
@@ -75,8 +52,6 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
           git add -f src/build/honestosqp_macosx.plugin
           git add -f src/build/honestecos_macosx.plugin
-          git add -f src/build/honestosqp_macosxarm64.plugin
-          git add -f src/build/honestecos_macosxarm64.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
           git fetch
