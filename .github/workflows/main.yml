@@ -50,7 +50,7 @@ jobs:
           cd ecos
           git restore .
           sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch amd64/g' Makefile
-          head Makefile
+          make clean
           make
           cd ..
           cd osqp
