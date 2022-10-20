@@ -12,7 +12,7 @@ cd ${ROOT}
 git clone --recursive https://github.com/embotech/ecos
 git clone --recursive https://github.com/osqp/osqp
 cd ecos
-# [ $(uname -s) == 'Darwin' ] && sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch amd64/g' Makefile
+# [ $(uname -s) == 'Darwin' ] && sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch arm64/g' Makefile
 make
 cd ../osqp
 if [[ $(uname -m) == 'arm64' && $(uname -s) == 'Darwin' ]]; then
