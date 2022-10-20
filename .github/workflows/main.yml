@@ -59,11 +59,10 @@ jobs:
           cd build
           sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)\
               ' ../CMakeLists.txt
-          head -n40 ../CMakeLists.txt
           cmake -G "Unix Makefiles" ..
           cmake --build .
           cd ../..
-          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin
+          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin OSFLAGS="-bundle -DSYSTEM=APPLEMAC -arch arm64"
           shasum src/build/honestosqp_macosxarm64.plugin
           shasum src/build/honestecos_macosxarm64.plugin
           otool -L src/build/honestosqp_macosxarm64.plugin
