@@ -50,9 +50,11 @@ config_standalone = {
         'src/mata/osqp.mata',
         'src/build/honestosqp_unix.plugin',
         'src/build/honestosqp_macosx.plugin',
+        'src/build/honestosqp_macosxarm64.plugin',
         'src/build/honestosqp_windows.plugin',
         'src/build/honestecos_unix.plugin',
         'src/build/honestecos_macosx.plugin',
+        'src/build/honestecos_macosxarm64.plugin',
         'src/build/honestecos_windows.plugin'
     ]
 }
