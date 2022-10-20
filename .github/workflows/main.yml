@@ -48,10 +48,13 @@ jobs:
       - name: dependencies and compile arm64
         run: |
           cd ecos
+          git restore .
           sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch amd64/g' Makefile
           make
           cd ..
           cd osqp
+          rm -rf build
+          git restore .
           mkdir  build
           cd build
           sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\ \ \ \ set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)' ../CMakeLists.txt
