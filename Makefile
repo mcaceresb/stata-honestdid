@@ -18,6 +18,7 @@ ifeq ($(OS),Windows_NT)
 	ECOS_OUT = src/build/honestecos_windows.plugin
 else
 	UNAME_S := $(shell uname -s)
+	UNAME_M := $(shell uname -m)
 	ifeq ($(UNAME_S),Linux)
 		OSFLAGS = -shared -fPIC -DSYSTEM=OPUNIX
 		OSQP_OUT = src/build/honestosqp_unix.plugin
@@ -25,8 +26,14 @@ else
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		OSFLAGS = -bundle -DSYSTEM=APPLEMAC
-		OSQP_OUT = src/build/honestosqp_macosx.plugin
-		ECOS_OUT = src/build/honestecos_macosx.plugin
+		ifeq ($(UNAME_M),x86_64)
+			OSQP_OUT = src/build/honestosqp_macosx.plugin
+			ECOS_OUT = src/build/honestecos_macosx.plugin
+		endif
+		ifeq ($(UNAME_M),arm64)
+			OSQP_OUT = src/build/honestosqp_macosxarm64.plugin
+			ECOS_OUT = src/build/honestecos_macosxarm64.plugin
+		endif
 	endif
 	GCC = gcc
 endif

@@ -1,4 +1,4 @@
-*! version 0.5.2 02Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.0.0 21Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -6,12 +6,12 @@ program honestdid, sclass
     version 14.1
     cap plugin call honestosqp_plugin, _plugin_check
     if ( _rc ) {
-        disp as err "Failed to load ECOS plugin"
+        disp as err "Failed to load OSQP plugin"
         exit _rc
     }
     cap plugin call honestecos_plugin, _plugin_check
     if ( _rc ) {
-        disp as err "Failed to load OSQP plugin"
+        disp as err "Failed to load ECOS plugin"
         exit _rc
     }
 
@@ -33,6 +33,7 @@ program honestdid, sclass
         POSTperiodindices(numlist)         /// post-period indices
         method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
         MATAsave(str)                      /// Save resulting mata object
+        parallel(str)                      /// Parallel execution
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
         colorspec(str asis)                /// special color handling
@@ -116,23 +117,77 @@ program honestdid, sclass
         local alpha = 0.05
     }
 
+    tempfile honestfile
+    if ( "`parallel'" == "" ) {
+        cap parallel numprocessors
+        local parallel = cond(_rc, 0, 4)
+
+        * TODO: xx Should default be no parallel?
+        * local parallel = 0
+        * cap parallel numprocessors
+        * if ( _rc == 0 ) {
+        *     disp as txt "(suggestion: you can specify a number of cores via parallel() for faster runtimes)"
+        * }
+    }
+    else {
+        cap confirm number `parallel'
+        if ( _rc | `parallel' < 0 ) {
+            disp as err "parallel() must be a number > 0"
+            exit _rc
+        }
+
+        cap which parallel
+        if ( _rc ) {
+            disp as err "-parallel- not found; required for parallel execution"
+            exit _rc
+        }
+    }
+
+    tempname rc
     mata {
         if ( `dohonest' | ("`cached'" == "") ) {
-            `results' = HonestDiD("`b'",                  ///
-                                  "`vcov'",               ///
-                                  `numpreperiods',        ///
-                                  "`preperiodindices'",   ///
-                                  "`postperiodindices'",  ///
-                                  "`l_vec'",              ///
-                                  "`mvec'",               ///
-                                  `alpha',                ///
-                                  "`method'",             ///
-                                  "`debug'",              ///
-                                  "`omit'",               ///
-                                  `relativeMagnitudes',   ///
-                                  `grid_lb',              ///
-                                  `grid_ub',              ///
-                                  `gridPoints')
+            if ( `parallel' ) {
+                `results' = HonestDiDParse("`b'",                  ///
+                                           "`vcov'",               ///
+                                           `numpreperiods',        ///
+                                           "`preperiodindices'",   ///
+                                           "`postperiodindices'",  ///
+                                           "`l_vec'",              ///
+                                           "`mvec'",               ///
+                                           `alpha',                ///
+                                           "`method'",             ///
+                                           "`debug'",              ///
+                                           "`omit'",               ///
+                                           `relativeMagnitudes',   ///
+                                           `grid_lb',              ///
+                                           `grid_ub',              ///
+                                           `gridPoints')
+                _honestPLLSave(`"`honestfile'"', `results')
+                `rc' = _honestPLLRun(`"`honestfile'"', `results', `parallel')
+                if ( `rc' & (`rc' != 1234) ) {
+                    errprintf("(note: error during parallel run; falling back on sequential execution)\n")
+                }
+            }
+            else `rc' = 1
+
+            if ( `rc' | `parallel' == 0 ) {
+                `results' = HonestDiD("`b'",                  ///
+                                      "`vcov'",               ///
+                                      `numpreperiods',        ///
+                                      "`preperiodindices'",   ///
+                                      "`postperiodindices'",  ///
+                                      "`l_vec'",              ///
+                                      "`mvec'",               ///
+                                      `alpha',                ///
+                                      "`method'",             ///
+                                      "`debug'",              ///
+                                      "`omit'",               ///
+                                      `relativeMagnitudes',   ///
+                                      `grid_lb',              ///
+                                      `grid_ub',              ///
+                                      `gridPoints')
+            }
+            else `results' = _honestPLLLoad(`"`honestfile'"')
             _honestPrintCI(`results')
         }
     }
@@ -199,7 +254,19 @@ program honestdid, sclass
         coefplot `matrices', vertical cionly yline(0) `options'
 
         * coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
-        disp as err "({bf:warning:} horizontal distance in plot needn't be to scale)"
+    }
+
+    tempname m k d dd
+    mata {
+        `m' = `results'.options.Mvec
+        `k' = length(`results'.options.Mvec)
+        if ( `k' > 2 ) {
+            `d'  = `m'[2::`k'] :- `m'[1::(`k'-1)]
+            `dd' = reldif(`d'[2::(`k'-1)], `d'[1::(`k'-2)])
+            if ( ("`coefplot'" != "") & any(`dd' :> epsilon(1)^(3/4)) ) {
+                display("{err}({bf:warning:} horizontal distance in plot needn't be to scale)")
+            }
+        }
     }
 
     sreturn local HonestEventStudy = "`results'"
@@ -335,11 +402,133 @@ program HonestSanityChecks
     c_local method: copy local method
 end
 
-if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
-else local c_os_: di lower("`c(os)'")
+capture program drop HonestParallel
+program HonestParallel
+    args honestfile mveclen ncores
+    * if ( `ncores' > `mveclen' ) {
+    *     disp as txt "warning: `ncores' requested but only `mveclen' M values supplied;"
+    *     disp as txt "setting number of cores to `mveclen' for parallel execution."
+    * }
+    disp as txt "(note: running execution using -parallel-; see {stata help parallel} for details)"
 
-cap program drop honestosqp_plugin
-cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+    cap parallel initialize `=min(`ncores', `mveclen')', f
+    if ( _rc ) {
+        disp as err "(note: unable to initialize -parallel-; falling back on sequential execution)"
+        exit 1234
+    }
 
-cap program drop honestecos_plugin
-cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    tempname results M
+    forvalues p = 1 / `mveclen' {
+        tempfile pf`p'
+    }
+    mata `results' = _honestPLLLoad(`"`honestfile'"')
+    preserve
+        clear
+        qui {
+            set obs `mveclen'
+            gen mindex  = _n
+            gen resfile = `"`honestfile'"'
+            gen parfile = ""
+            sort mindex
+            forvalues p = 1 / `mveclen' {
+            replace parfile = "`pf`p''" in `p'
+            }
+        }
+        * parallel, prog(honestdid.HonestParallelWork): HonestParallelWork
+        global HONEST_CALLER honestdid
+        qui parallel: honestwork
+        global HONEST_CALLER
+
+        mata `M' = `results'.options.Mvec
+        mata `results'.options.Mvec = J(1, 0, .)
+        local nfiles = 0
+        forvalues p = 1 / `mveclen' {
+            cap confirm file `"`=parfile[`p']'"'
+            if ( _rc == 0 ) {
+                mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
+                local ++nfiles
+            }
+        }
+
+        if ( `nfiles' != ${PLL_CHILDREN} ) {
+            disp as err "-parallel- run failed (files); falling back on sequential execution"
+            exit 1234
+        }
+
+        mata {
+            `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
+            if ( !all(`M' :== `results'.options.Mvec) ) {
+                errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                _error(1234)
+            }
+        }
+
+    restore
+    mata _honestPLLFinish(`results')
+    mata _honestPLLSave(`"`honestfile'"', `results')
+
+    if ( `nfiles' != ${PLL_CHILDREN} ) {
+        exit 1234
+    }
+
+    * disp as txt "Note: -honestdid- runs -parallel clean- to delete files created by -parallel-"
+    * disp as txt "{hline `=cond(`c(linesize)'>80, 80, `c(linesize)')'}"
+    parallel clean
+end
+
+* capture program drop HonestParallelWork
+* program HonestParallelWork
+*     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
+*         local c_os_ macosx
+*         local rc = 0
+*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*         local rc = _rc | `rc'
+*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*         local rc = _rc | `rc'
+*         if `rc' {
+*             local c_os_ macosxarm64
+*             cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*             cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*         }
+*     }
+*     else {
+*         local c_os_: di lower("`c(os)'")
+*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*     }
+*
+*     tempname results
+*     mata {
+*         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+*         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+*         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+*     }
+* end
+
+if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
+    local c_os_ macosx
+
+    cap program drop honestosqp_plugin
+    cap program drop honestecos_plugin
+
+    local rc = 0
+    cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+    local rc = _rc | `rc'
+    cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    local rc = _rc | `rc'
+
+    if `rc' {
+        local c_os_ macosxarm64
+        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    }
+}
+else {
+    local c_os_: di lower("`c(os)'")
+
+    cap program drop honestosqp_plugin
+    cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+
+    cap program drop honestecos_plugin
+    cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+}

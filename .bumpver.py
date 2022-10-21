@@ -24,8 +24,8 @@ args = vars(parser.parse_args())
 # Config
 
 config_token   = "CrossPlatformCompatibilityCookie"
-config_version = "0.5.2"
-config_date = date(2022, 10, 2)
+config_version = "1.0.0"
+config_date = date(2022, 10, 21)
 config_files = [
     ('.bumpver.py', 'config_version = "{major}.{minor}.{patch}"'),
     ('.bumpver.py', f'config_date = date({{date:%Y, {config_token}%m, {config_token}%d}})'),
@@ -50,9 +50,11 @@ config_standalone = {
         'src/mata/osqp.mata',
         'src/build/honestosqp_unix.plugin',
         'src/build/honestosqp_macosx.plugin',
+        'src/build/honestosqp_macosxarm64.plugin',
         'src/build/honestosqp_windows.plugin',
         'src/build/honestecos_unix.plugin',
         'src/build/honestecos_macosx.plugin',
+        'src/build/honestecos_macosxarm64.plugin',
         'src/build/honestecos_windows.plugin'
     ]
 }

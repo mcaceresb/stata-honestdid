@@ -27,7 +27,7 @@ jobs:
           repository: embotech/ecos
           path: './ecos'
           submodules: recursive
-      - name: dependencies and compile
+      - name: dependencies and compile x86_64
         run: |
           cd ecos
           make
@@ -48,8 +48,8 @@ jobs:
           git config --global user.name 'Mauricio Caceres'
           git config --global user.email 'mauricio.caceres.bravo@gmail.com'
           git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
-          git add src/build/honestosqp_macosx.plugin
-          git add src/build/honestecos_macosx.plugin
+          git add -f src/build/honestosqp_macosx.plugin
+          git add -f src/build/honestecos_macosx.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
           git fetch
