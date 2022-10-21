@@ -320,10 +320,10 @@ the second period after treatment.
 ## Speeding up with the parallel package
 
 `honestdid` has built-in support for the user-written
-[parallel](https://github.com/gvegayon/parallel) package (latest
-stable version required). `parallel(#)` can be specified as an option with `#`
-signifying the number of cores (parallel processes). Each core processes
-an $M$ in parallel. For example,
+[parallel](https://github.com/gvegayon/parallel) package (latest stable
+version required). `parallel(#)` can be specified as an option with `#`
+signifying the number of cores (parallel processes; default 4). Each
+core processes an $M$ in parallel. For example,
 
 ```stata
 net install parallel, from(https://raw.github.com/gvegayon/parallel/stable) replace
@@ -333,7 +333,10 @@ honestdid, pre(1/5) post(7/8) mvec(0.5(0.5)2) parallel(4)
 
 processes each entry of `mvec` in a different core (with 8 values, 2
 would be processed per core and so on; further, if more cores than $M$
-are requested, the additional cores are not used).
+are requested, the additional cores are not used). Note the `parallel`
+package creates several temporary files in the current working directory;
+`honestdid` runs `parallel clean` to delete them after a successful
+run, but in case of an error the user may need to delete them manually.
 
 ## Staggered timing
 

@@ -164,6 +164,9 @@ program honestdid, sclass
                                            `gridPoints')
                 _honestPLLSave(`"`honestfile'"', `results')
                 `rc' = _honestPLLRun(`"`honestfile'"', `results', `parallel')
+                if ( `rc' & (`rc' != 1234) ) {
+                    errprintf("(note: error during parallel run; falling back on sequential execution)\n")
+                }
             }
             else `rc' = 1
 
@@ -394,10 +397,11 @@ program HonestParallel
     *     disp as txt "warning: `ncores' requested but only `mveclen' M values supplied;"
     *     disp as txt "setting number of cores to `mveclen' for parallel execution."
     * }
+    disp as txt "(note: running execution using -parallel-; see {stata help parallel} for details)"
 
     cap parallel initialize `=min(`ncores', `mveclen')', f
     if ( _rc ) {
-        disp as err "unable to initialize parallelization; falling back on sequential execution"
+        disp as err "(note: unable to initialize -parallel-; falling back on sequential execution)"
         exit 1234
     }
 
