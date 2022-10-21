@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.5.2 02Oct2022}{...}
+{* *! version 1.0.0 21Oct2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -46,6 +46,7 @@ Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are req
 {synopt :{opth alpha(real)}} 1 - confidence level; default 0.05{p_end}
 {synopt :{opt method(str)}} C-LF (default with {opt delta(rm)}), FLCI (default with {opt delta(sd)}), Conditional, C-F{p_end}
 {synopt :{opt mata:save(str)}} save resulting mata object (default: HonestEventStudy){p_end}
+{synopt :{opt parallel(int)}} number of cores for parallel execution (default 4 if {cmd:parallel} is installed){p_end}
 {synopt :{opt coefplot}} coefficient plot{p_end}
 {synopt :{opt colorspec(str)}} colors for CIs. The first color is taken as the color of the original CI and the second as the color of the other CIs; this option can be overriden by passing {cmd:ciopts(lcolor())}.{p_end}
 {synopt :{opt cached}} use cached results for coefficient plot{p_end}
@@ -93,6 +94,7 @@ to the CI, all the inputs and options are saved:
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.l_vec     }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.Mvec      }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.rm        }{p_end}
+{phang2}{cmd:. mata `s(HonestEventStudy)'.options.omit      }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.method    }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.Delta     }{p_end}
 {phang2}{cmd:. mata `s(HonestEventStudy)'.options.grid_lb   }{p_end}

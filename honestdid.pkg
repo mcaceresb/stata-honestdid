@@ -1,4 +1,4 @@
-v 0.5.2
+v 1.0.0
 d
 d 'HONESTDID': HonestDiD
 d
@@ -10,12 +10,12 @@ d KW: event study
 d
 d Requires: Stata version 14.1
 d
-d Distribution-Date: 20221002
+d Distribution-Date: 20221021
 d
 f src/build/lhonestdid.mlib
 f src/ado/honestdid.ado
+f src/ado/honestwork.ado
 f doc/honestdid.sthlp
-f src/mata/honestdid.mata
 f src/mata/ecos.mata
 f src/mata/flci.mata
 f src/mata/osqp.mata
@@ -23,3 +23,7 @@ f src/build/honestecos_unix.plugin
 f src/build/honestosqp_unix.plugin
 f src/build/honestecos_windows.plugin
 f src/build/honestosqp_windows.plugin
+f src/build/honestecos_macosx.plugin
+f src/build/honestosqp_macosx.plugin
+f src/build/honestecos_macosxarm64.plugin
+f src/build/honestosqp_macosxarm64.plugin

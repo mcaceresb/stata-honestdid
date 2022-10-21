@@ -6,7 +6,6 @@ data(LWdata_EventStudy)
 # source('~/projects/ra/roth/honestDiD/references/HonestDiD/R/arp-nuisance.R')
 # Rscript --no-save --no-restore --verbose test/unit-tests-consistency.R > test/unit-tests-consistency.R.log 2>&1
 
-
 BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
 BC_l_vec          <- basisVector(index = 1, size = BC_numPostPeriods)

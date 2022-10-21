@@ -1,4 +1,4 @@
-*! version 0.5.1 28Sep2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 0.5.3 09Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -33,6 +33,7 @@ program honestdid, sclass
         POSTperiodindices(numlist)         /// post-period indices
         method(str)                        /// FLCI, Conditional, C-F or C-LF (default depends on rm)
         MATAsave(str)                      /// Save resulting mata object
+        parallel(str)                      /// Parallel execution
         coefplot                           /// Coefficient  plot
         cached                             /// Use cached results
         colorspec(str asis)                /// special color handling
@@ -116,23 +117,67 @@ program honestdid, sclass
         local alpha = 0.05
     }
 
+    tempfile honestfile
+    if ( "`parallel'" == "" ) {
+        cap which parallel
+        local parallel = cond(_rc, 0, 4)
+    }
+    else {
+        cap confirm number `parallel'
+        if ( _rc | `parallel' < 0 ) {
+            disp as err "parallel() must be a number > 0"
+            exit _rc
+        }
+
+        cap which parallel
+        if ( _rc ) {
+            disp as err "-parallel- not found; required for parallel execution"
+            exit _rc
+        }
+    }
+
+    tempname rc
     mata {
         if ( `dohonest' | ("`cached'" == "") ) {
-            `results' = HonestDiD("`b'",                  ///
-                                  "`vcov'",               ///
-                                  `numpreperiods',        ///
-                                  "`preperiodindices'",   ///
-                                  "`postperiodindices'",  ///
-                                  "`l_vec'",              ///
-                                  "`mvec'",               ///
-                                  `alpha',                ///
-                                  "`method'",             ///
-                                  "`debug'",              ///
-                                  "`omit'",               ///
-                                  `relativeMagnitudes',   ///
-                                  `grid_lb',              ///
-                                  `grid_ub',              ///
-                                  `gridPoints')
+            if ( `parallel' ) {
+                `results' = HonestDiDParse("`b'",                  ///
+                                           "`vcov'",               ///
+                                           `numpreperiods',        ///
+                                           "`preperiodindices'",   ///
+                                           "`postperiodindices'",  ///
+                                           "`l_vec'",              ///
+                                           "`mvec'",               ///
+                                           `alpha',                ///
+                                           "`method'",             ///
+                                           "`debug'",              ///
+                                           "`omit'",               ///
+                                           `relativeMagnitudes',   ///
+                                           `grid_lb',              ///
+                                           `grid_ub',              ///
+                                           `gridPoints')
+                _honestPLLSave(`"`honestfile'"', `results')
+                `rc' = _honestPLLRun(`"`honestfile'"', `results', `parallel')
+            }
+            else `rc' = 1
+
+            if ( `rc' | `parallel' == 0 ) {
+                `results' = HonestDiD("`b'",                  ///
+                                      "`vcov'",               ///
+                                      `numpreperiods',        ///
+                                      "`preperiodindices'",   ///
+                                      "`postperiodindices'",  ///
+                                      "`l_vec'",              ///
+                                      "`mvec'",               ///
+                                      `alpha',                ///
+                                      "`method'",             ///
+                                      "`debug'",              ///
+                                      "`omit'",               ///
+                                      `relativeMagnitudes',   ///
+                                      `grid_lb',              ///
+                                      `grid_ub',              ///
+                                      `gridPoints')
+            }
+            else `results' = _honestPLLLoad(`"`honestfile'"')
             _honestPrintCI(`results')
         }
     }
@@ -333,6 +378,81 @@ program HonestSanityChecks
     c_local b:      copy local b
     c_local vcov:   copy local vcov
     c_local method: copy local method
+end
+
+capture program drop HonestParallel
+program HonestParallel
+    args honestfile mveclen ncores
+    * if ( `ncores' > `mveclen' ) {
+    *     disp as txt "warning: `ncores' requested but only `mveclen' M values supplied;"
+    *     disp as txt "setting number of cores to `mveclen' for parallel execution."
+    * }
+
+    cap parallel initialize `=min(`ncores', `mveclen')', f
+    if ( _rc ) {
+        disp as err "unable to initialize parallelization; falling back on sequential execution"
+        exit 1234
+    }
+
+* TODO: xx it seems possible to do parallel, prog() nodata and use $pll_instance.
+* DO NOT pass every mata object. Figure out a way to pass a local/global then do a file.
+
+    tempname results
+    forvalues p = 1 / `mveclen' {
+        tempfile pf`p'
+    }
+    mata `results' = _honestPLLLoad(`"`honestfile'"')
+    preserve
+        clear
+        qui {
+            set obs `mveclen'
+            gen mindex  = _n
+            gen resfile = `"`honestfile'"'
+            gen parfile = ""
+            sort mindex
+            forvalues p = 1 / `mveclen' {
+            replace parfile = "`pf`p''" in `p'
+            }
+        }
+        parallel, prog(honestdid.HonestParallelWork): HonestParallelWork
+        local nfiles = 0
+        forvalues p = 1 / `mveclen' {
+            cap confirm file `"`=parfile[`p']'"'
+            if ( _rc == 0 ) {
+                mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
+                local ++nfiles
+            }
+        }
+
+        if ( `nfiles' != ${PLL_CHILDREN} ) {
+            disp as err "parallelization failed; falling back on sequential execution"
+            exit 1234
+        }
+    restore
+    mata _honestPLLFinish(`results')
+    mata _honestPLLSave(`"`honestfile'"', `results')
+
+    if ( `nfiles' != ${PLL_CHILDREN} ) {
+        exit 1234
+    }
+
+    disp as txt "Note: -honestdid- runs -parallel clean- to delete files created by -parallel-"
+    disp as txt "{hline `=cond(`c(linesize)'>80, 80, `c(linesize)')'}"
+    parallel clean
+end
+
+capture program drop HonestParallelWork
+program HonestParallelWork
+    if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
+    else local c_os_: di lower("`c(os)'")
+    program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+    program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+    tempname results
+    mata {
+        `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+        (void) HonestDiDPLL(`results', st_data(., "mindex"))
+        _honestPLLSave(st_sdata(., "parfile")[1], `results')
+    }
 end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) local c_os_ macosx
