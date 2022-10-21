@@ -14,8 +14,8 @@ d Distribution-Date: 20221020
 d
 f src/build/lhonestdid.mlib
 f src/ado/honestdid.ado
+f src/ado/honestwork.ado
 f doc/honestdid.sthlp
-f src/mata/honestdid.mata
 f src/mata/ecos.mata
 f src/mata/flci.mata
 f src/mata/osqp.mata

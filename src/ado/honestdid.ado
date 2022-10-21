@@ -119,15 +119,15 @@ program honestdid, sclass
 
     tempfile honestfile
     if ( "`parallel'" == "" ) {
-        local parallel = 0
-        * TODO: xx bring back parallel as default if verbosity subsides
-        * cap which parallel
-        * local parallel = cond(_rc, 0, 4)
-
         cap parallel numprocessors
-        if ( _rc == 0 ) {
-            disp as txt "(suggestion: you can specify a number of cores via parallel() for faster runtimes)"
-        }
+        local parallel = cond(_rc, 0, 4)
+
+        * TODO: xx Should default be no parallel?
+        * local parallel = 0
+        * cap parallel numprocessors
+        * if ( _rc == 0 ) {
+        *     disp as txt "(suggestion: you can specify a number of cores via parallel() for faster runtimes)"
+        * }
     }
     else {
         cap confirm number `parallel'
@@ -401,9 +401,6 @@ program HonestParallel
         exit 1234
     }
 
-* TODO: xx it seems possible to do parallel, prog() nodata and use $pll_instance.
-* DO NOT pass every mata object. Figure out a way to pass a local/global then do a file.
-
     tempname results
     forvalues p = 1 / `mveclen' {
         tempfile pf`p'
@@ -421,7 +418,10 @@ program HonestParallel
             replace parfile = "`pf`p''" in `p'
             }
         }
-        parallel, prog(honestdid.HonestParallelWork): HonestParallelWork
+        * parallel, prog(honestdid.HonestParallelWork): HonestParallelWork
+        global HONEST_CALLER honestdid
+        qui parallel: honestwork
+        global HONEST_CALLER
         local nfiles = 0
         forvalues p = 1 / `mveclen' {
             cap confirm file `"`=parfile[`p']'"'
@@ -443,8 +443,8 @@ program HonestParallel
         exit 1234
     }
 
-    disp as txt "Note: -honestdid- runs -parallel clean- to delete files created by -parallel-"
-    disp as txt "{hline `=cond(`c(linesize)'>80, 80, `c(linesize)')'}"
+    * disp as txt "Note: -honestdid- runs -parallel clean- to delete files created by -parallel-"
+    * disp as txt "{hline `=cond(`c(linesize)'>80, 80, `c(linesize)')'}"
     parallel clean
 end
 
