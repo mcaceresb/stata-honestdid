@@ -6,7 +6,7 @@ sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 This is the Stata version of the [R package of the same name](https://github.com/asheshrambachan/HonestDiD).
 
-`version 0.5.4 20Oct2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 1.0.0 21Oct2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 

@@ -1,2 +1,2 @@
-v 0.5.4
+v 1.0.0
 p 'HONESTDID': Honest DiD
