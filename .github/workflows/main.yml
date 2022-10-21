@@ -1,9 +1,7 @@
 name: compile-macosx-plugin
 on:
   push:
-    branches:
-      - main
-      - parallel
+    branches: [ main ]
     paths:
       - 'src/plugin'
   pull_request:
