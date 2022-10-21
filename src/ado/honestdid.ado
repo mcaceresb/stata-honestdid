@@ -254,7 +254,19 @@ program honestdid, sclass
         coefplot `matrices', vertical cionly yline(0) `options'
 
         * coefplot matrix(`dummycoef'), ci(`cimatrix') vertical cionly yline(0) `ciopts' `options'
-        disp as err "({bf:warning:} horizontal distance in plot needn't be to scale)"
+    }
+
+    tempname m k d dd
+    mata {
+        `m' = `results'.options.Mvec
+        `k' = length(`results'.options.Mvec)
+        if ( `k' > 2 ) {
+            `d'  = `m'[2::`k'] :- `m'[1::(`k'-1)]
+            `dd' = reldif(`d'[2::(`k'-1)], `d'[1::(`k'-2)])
+            if ( ("`coefplot'" != "") & any(`dd' :> epsilon(1)^(3/4)) ) {
+                display("{err}({bf:warning:} horizontal distance in plot needn't be to scale)")
+            }
+        }
     }
 
     sreturn local HonestEventStudy = "`results'"
@@ -405,7 +417,7 @@ program HonestParallel
         exit 1234
     }
 
-    tempname results
+    tempname results M
     forvalues p = 1 / `mveclen' {
         tempfile pf`p'
     }
@@ -426,6 +438,9 @@ program HonestParallel
         global HONEST_CALLER honestdid
         qui parallel: honestwork
         global HONEST_CALLER
+
+        mata `M' = `results'.options.Mvec
+        mata `results'.options.Mvec = J(1, 0, .)
         local nfiles = 0
         forvalues p = 1 / `mveclen' {
             cap confirm file `"`=parfile[`p']'"'
@@ -436,9 +451,18 @@ program HonestParallel
         }
 
         if ( `nfiles' != ${PLL_CHILDREN} ) {
-            disp as err "parallelization failed; falling back on sequential execution"
+            disp as err "-parallel- run failed (files); falling back on sequential execution"
             exit 1234
         }
+
+        mata {
+            `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
+            if ( !all(`M' :== `results'.options.Mvec) ) {
+                errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                _error(1234)
+            }
+        }
+
     restore
     mata _honestPLLFinish(`results')
     mata _honestPLLSave(`"`honestfile'"', `results')
@@ -452,34 +476,34 @@ program HonestParallel
     parallel clean
 end
 
-capture program drop HonestParallelWork
-program HonestParallelWork
-    if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
-        local c_os_ macosx
-        local rc = 0
-        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-        local rc = _rc | `rc'
-        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-        local rc = _rc | `rc'
-        if `rc' {
-            local c_os_ macosxarm64
-            cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-            cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-        }
-    }
-    else {
-        local c_os_: di lower("`c(os)'")
-        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-    }
-
-    tempname results
-    mata {
-        `results' = _honestPLLLoad(st_sdata(1, "resfile"))
-        (void) HonestDiDPLL(`results', st_data(., "mindex"))
-        _honestPLLSave(st_sdata(., "parfile")[1], `results')
-    }
-end
+* capture program drop HonestParallelWork
+* program HonestParallelWork
+*     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
+*         local c_os_ macosx
+*         local rc = 0
+*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*         local rc = _rc | `rc'
+*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*         local rc = _rc | `rc'
+*         if `rc' {
+*             local c_os_ macosxarm64
+*             cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*             cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*         }
+*     }
+*     else {
+*         local c_os_: di lower("`c(os)'")
+*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+*     }
+*
+*     tempname results
+*     mata {
+*         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+*         (void) HonestDiDPLL(`results', st_data(., "mindex"))
+*         _honestPLLSave(st_sdata(., "parfile")[1], `results')
+*     }
+* end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
     local c_os_ macosx
