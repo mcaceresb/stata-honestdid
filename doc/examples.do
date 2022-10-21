@@ -65,7 +65,7 @@ graph export coefplot.pdf, replace
 * with the {cmd:all} option. Since the data is available, we run the
 * regression using {cmd:reghdfe} and then use the resulting estimates.
 
-use LWdata_RawData.dta, clear           
+use test/LWdata_RawData.dta, clear           
 mata stata(_honestExampleLWCall())      
 honestdid, pre(1/9) post(10/32) coefplot
 
