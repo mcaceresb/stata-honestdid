@@ -366,7 +366,7 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 
 ## Additional options and resources
 
-See the [vignette](https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf) for the R package. You can also view a video presentation about this paper [here](https://www.youtube.com/watch?v=6-NkiA2jN7U).
+You can view a video presentation about this paper [here](https://www.youtube.com/watch?v=6-NkiA2jN7U).
 
 ## Authors
 
