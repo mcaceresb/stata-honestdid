@@ -1,5 +1,6 @@
 if `"`0'"' != "" shell make `0'
 cap noi ado uninstall honestdid
+cap noi net uninstall honestdid
 mata: mata clear
 mata: mata set matastrict on
 mata: mata set mataoptimize on

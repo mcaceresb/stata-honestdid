@@ -70,6 +70,31 @@ local github https://raw.githubusercontent.com
 net install honestdid, from(`github'/mcaceresb/stata-honestdid/main) replace
 ```
 
+## Compiling
+
+`honestdid` uses compiled C code internally; if you receive an error
+message saying "Failed to load OSQP/ECOS plugin" then you will need
+to compile the plugin in order to use `honestdid`. While we provide
+pre-compiled binaries, they may not work on every system. If you are
+using OSX or Linux, some helper code is provided in order to do this:
+
+```bash
+git clone https://github.com/mcaceresb/stata-honestdid
+cd stata-honestdid
+bash src/compile.sh
+```
+
+(you're required to have `make`, `cmake`, and `gcc` installed for this
+code to run; all three should be readily available on any OSX or
+Linux system). Then from a Stata session, run
+
+```stata
+do /path/to/stata-honestdid/src/install.do
+```
+
+If you are on Windows and you receive this error message, or if
+compiling the plugin yourself does not fix it, please open an issue.
+
 ## Example usage -- Medicaid expansions
 
 As an illustration of the package, we will examine the effects of

@@ -1,9 +1,10 @@
-* Install here coefplot, ftools, reghdfe, plot scheme
+* Install here coefplot, ftools, reghdfe, csdid, and plot scheme
 * local github https://raw.githubusercontent.com
 * ssc install coefplot,      replace
 * ssc install ftools,        replace
 * ssc install reghdfe,       replace
 * net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
+* net install csdid,         replace from(`github'/friosavila/csdid_drdid/main/code)
 * set scheme modern
 
 * Load data
