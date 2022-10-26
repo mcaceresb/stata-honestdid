@@ -106,6 +106,13 @@ end
 *                                                                     *
 ***********************************************************************
 
+* In some early runs there was a slight numerical precision issue
+* where the optimal value (the min) would occurr just beyond hMin or
+* h0 (hMax). Hence I resolved to expand the grid beyond those values
+* and continue the search. However, searching too far beyond the bounds
+* results in errors.  Hence I only expand the search in this way once,
+* and I am sure to use a relatively small step size when I do so.
+
 mata
 struct _flciResults scalar function _flciFindOptimalHelper(
     real matrix sigma,
@@ -119,14 +126,13 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     struct _flciResults scalar results
     real rowvector hGrid
     real colvector sel, selmin, CI_halflength, optimal_l
-    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter, expected
+    real scalar h0, hMin, n, nn, i, maxBias, diff, maxiter, xtol, iter, expected, step, first
     real matrix biasDF
 
     if ( args() < 5 ) l_vec     = _honestBasis(1, numPostPeriods)
     if ( args() < 6 ) alpha     = 0.05
     if ( args() < 7 ) numPoints = 10
 
-    // n   = numPrePeriods + numPostPeriods
     xtol    = sqrt(epsilon(1))
     maxiter = 100
     n       = numPrePeriods + numPrePeriods
@@ -136,7 +142,6 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     diff    = 1
     iter    = 0
 
-    // First attempt
     hGrid  = _honestLinspace(hMin, h0, numPoints)
     biasDF = J(numPoints, 2 + n + 2 * nn, .)
     for (i = 1; i <= numPoints; i++) {
@@ -150,22 +155,21 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
     expected = floor(log((h0 - hMin) / xtol)/log((numPoints-1)/2))
+    first = any(selmin :== 1)
+    step = (hGrid[2] - hGrid[1]) / (first? numPoints: 1)
+    if ( (abs(M) < epsilon(1)) & first ) {
+        diff = 0
+        expected = 0
+    }
 
     while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
-        if ( selmin == 1 ) {
-            hGrid = _honestLinspace(hGrid[selmin] - (hGrid[selmin+1] - hGrid[selmin]), hGrid[selmin+1], numPoints)
-        }
-        else if ( selmin == length(hGrid) ) {
-            hGrid = _honestLinspace(hGrid[selmin-1], hGrid[selmin] + (hGrid[selmin] - hGrid[selmin-1]), numPoints)
-        }
-        else {
-            hGrid = _honestLinspace(hGrid[selmin-1], hGrid[selmin+1], numPoints)
-        }
+        hGrid  = _honestLinspace(hGrid[selmin] - step, hGrid[selmin] + step, numPoints), hGrid[selmin]
+        step   = 2 * step / (numPoints-1)
         biasDF = J(numPoints, 2 + n + 2 * nn, .)
         for (i = 1; i <= numPoints; i++) {
             biasDF[i, .] = _flciFindWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
         }
-        sel     = selectindex((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10))
+        sel     = selectindex(((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10)) :& (biasDF[., 2] :< .))
         biasDF  = biasDF[sel, .]
         hGrid   = hGrid'[sel, .]
         maxBias = biasDF[., 2] :* M
@@ -174,6 +178,11 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
         diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]') \ (max(hGrid) - min(hGrid)))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
+        first = first + any(selmin :== 1)
+        if ( first > iter ) {
+            diff = 0
+            expected = 0
+        }
     }
 
     results.optimalVec          = optimal_l \ l_vec
@@ -193,24 +202,34 @@ real vector function _flciFoldedNormalQuantiles(real scalar p,
                                                 | real scalar sd) {
     if ( args() < 3 ) sd = 1
 
-    real scalar tol, diff
-    real vector left, right, exact, quant, sell, selr, miss
+    real scalar tol, diff, xdiff
+    real vector left, right, exact, quant, sel, sell, selr, miss
 
     miss  = !(mu :< .)
     tol   = epsilon(1)^(3/4)
     left  = invnormal(p/2) * sd :+ mu
     right = invnormal((p + 9) / 10) * sd :+ abs(mu)
+    sel   = selectindex(rowmin((reldif(left, mu), reldif(right, mu))) :< epsilon(1))
+    if ( length(sel) ) {
+        mu[sel] = J(length(sel), 1, .)
+        miss    = !(mu :< .)
+        left    = invnormal(p/2) * sd :+ mu
+        right   = invnormal((p + 9) / 10) * sd :+ abs(mu)
+    }
+
     assert(all(((normal(left  :- mu) - normal(-left  :- mu)) :<= p) :| miss))
     assert(all(((normal(right :- mu) - normal(-right :- mu)) :>= p) :| miss))
 
     quant = (left :+ right) / 2
     exact = normal(quant :- mu) - normal(-quant :- mu)
     diff  = max(abs(exact :- p))
-    while ( !missing(diff) & diff > tol ) {
+    xdiff = 1
+    while ( !missing(diff) & diff > tol & xdiff > tol ) {
         selr = selectindex(exact :> p)
         sell = selectindex(exact :< p)
         if ( length(selr) ) right[selr] = quant[selr]
         if ( length(sell) ) left[sell]  = quant[sell]
+        xdiff = max(abs(quant :- (left :+ right) / 2))
         quant = (left :+ right) / 2
         exact = normal(quant :- mu) - normal(-quant :- mu)
         diff  = max(abs(exact :- p))

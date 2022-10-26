@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0.0 21Oct2022}{...}
+{* *! version 1.0.1 26Oct2022}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
