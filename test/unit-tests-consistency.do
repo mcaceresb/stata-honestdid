@@ -70,7 +70,5 @@ honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
 honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
 
 local opts mvec(0(0.5)2) delta(rm) numpre(7)
-honestdid, b(`beta') vcov(`sigma') `opts' method(FLCI)
 honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
-honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
 honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)

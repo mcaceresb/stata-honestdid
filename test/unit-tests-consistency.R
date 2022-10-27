@@ -114,9 +114,6 @@ for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
     print(Sys.time() - timer)
 }
 
-xx ok, you need to check because these are suddetly suspiciously fast...what?
-xx also they differ from Stata results
-
 for (meth in c("FLCI", "Conditional", "C-F", "C-LF")) {
     timer = Sys.time()
     results <- createSensitivityResults(betahat        = BCdata_EventStudy$betahat,

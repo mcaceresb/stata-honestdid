@@ -110,8 +110,8 @@ end
 * where the optimal value (the min) would occurr just beyond hMin or
 * h0 (hMax). Hence I resolved to expand the grid beyond those values
 * and continue the search. However, searching too far beyond the bounds
-* results in errors.  Hence I only expand the search in this way once,
-* and I am sure to use a relatively small step size when I do so.
+* results in errors.  Hence I break the loop if I expand the search in
+* this way two consecutive times.
 
 mata
 struct _flciResults scalar function _flciFindOptimalHelper(
@@ -155,8 +155,8 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
     optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
     expected = floor(log((h0 - hMin) / xtol)/log((numPoints-1)/2))
-    first = any(selmin :== 1)
-    step = (hGrid[2] - hGrid[1]) / (first? numPoints: 1)
+    first = (selmin :== 1)
+    step = hGrid[2] - hGrid[1]
     if ( (abs(M) < epsilon(1)) & first ) {
         diff = 0
         expected = 0
@@ -165,8 +165,8 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
         hGrid  = _honestLinspace(hGrid[selmin] - step, hGrid[selmin] + step, numPoints), hGrid[selmin]
         step   = 2 * step / (numPoints-1)
-        biasDF = J(numPoints, 2 + n + 2 * nn, .)
-        for (i = 1; i <= numPoints; i++) {
+        biasDF = J(numPoints+1, 2 + n + 2 * nn, .)
+        for (i = 1; i <= numPoints+1; i++) {
             biasDF[i, .] = _flciFindWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
         }
         sel     = selectindex(((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10)) :& (biasDF[., 2] :< .))
@@ -178,11 +178,11 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
         diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]') \ (max(hGrid) - min(hGrid)))
         optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
-        first = first + any(selmin :== 1)
-        if ( first > iter ) {
+        if ( first & (selmin :== 1) & (min(hGrid) < hMin) ) {
             diff = 0
             expected = 0
         }
+        first = (selmin :== 1)
     }
 
     results.optimalVec          = optimal_l \ l_vec

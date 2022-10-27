@@ -1,25 +1,25 @@
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdi
-> d/test/unit-tests-consistency.do.log
+       log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdid/test/unit-tests-consistency.do.log
   log type:  text
- opened on:   2 Oct 2022, 20:30:55
+ opened on:  26 Oct 2022, 22:26:10
 
 . set rmsg on
-r; t=0.00 20:30:55
+r; t=0.00 22:26:10
 
 . tempname beta sigma
-r; t=0.00 20:30:55
+r; t=0.00 22:26:10
 
 . mata {
 >     st_matrix(st_local("beta"),  _honestExampleBCBeta())
 >     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 > }
-r; t=0.01 20:30:55
+r; t=0.00 22:26:10
 
 . 
 . * Base relative magnitudes comparison
 . honestdid, numpre(4) b(`beta') vcov(`sigma')
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -35,21 +35,22 @@ r; t=0.01 20:30:55
 |  2.0000 | -0.041 |  0.379 | (+)
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=42.32 20:31:38
+r; t=15.63 22:26:25
 
 . 
 . mata st_matrix("l_vec", _honestBasis(1, 4))
-r; t=0.00 20:31:38
+r; t=0.00 22:26:25
 
 . mata st_matrix("l_alt", J(4, 1, 1)/4)
-r; t=0.00 20:31:38
+r; t=0.00 22:26:25
 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_vec)
-r; t=0.00 20:31:38
+r; t=0.00 22:26:25
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -60,11 +61,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=8.33 20:31:46
+r; t=4.00 22:26:29
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -75,15 +77,16 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=4.25 20:31:50
+r; t=2.67 22:26:32
 
 . 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_alt)
-r; t=0.00 20:31:50
+r; t=0.00 22:26:32
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -94,11 +97,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=9.76 20:32:00
+r; t=5.22 22:26:37
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -109,11 +113,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=1.30 20:32:01
+r; t=0.98 22:26:38
 
 . 
 . * Base non-rm comparison
 . honestdid, numpre(4) b(`beta') vcov(`sigma') delta(sd)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -129,16 +134,14 @@ r; t=1.30 20:32:01
 |  0.1797 |  0.040 |  0.498 | 
 |  0.2022 |  0.017 |  0.521 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.53 20:32:02
+r; t=0.58 22:26:39
 
 . 
 . local opts mvec(0(0.1)0.3) l_vec(l_vec)
-r; t=0.00 20:32:02
+r; t=0.00 22:26:39
 
-. foreach meth in FLCI Conditional C-F C-LF {
-  2.     honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(`
-> meth')
-  3. }
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -148,6 +151,10 @@ r; t=0.00 20:32:02
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.619 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=0.46 22:26:39
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditional)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -157,6 +164,10 @@ r; t=0.00 20:32:02
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
+r; t=2.15 22:26:41
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -166,6 +177,10 @@ r; t=0.00 20:32:02
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
+r; t=2.27 22:26:44
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -175,16 +190,14 @@ r; t=0.00 20:32:02
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.618 | 
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
-r; t=14.26 20:32:16
+r; t=1.72 22:26:45
 
 . 
 . local opts mvec(0(0.1)0.3) l_vec(l_alt)
-r; t=0.00 20:32:16
+r; t=0.00 22:26:45
 
-. foreach meth in FLCI Conditional C-F C-LF {
-  2.     honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(`
-> meth')
-  3. }
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -194,6 +207,10 @@ r; t=0.00 20:32:16
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.186 |  1.988 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=0.46 22:26:46
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditional)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -204,6 +221,10 @@ r; t=0.00 20:32:16
 |  0.3000 | -1.185 |  1.853 | (+)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=0.89 22:26:47
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -213,6 +234,10 @@ r; t=0.00 20:32:16
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.183 |  1.985 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
+r; t=1.10 22:26:48
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -223,14 +248,14 @@ r; t=0.00 20:32:16
 |  0.3000 | -1.185 |  1.853 | (+)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=4.69 20:32:21
+r; t=1.31 22:26:49
 
 . 
 . * Large non-rm comparison
 . * -----------------------
 . 
 . use test/LWdata_RawData.dta, clear
-r; t=0.00 20:32:21
+r; t=0.00 22:26:49
 
 . mata stata(_honestExampleLWCall())
 (MWFE estimator converged in 4 iterations)
@@ -299,26 +324,27 @@ Absorbed degrees of freedom:
    PUS_SURVEY_YEAR#BIRTHYEAR |       120           8         112     |
 ---------------------------------------------------------------------+
 * = FE nested within cluster; treated as redundant for DoF computation
-r; t=0.37 20:32:21
+r; t=0.38 22:26:50
 
 . matrix b = 100 * e(b)
-r; t=0.00 20:32:21
+r; t=0.00 22:26:50
 
 . matrix V = 100^2 * e(V) * 1.038349
-r; t=0.00 20:32:21
+r; t=0.00 22:26:50
 
 . mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
-r; t=0.00 20:32:21
+r; t=0.00 22:26:50
 
 . mata st_matrix("l_alt", J(23, 1, 1)/23)
-r; t=0.00 20:32:21
+r; t=0.00 22:26:50
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
 |       . | -1.254 |  0.298 | (Original)
-|  0.0000 |  0.794 |  1.762 | 
+|  0.0000 |  0.796 |  1.763 | 
 |  0.4432 | -2.253 |  0.193 | 
 |  0.8863 | -2.678 |  0.759 | 
 |  1.3295 | -3.107 |  1.227 | 
@@ -329,15 +355,14 @@ r; t=0.00 20:32:21
 |  3.5453 | -5.323 |  3.443 | 
 |  3.9884 | -5.766 |  3.886 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=1.24 20:32:22
+r; t=1.02 22:26:51
 
 . 
 . local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-r; t=0.00 20:32:22
+r; t=0.00 22:26:51
 
-. foreach meth in FLCI Conditional C-F C-LF {
-  2.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
-  3. }
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -352,6 +377,10 @@ r; t=0.00 20:32:22
 |  0.0350 | -12.772 |  5.047 | 
 |  0.0400 | -14.104 |  5.390 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=0.87 22:26:51
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -367,6 +396,10 @@ r; t=0.00 20:32:22
 |  0.0400 | -18.879 |  1.266 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
+r; t=16.61 22:27:08
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -381,6 +414,10 @@ r; t=0.00 20:32:22
 |  0.0350 | -10.082 |  0.732 | 
 |  0.0400 | -12.632 |  1.419 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
+r; t=17.86 22:27:26
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -396,15 +433,14 @@ r; t=0.00 20:32:22
 |  0.0400 | -18.879 |  1.342 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=157.96 20:35:00
+r; t=13.96 22:27:40
 
 . 
 . local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_alt)
-r; t=0.00 20:35:00
+r; t=0.00 22:27:40
 
-. foreach meth in FLCI Conditional C-F C-LF {
-  2.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth')
-  3. }
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -419,6 +455,10 @@ r; t=0.00 20:35:00
 |  0.0350 | -8.525 |  3.832 | 
 |  0.0400 | -9.610 |  3.851 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=0.88 22:27:41
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -434,6 +474,10 @@ r; t=0.00 20:35:00
 |  0.0400 | -14.510 |  0.973 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
+r; t=8.15 22:27:49
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -448,6 +492,10 @@ r; t=0.00 20:35:00
 |  0.0350 | -6.599 |  0.649 | 
 |  0.0400 | -8.463 |  1.102 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
+r; t=7.84 22:27:57
+
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -463,18 +511,17 @@ r; t=0.00 20:35:00
 |  0.0400 | -14.510 |  1.031 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=63.94 20:36:04
+r; t=11.41 22:28:08
 
 . 
 . * One post-period
 . * ---------------
 . 
 . local opts mvec(0(0.1)0.3) delta(sd) numpre(7)
-r; t=0.00 20:36:04
+r; t=0.00 22:28:08
 
-. foreach meth in FLCI Conditional C-F C-LF {
-  2.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
-  3. }
+. honestdid, b(`beta') vcov(`sigma') `opts' method(FLCI)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -484,6 +531,10 @@ r; t=0.00 20:36:04
 |  0.2000 |  0.092 |  0.639 | 
 |  0.3000 | -0.008 |  0.739 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
+r; t=0.46 22:28:09
+
+. honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -493,6 +544,10 @@ r; t=0.00 20:36:04
 |  0.2000 |  0.079 |  0.659 | 
 |  0.3000 | -0.008 |  0.741 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
+r; t=0.46 22:28:09
+
+. honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -504,6 +559,10 @@ r; t=0.00 20:36:04
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 (+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=0.68 22:28:10
+
+. honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -513,17 +572,16 @@ r; t=0.00 20:36:04
 |  0.2000 |  0.078 |  0.662 | 
 |  0.3000 | -0.009 |  0.743 | 
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
-r; t=1.01 20:36:05
+r; t=0.57 22:28:10
 
 . 
 . local opts mvec(0(0.5)2) delta(rm) numpre(7)
-r; t=0.00 20:36:05
+r; t=0.00 22:28:10
 
-. foreach meth in Conditional C-LF {
-  2.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth')
-  3. }
+. honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -535,8 +593,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  2.0000 | -0.459 |  0.552 | (+)
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
+r; t=2.67 22:28:13
+
+. honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
+(note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
@@ -548,8 +610,11 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  2.0000 | -0.411 |  0.552 | (+)
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=7.45 20:36:13
+r; t=1.50 22:28:14
 
 . 
 end of do-file
-r; t=0.00 20:36:13
+
+r; t=0.00 22:28:14
+. 
+. 
