@@ -243,7 +243,7 @@ struct ECOS_workspace_abridged scalar ECOS_solve(string scalar fname) {
 void ECOS_cleanup(struct ECOS_workspace_abridged scalar work, string scalar fname) {
     real scalar fh
     colvector C
-    fh = fopen(fname, "r")
+    fh = fopen(fname, "rw")
     C = bufio()
     work.rc = fbufget(C, fh, "%4bu", 1)
     if ( work.rc == 0 ) {

@@ -123,7 +123,7 @@ struct OSQP_workspace_abridged scalar OSQP_solve (string scalar fname) {
 void OSQP_cleanup (struct OSQP_workspace_abridged scalar work, string scalar fname) {
     real scalar fh
     colvector C
-    fh = fopen(fname, "r")
+    fh = fopen(fname, "rw")
     C = bufio()
     work.rc = fbufget(C, fh, "%4bu", 1)
     if ( work.rc == 0 ) {
