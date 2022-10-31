@@ -27,8 +27,8 @@ else
 	ifeq ($(UNAME_S),Darwin)
 		OSFLAGS = -bundle -DSYSTEM=APPLEMAC
 		ifeq ($(UNAME_M),x86_64)
-			OSQP_OUT = src/build/honestosqp_macosx.plugin
-			ECOS_OUT = src/build/honestecos_macosx.plugin
+			OSQP_OUT = src/build/honestosqp_macosx86_64.plugin
+			ECOS_OUT = src/build/honestecos_macosx86_64.plugin
 		endif
 		ifeq ($(UNAME_M),arm64)
 			OSQP_OUT = src/build/honestosqp_macosxarm64.plugin
