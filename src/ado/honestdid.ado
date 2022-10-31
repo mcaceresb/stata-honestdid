@@ -143,8 +143,12 @@ program honestdid, sclass
         }
     }
 
-    tempname rc
-    mata {
+    tempname rc frname
+    if ( `c(stata_version)' >= 16 ) {
+        frame create `frname'
+        local frame frame `frname':
+    }
+    `frame' mata {
         if ( `dohonest' | ("`cached'" == "") ) {
             if ( `parallel' ) {
                 `results' = HonestDiDParse("`b'",                  ///
@@ -194,6 +198,7 @@ program honestdid, sclass
             ECOS_cleanup()
         }
     }
+    if ( `c(stata_version)' >= 16 ) frame drop `frname'
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
     * `results'.referencePeriod = 2008
 
