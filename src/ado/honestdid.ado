@@ -1,4 +1,4 @@
-*! version 1.1.0 30Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.1.1 31Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -13,6 +13,13 @@ program honestdid, sclass
     if ( _rc ) {
         disp as err "Failed to load ECOS plugin"
         exit _rc
+    }
+
+    if `"`0'"' == "_plugin_check" {
+        which honestdid
+        plugin call honestosqp_plugin, _plugin_check
+        plugin call honestecos_plugin, _plugin_check
+        exit 0
     }
 
     syntax,                                ///
@@ -442,7 +449,6 @@ program HonestParallel
             replace parfile = "`pf`p''" in `p'
             }
         }
-        * parallel, prog(honestdid.HonestParallelWork): HonestParallelWork
         global HONEST_CALLER honestdid
         qui parallel: honestwork
         global HONEST_CALLER
@@ -483,35 +489,6 @@ program HonestParallel
     * disp as txt "{hline `=cond(`c(linesize)'>80, 80, `c(linesize)')'}"
     parallel clean
 end
-
-* capture program drop HonestParallelWork
-* program HonestParallelWork
-*     if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
-*         local c_os_ macosx
-*         local rc = 0
-*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-*         local rc = _rc | `rc'
-*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-*         local rc = _rc | `rc'
-*         if `rc' {
-*             local c_os_ macosxarm64
-*             cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-*             cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-*         }
-*     }
-*     else {
-*         local c_os_: di lower("`c(os)'")
-*         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
-*         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
-*     }
-*
-*     tempname results
-*     mata {
-*         `results' = _honestPLLLoad(st_sdata(1, "resfile"))
-*         (void) HonestDiDPLL(`results', st_data(., "mindex"))
-*         _honestPLLSave(st_sdata(., "parfile")[1], `results')
-*     }
-* end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
     local c_os_ macosx

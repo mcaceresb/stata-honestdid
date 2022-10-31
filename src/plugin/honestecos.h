@@ -6,7 +6,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define HONESTECOS_VERSION "0.1.1"
+#define HONESTECOS_VERSION "1.1.1"
 
 #define HONESTECOS_CHAR(cvar, len)                \
     char *(cvar) = malloc(sizeof(char) * (len)); \

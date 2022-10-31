@@ -70,9 +70,9 @@ rm -f CMakeLists.txt.bak
 cd ..
 HONEST_FLAGS=""
 if [[ "${RUN_OS}" == "APPLE_X86_64" ]]; then
-    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosx86_64.plugin ECOS_OUT=src/build/honestecos_macosx86_64.plugin"
+    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosx86_64.plugin ECOS_OUT=src/build/honestecos_macosx86_64.plugin GCC=clang OSFLAGS=\"-bundle -DSYSTEM=APPLEMAC -arch x86_64\""
 elif [[ "${RUN_OS}" == "APPLE_ARM64"  ]]; then
-    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin"
+    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin GCC=clang OSFLAGS=\"-bundle -DSYSTEM=APPLEMAC -arch arm64\""
 fi
 (( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT}
 (( ${RUN_CLONE} )) && rm -rf ecos osqp
