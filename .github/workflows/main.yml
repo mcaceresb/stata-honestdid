@@ -42,6 +42,7 @@ jobs:
           otool -L src/build/honestosqp_macosxarm64.plugin
           otool -L src/build/honestecos_macosxarm64.plugin
       - name: combine plugins
+        run: |
           lipo -create -output src/build/honestosqp_macosx.plugin src/build/honestosqp_macosx86_64.plugin src/build/honestosqp_macosxarm64.plugin
           lipo -create -output src/build/honestecos_macosx.plugin src/build/honestecos_macosx86_64.plugin src/build/honestecos_macosxarm64.plugin
           shasum src/build/honestosqp_macosx.plugin
