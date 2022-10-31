@@ -3,6 +3,7 @@ cap mata mata drop ECOS_sol()
 cap mata mata drop ECOS_obj()
 cap mata mata drop ECOS_setup()
 cap mata mata drop ECOS_solve()
+cap mata mata drop ECOS_read()
 cap mata mata drop ECOS_cleanup()
 cap mata mata drop ECOS_vec_export()
 cap mata mata drop ECOS_code()
@@ -46,7 +47,7 @@ cap mata mata drop ECOS_workspace_abridged()
 *
 * With this notation in mind,
 *
-*     result = ECOS(c, G, h, l, q, e, A, b)
+*     result = ECOS(c, G, h, l, q, e, A, b, 1)
 *
 * where
 *
@@ -77,21 +78,19 @@ cap mata mata drop ECOS_workspace_abridged()
 * to create your own sparce matrices using the OSQP_csc_matrix structure,
 * you can access the internals as follows:
 *
-*        fname = st_tempfilename()
-*        ECOS_setup(fname,
-*                   n,
-*                   m,
-*                   p,
-*                   l,
-*                   ncones,
-*                   q,
-*                   e,
-*                   G,
-*                   A,
-*                   c,
-*                   h,
-*                   b)
-*        result = ECOS_solve(fname)
+*        bufvar = ECOS_setup(n,
+*                            m,
+*                            p,
+*                            l,
+*                            ncones,
+*                            q,
+*                            e,
+*                            G,
+*                            A,
+*                            c,
+*                            h,
+*                            b)
+*        result = ECOS_solve(bufvar, 1)
 *
 * Where G, A are already of type OSQP_csc_matrix. See the "Internal
 * reference for ECOS_setup" below for details.
@@ -140,10 +139,14 @@ real scalar ECOS_obj(real vector c,
                      real vector q,
                      real scalar e,
                      real matrix A,
-                     real vector b)
+                     real vector b,
+                     | real scalar cleanup,
+                     real scalar verbose)
 {
+    if ( args() < 9  ) cleanup = 0
+    if ( args() < 10 ) verbose = 0
     struct ECOS_workspace_abridged scalar res
-    res = ECOS(c, G, h, l, q, e, A, b)
+    res = ECOS(c, G, h, l, q, e, A, b, cleanup, verbose)
     if ( (res.rc == 0) & ((res.info_exitcode == 0) | (res.info_exitcode == 10)) ) {
         return(res.info_obj_val)
     }
@@ -160,10 +163,14 @@ real vector ECOS_sol(real vector c,
                      real vector q,
                      real scalar e,
                      real matrix A,
-                     real vector b)
+                     real vector b,
+                     | real scalar cleanup,
+                     real scalar verbose)
 {
+    if ( args() < 9  ) cleanup = 0
+    if ( args() < 10 ) verbose = 0
     struct ECOS_workspace_abridged scalar res
-    res = ECOS(c, G, h, l, q, e, A, b)
+    res = ECOS(c, G, h, l, q, e, A, b, cleanup, verbose)
     if ( (res.rc == 0) & ((res.info_exitcode == 0) | (res.info_exitcode == 10)) ) {
         return(res.solution_x)
     }
@@ -180,96 +187,137 @@ struct ECOS_workspace_abridged scalar ECOS(real vector c,
                                            real vector q,
                                            real scalar e,
                                            real matrix A,
-                                           real vector b)
+                                           real vector b,
+                                           | real scalar cleanup,
+                                           real scalar verbose)
 {
-    string scalar fname
+    if ( args() < 9  ) cleanup = 0
+    if ( args() < 10 ) verbose = 0
+    string scalar bufvar
     real scalar ncones
-    fname = st_tempfilename()
     ncones = max(q) > 0? length(q): 0
-    ECOS_setup(fname,
-               length(c),
-               rows(G),
-               rows(A),
-               l,
-               ncones,
-               q,
-               e,
-               OSQP_csc_convert(G),
-               OSQP_csc_convert(A),
-               c,
-               h,
-               b)
-    return(ECOS_solve(fname))
+    bufvar = ECOS_setup(length(c),
+                        rows(G),
+                        rows(A),
+                        l,
+                        ncones,
+                        q,
+                        e,
+                        OSQP_csc_convert(G),
+                        OSQP_csc_convert(A),
+                        c,
+                        h,
+                        b,
+                        verbose)
+    return(ECOS_solve(bufvar, cleanup))
 }
 
-void ECOS_setup(string scalar fname,
-                real scalar n,
-                real scalar m,
-                real scalar p,
-                real scalar l,
-                real scalar ncones,
-                real vector q,
-                real scalar e,
-                struct OSQP_csc_matrix G,
-                struct OSQP_csc_matrix A,
-                real vector c,
-                real vector h,
-                real vector b)
+string scalar ECOS_setup(real scalar n,
+                         real scalar m,
+                         real scalar p,
+                         real scalar l,
+                         real scalar ncones,
+                         real vector q,
+                         real scalar e,
+                         struct OSQP_csc_matrix G,
+                         struct OSQP_csc_matrix A,
+                         real vector c,
+                         real vector h,
+                         real vector b,
+                         | real scalar verbose)
 {
-    real scalar fh
-    fh = fopen(fname, "rw")
-    OSQP_int_export(fh, n)
-    OSQP_int_export(fh, m)
-    OSQP_int_export(fh, p)
-    OSQP_int_export(fh, l)
-    OSQP_int_export(fh, ncones)
-    ECOS_vec_export(fh, q)
-    OSQP_int_export(fh, e)
-    OSQP_csc_export(fh, G)
-    OSQP_csc_export(fh, A)
-    OSQP_vec_export(fh, c)
-    OSQP_vec_export(fh, h)
-    OSQP_vec_export(fh, b)
-    fclose(fh)
+    if ( args() < 13 ) verbose = 0
+
+    string scalar buf, bufvar
+    real scalar off
+
+    st_numscalar("__honestecos_rc",   .)
+    st_numscalar("__honestecos_exit", .)
+    st_numscalar("__honestecos_obj",  .)
+
+    st_matrix("__honestecos_x", J(1, n, .))
+    st_matrix("__honestecos_y", J(1, p, .))
+    st_matrix("__honestecos_z", J(1, m, .))
+
+    off = 0
+    buf = char(0)
+
+    OSQP_int_export(buf, verbose, off)
+    OSQP_int_export(buf, n,       off)
+    OSQP_int_export(buf, m,       off)
+    OSQP_int_export(buf, p,       off)
+    OSQP_int_export(buf, l,       off)
+    OSQP_int_export(buf, ncones,  off)
+    ECOS_vec_export(buf, q,       off)
+    OSQP_int_export(buf, e,       off)
+    OSQP_csc_export(buf, G,       off)
+    OSQP_csc_export(buf, A,       off)
+    OSQP_vec_export(buf, c,       off)
+    OSQP_vec_export(buf, h,       off)
+    OSQP_vec_export(buf, b,       off)
+
+    if ( st_nobs() < 1 ) stata("qui set obs 1")
+    if ( st_global("__HONESTBUFVAR") == "" ) {
+        bufvar = st_tempname()
+        (void) st_addvar("strL", bufvar)
+        st_global("__HONESTBUFVAR", bufvar)
+    }
+    else {
+        bufvar = st_global("__HONESTBUFVAR")
+    }
+    (void) st_sstore(1, bufvar, buf)
+    return(bufvar)
 }
 
-struct ECOS_workspace_abridged scalar ECOS_solve(string scalar fname) {
+struct ECOS_workspace_abridged scalar ECOS_solve(string scalar bufvar, | real scalar cleanup) {
+    if ( args() < 2 ) cleanup = 0
     struct ECOS_workspace_abridged scalar work
-    stata(sprintf(`"plugin call honestecos_plugin, `"%s"'"', fname))
-    ECOS_cleanup(work, fname)
+    stata(sprintf(`"plugin call honestecos_plugin %s, _plugin_run"', bufvar))
+    ECOS_read(work, cleanup)
     return(work)
 }
 
-void ECOS_cleanup(struct ECOS_workspace_abridged scalar work, string scalar fname) {
-    real scalar fh
-    colvector C
-    fh = fopen(fname, "rw")
-    C = bufio()
-    work.rc = fbufget(C, fh, "%4bu", 1)
+void ECOS_read(struct ECOS_workspace_abridged scalar work, | real scalar cleanup) {
+    work.rc = st_numscalar("__honestecos_rc")
     if ( work.rc == 0 ) {
-        work.info_exitcode = fbufget(C, fh, "%4bu", 1)
+        work.info_exitcode = st_numscalar("__honestecos_exit")
         work.success       = ((work.info_exitcode == 0) | (work.info_exitcode == 10)) 
         work.info_status   = ECOS_code(work.info_exitcode)
-        work.info_obj_val  = fbufget(C, fh, "%8z", 1)
-        work.solution_x    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
-        work.solution_y    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
-        work.solution_z    = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
+        work.info_obj_val  = st_numscalar("__honestecos_obj")
+        work.solution_x    = st_matrix("__honestecos_x")
+        work.solution_y    = st_matrix("__honestecos_y")
+        work.solution_z    = st_matrix("__honestecos_z")
     }
     else {
         work.success       = 0
         work.info_obj_val  = .
         work.info_exitcode = .
     }
-    fclose(fh)
-    unlink(fname)
+    if ( cleanup ) ECOS_cleanup()
 }
 
-void function ECOS_vec_export(real scalar fh, real vector v)
+void ECOS_cleanup() {
+    real scalar ix
+    ix = _st_varindex(st_global("__HONESTBUFVAR"))
+    if ( !missing(ix) ) (void) st_dropvar(ix)
+    st_global("__HONESTBUFVAR", "")
+
+    st_numscalar("__honestecos_rc",   J(0, 0, .))
+    st_numscalar("__honestecos_exit", J(0, 0, .))
+    st_numscalar("__honestecos_obj",  J(0, 0, .))
+
+    st_matrix("__honestecos_x", J(0, 0, .))
+    st_matrix("__honestecos_y", J(0, 0, .))
+    st_matrix("__honestecos_z", J(0, 0, .))
+}
+
+void function ECOS_vec_export(string scalar buf, real vector v, real scalar off)
 {
     colvector C
     C = bufio()
-    fbufput(C, fh, "%4bu", length(v))
-    fbufput(C, fh, "%4bu", v)
+    buf = buf + (4 + 4 * length(v)) * char(0);
+    bufput(C, buf, off, "%4bu", length(v)); off = off + 4;
+    bufput(C, buf, off, "%4bu", v);         off = off + 4 * length(v);
 }
 
 string scalar ECOS_code (real scalar exitcode) {

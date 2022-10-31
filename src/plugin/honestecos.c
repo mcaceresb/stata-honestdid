@@ -12,25 +12,30 @@
 STDLL stata_call(int argc, char * argv[])
 {
     ST_retcode rc = 0;
-    HONESTECOS_CHAR(fname, strlen(argv[0]) + 1);
-    strcpy(fname, argv[0]);
-    if ( strcmp(fname, "_plugin_check") == 0 ) {
+    HONESTECOS_CHAR(todo, strlen(argv[0]) + 1);
+    strcpy(todo, argv[0]);
+    if ( strcmp(todo, "_plugin_check") == 0 ) {
         sf_printf("(note: honestecos_plugin v"HONESTECOS_VERSION" successfully loaded)\n");
     }
+    else if ( strcmp(todo, "_plugin_run") == 0 ) {
+        rc = honestecos();
+    }
     else {
-        rc = honestecos(fname);
+        sf_printf("unknown option %s\n", todo);
+        rc = 198;
     }
     return(rc);
 }
 
-ST_retcode honestecos(char *fname)
+ST_retcode honestecos()
 {
     ST_retcode rc = 0;
+    char *buf = NULL, *bufptr;
     ST_double *x = NULL, *y = NULL, *z = NULL, obj;
     uint32_t i;
-    FILE *fhandle;
+    ST_int bytes = SF_sdatalen(1, 1);
 
-    idxint n, m, p, l, ncones, e, nq, nc, nh, nb, exitflag;
+    idxint verbose, n, m, p, l, ncones, e, nq, nc, nh, nb, exitflag;
     idxint G_nnz, A_nnz;
     pfloat *G_x = NULL, *A_x = NULL;
     idxint *G_i = NULL, *A_i = NULL;
@@ -42,28 +47,37 @@ ST_retcode honestecos(char *fname)
     // Read data
     // ---------
 
-    fhandle = fopen(fname, "rb");
+    buf = malloc(bytes);
+    if ( buf == NULL ) {
+        rc = 17290;
+        goto exit;
+    }
+    bufptr = buf;
 
-    if ((rc = honestecos_read_int      (fhandle, &n)))      goto exit;
-    if ((rc = honestecos_read_int      (fhandle, &m)))      goto exit;
-    if ((rc = honestecos_read_int      (fhandle, &p)))      goto exit;
-    if ((rc = honestecos_read_int      (fhandle, &l)))      goto exit;
-    if ((rc = honestecos_read_int      (fhandle, &ncones))) goto exit;
-    if ((rc = honestecos_read_intvector(fhandle, &q, &nq))) goto exit;
-    if ((rc = honestecos_read_int      (fhandle, &e)))      goto exit;
+    if ((rc = SF_strldata(1, 1, buf, bytes)) != bytes) {
+        goto exit;
+    }
+    else rc = 0;
 
-    if ((rc = honestecos_read_matrix(fhandle, &G_x, &G_i, &G_p, &G_nnz))) goto exit;
-    if ((rc = honestecos_read_matrix(fhandle, &A_x, &A_i, &A_p, &A_nnz))) goto exit;
+    verbose = honestecos_read_int(&bufptr);
+    n       = honestecos_read_int(&bufptr);
+    m       = honestecos_read_int(&bufptr);
+    p       = honestecos_read_int(&bufptr);
+    l       = honestecos_read_int(&bufptr);
+    ncones  = honestecos_read_int(&bufptr);
+    if ((rc = honestecos_read_intvector(&bufptr, &q, &nq))) goto exit;
+    e       = honestecos_read_int(&bufptr);
 
-    if ((rc = honestecos_read_vector(fhandle, &c, &nc))) goto exit;
-    if ((rc = honestecos_read_vector(fhandle, &h, &nh))) goto exit;
-    if ((rc = honestecos_read_vector(fhandle, &b, &nb))) goto exit;
+    if ((rc = honestecos_read_matrix(&bufptr, &G_x, &G_i, &G_p, &G_nnz))) goto exit;
+    if ((rc = honestecos_read_matrix(&bufptr, &A_x, &A_i, &A_p, &A_nnz))) goto exit;
+
+    if ((rc = honestecos_read_vector(&bufptr, &c, &nc))) goto exit;
+    if ((rc = honestecos_read_vector(&bufptr, &h, &nh))) goto exit;
+    if ((rc = honestecos_read_vector(&bufptr, &b, &nb))) goto exit;
 
     if ((rc = ((x = calloc(HONESTECOS_PWMAX(n, 1), sizeof *x)) == NULL))) goto exit;
     if ((rc = ((y = calloc(HONESTECOS_PWMAX(p, 1), sizeof *y)) == NULL))) goto exit;
     if ((rc = ((z = calloc(HONESTECOS_PWMAX(m, 1), sizeof *z)) == NULL))) goto exit;
-
-    fclose (fhandle);
 
     // Solve Problem
     // -------------
@@ -76,7 +90,7 @@ ST_retcode honestecos(char *fname)
     if (work) {
         // Default parameters to match CVXR:
         // https://cvxr.rbind.io/cvxr_examples/cvxr_solver-parameters/
-        work->stgs->verbose = 0;
+        work->stgs->verbose = verbose;
         work->stgs->reltol  = 1e-8;
         work->stgs->abstol  = 1e-8;
         work->stgs->feastol = 1e-8;
@@ -88,8 +102,8 @@ ST_retcode honestecos(char *fname)
         goto exit;
     }
 
-    fhandle = fopen(fname, "wb");
-    rc = rc | (fwrite((uint32_t *) &rc, sizeof(uint32_t), 1, fhandle) != 1);
+    rc = rc | (SF_scal_save("__honestecos_rc", (ST_double) rc));
+    rc = rc | (SF_scal_save("__honestecos_exit", (ST_double) exitflag));
     if (work) {
         // Proofing against corner instance where n, p, m = 0 somehow
         x[0] = SV_missval;
@@ -127,20 +141,21 @@ ST_retcode honestecos(char *fname)
         p = HONESTECOS_PWMAX(p, 1);
         m = HONESTECOS_PWMAX(m, 1);
 
-        rc = rc | (fwrite((uint32_t *) &exitflag, sizeof(uint32_t),  1, fhandle) != 1);
-        rc = rc | (fwrite(&obj,                   sizeof(ST_double), 1, fhandle) != 1);
-        rc = rc | (fwrite((uint32_t *) &n,        sizeof(uint32_t),  1, fhandle) != 1);
-        rc = rc | (fwrite(x,                      sizeof *x,         n, fhandle) != n);
-        rc = rc | (fwrite((uint32_t *) &p,        sizeof(uint32_t),  1, fhandle) != 1);
-        rc = rc | (fwrite(y,                      sizeof *y,         p, fhandle) != p);
-        rc = rc | (fwrite((uint32_t *) &m,        sizeof(uint32_t),  1, fhandle) != 1);
-        rc = rc | (fwrite(z,                      sizeof *z,         m, fhandle) != m);
+        rc = rc | (SF_scal_save("__honestecos_obj", obj));
+        for (i = 0; i < n; i++) {
+            rc = rc | SF_mat_store("__honestecos_x", 1, i + 1, x[i]);
+        }
+        for (i = 0; i < p; i++) {
+            rc = rc | SF_mat_store("__honestecos_y", 1, i + 1, y[i]);
+        }
+        for (i = 0; i < m; i++) {
+            rc = rc | SF_mat_store("__honestecos_z", 1, i + 1, z[i]);
+        }
     }
     else {
         rc = 17293;
         goto exit;
     }
-    fclose (fhandle);
 
     // Cleanup
     // -------
@@ -171,17 +186,16 @@ exit:
     return(rc);
 }
 
-ST_retcode honestecos_read_matrix(FILE *fhandle, pfloat **A_x, idxint **A_i, idxint **A_p, idxint *A_nnz)
+ST_retcode honestecos_read_matrix(char **bufptr, pfloat **A_x, idxint **A_i, idxint **A_p, idxint *A_nnz)
 {
     ST_retcode rc = 0;
     uint32_t nnz, ni, np, j;
     uint32_t *i = NULL, *p = NULL;
     ST_double *A = NULL;
 
-    rc = rc | (fread(&nnz, sizeof nnz, 1, fhandle) != 1);
-    rc = rc | (fread(&ni,  sizeof ni,  1, fhandle) != 1);
-    rc = rc | (fread(&np,  sizeof np,  1, fhandle) != 1);
-    if (rc) goto exit;
+    memmove(&nnz, *bufptr, sizeof nnz); *bufptr += (sizeof nnz);
+    memmove(&ni,  *bufptr, sizeof ni);  *bufptr += (sizeof ni);
+    memmove(&np,  *bufptr, sizeof np);  *bufptr += (sizeof np);
 
     rc = rc | (((*A_x) = calloc(nnz, sizeof **A_x)) == NULL);
     rc = rc | (((*A_i) = calloc(ni,  sizeof **A_i)) == NULL);
@@ -194,10 +208,9 @@ ST_retcode honestecos_read_matrix(FILE *fhandle, pfloat **A_x, idxint **A_i, idx
         goto exit;
     }
 
-    rc = rc | (fread(A, sizeof *A, nnz, fhandle) != nnz);
-    rc = rc | (fread(i, sizeof *i, ni,  fhandle) != ni);
-    rc = rc | (fread(p, sizeof *p, np,  fhandle) != np);
-    if (rc) goto exit;
+    memmove(A, *bufptr, (sizeof *A) * nnz); *bufptr += (sizeof *A) *  nnz;
+    memmove(i, *bufptr, (sizeof *i) * ni);  *bufptr += (sizeof *i) *  ni;
+    memmove(p, *bufptr, (sizeof *p) * np);  *bufptr += (sizeof *p) *  np;
 
     *A_nnz = (idxint) nnz;
     for (j = 0; j < nnz; j++) {
@@ -219,14 +232,13 @@ exit:
     return(rc);
 }
 
-ST_retcode honestecos_read_vector(FILE *fhandle, pfloat **x, idxint *nn)
+ST_retcode honestecos_read_vector(char **bufptr, pfloat **x, idxint *nn)
 {
     ST_retcode rc = 0;
     uint32_t n, j;
     ST_double *y = NULL;
 
-    rc = (fread(&n, sizeof n, 1, fhandle) != 1);
-    if (rc) goto exit;
+    memmove(&n, *bufptr, sizeof n); *bufptr += (sizeof n);
 
     rc = (((*x) = calloc(n, sizeof **x)) == NULL);
     rc = ((  y  = calloc(n, sizeof  *y)) == NULL);
@@ -235,10 +247,7 @@ ST_retcode honestecos_read_vector(FILE *fhandle, pfloat **x, idxint *nn)
         goto exit;
     }
 
-    rc = (fread(y, sizeof *y, n, fhandle) != n);
-    if (rc) goto exit;
-
-
+    memmove(y, *bufptr, (sizeof *y) * n); *bufptr += (sizeof *y) * n;
     *nn = (idxint) n;
     for (j = 0; j < n; j++) {
         (*x)[j] = (pfloat) y[j];
@@ -249,14 +258,13 @@ exit:
     return(rc);
 }
 
-ST_retcode honestecos_read_intvector(FILE *fhandle, idxint **x, idxint *nn)
+ST_retcode honestecos_read_intvector(char **bufptr, idxint **x, idxint *nn)
 {
     ST_retcode rc = 0;
     uint32_t n, j;
     uint32_t *y = NULL;
 
-    rc = (fread(&n, sizeof n, 1, fhandle) != 1);
-    if (rc) goto exit;
+    memmove(&n, *bufptr, sizeof n); *bufptr += (sizeof n);
 
     rc = (((*x) = calloc(n, sizeof **x)) == NULL);
     rc = ((  y  = calloc(n, sizeof  *y)) == NULL);
@@ -265,9 +273,7 @@ ST_retcode honestecos_read_intvector(FILE *fhandle, idxint **x, idxint *nn)
         goto exit;
     }
 
-    rc = (fread(y, sizeof *y, n, fhandle) != n);
-    if (rc) goto exit;
-
+    memmove(y, *bufptr, (sizeof *y) * n); *bufptr += (sizeof *y) * n;
     *nn = (idxint) n;
     for (j = 0; j < n; j++) {
         (*x)[j] = (idxint) y[j];
@@ -278,14 +284,9 @@ exit:
     return(rc);
 }
 
-ST_retcode honestecos_read_int(FILE *fhandle, idxint *nn)
+idxint honestecos_read_int(char **bufptr)
 {
-    ST_retcode rc = 0;
-    uint32_t n, xx;
-    xx = fread(&n, sizeof n, 1, fhandle);
-    rc = (xx != 1);
-    if (rc) goto exit;
-    *nn = (idxint) n;
-exit:
-    return(rc);
+    uint32_t n;
+    memmove(&n, *bufptr, sizeof n); *bufptr += (sizeof n); 
+    return((idxint) n);
 }
