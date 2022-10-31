@@ -37,6 +37,7 @@ fi
 cd ${ROOT}
 (( ${RUN_CLONE} )) && git clone --recursive https://github.com/embotech/ecos
 (( ${RUN_CLONE} )) && git clone --recursive https://github.com/osqp/osqp
+
 cd ecos
 make clean
 cp ecos.mk ecos.mk.bak
@@ -48,6 +49,7 @@ cp ecos.mk ecos.mk.bak
 (( ${RUN_BUILD} )) && make
 cp -f ecos.mk.bak ecos.mk
 rm -f ecos.mk.bak
+
 cd ../osqp
 cp CMakeLists.txt CMakeLists.txt.bak
 if [[ "${RUN_OS}" == "APPLE_X86_64" ]]; then
@@ -60,6 +62,7 @@ elif [[ "${RUN_OS}" == "CYGWIN" ]]; then
     echo "set(CMAKE_C_COMPILER "x86_64-w64-mingw32-gcc")" >>  CMakeLists.txt
     CMAKE_FLAGS="-DIS_WINDOWS=ON"
 fi
+
 [ -d "build" ] && rm -rf build
 mkdir build && cd build
 cmake ${CMAKE_FLAGS} -G "Unix Makefiles" ..
@@ -68,13 +71,22 @@ cd ..
 cp -f CMakeLists.txt.bak CMakeLists.txt
 rm -f CMakeLists.txt.bak
 cd ..
-HONEST_FLAGS=""
+
 if [[ "${RUN_OS}" == "APPLE_X86_64" ]]; then
-    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosx86_64.plugin ECOS_OUT=src/build/honestecos_macosx86_64.plugin GCC=clang OSFLAGS=\"-bundle -DSYSTEM=APPLEMAC -arch x86_64\""
+    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosx86_64.plugin ECOS_OUT=src/build/honestecos_macosx86_64.plugin GCC=clang"
+    HONEST_FLAGS="-bundle -DSYSTEM=APPLEMAC -arch x86_64"
 elif [[ "${RUN_OS}" == "APPLE_ARM64"  ]]; then
-    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin GCC=clang OSFLAGS=\"-bundle -DSYSTEM=APPLEMAC -arch arm64\""
+    HONEST_OUT="OSQP_OUT=src/build/honestosqp_macosxarm64.plugin ECOS_OUT=src/build/honestecos_macosxarm64.plugin GCC=clang"
+    HONEST_FLAGS="-bundle -DSYSTEM=APPLEMAC -arch arm64"
+elif [[ "${RUN_OS}" == "CYGWIN"  ]]; then
+    HONEST_OUT=
+    HONEST_FLAGS="-shared -fPIC"
+elif [[ "${RUN_OS}" == "LINUX"  ]]; then
+    HONEST_OUT=
+    HONEST_FLAGS="-shared -fPIC -DSYSTEM=OPUNIX"
 fi
-(( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT}
+(( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT} OSFLAGS="${HONEST_FLAGS}"
+
 (( ${RUN_CLONE} )) && rm -rf ecos osqp
 cd ${CWD}
 exit 0

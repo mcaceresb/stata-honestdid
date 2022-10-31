@@ -85,9 +85,9 @@ cd stata-honestdid
 bash src/compile.sh
 ```
 
-(you're required to have `make`, `cmake`, and `gcc` installed for this
-code to run; all three should be readily available on any OSX or
-Linux system). On Windows:
+You're required to have `make`, `cmake`, and `clang` (OSX) or `gcc`
+(Linux) installed; all three should be readily available on any OSX or
+Linux system. On Windows:
 
 1. Install [Cygwin](https://www.cygwin.com).
 2. Install `make`, `cmake`, `mingw64-x86_64-gcc-core`, `mingw64-x86_64-gcc-g++`, `mingw64-x86_64-dlfcn`
