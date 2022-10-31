@@ -6,7 +6,7 @@ sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 This is the Stata version of the [R package of the same name](https://github.com/asheshrambachan/HonestDiD).
 
-`version 1.1.0 30Oct2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 1.1.1 31Oct2022` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 
@@ -85,9 +85,9 @@ cd stata-honestdid
 bash src/compile.sh
 ```
 
-(you're required to have `make`, `cmake`, and `gcc` installed for this
-code to run; all three should be readily available on any OSX or
-Linux system). On Windows:
+You're required to have `make`, `cmake`, and `clang` (OSX) or `gcc`
+(Linux) installed; all three should be readily available on any OSX or
+Linux system. On Windows:
 
 1. Install [Cygwin](https://www.cygwin.com).
 2. Install `make`, `cmake`, `mingw64-x86_64-gcc-core`, `mingw64-x86_64-gcc-g++`, `mingw64-x86_64-dlfcn`

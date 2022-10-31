@@ -27,18 +27,24 @@ jobs:
           repository: embotech/ecos
           path: './ecos'
           submodules: recursive
-      - name: dependencies and compile x86_64
+      - name: compile x86_64
         run: |
-          cd ecos
-          make
-          cd ..
-          cd osqp
-          mkdir  build
-          cd build
-          cmake -G "Unix Makefiles" ..
-          cmake --build .
-          cd ../..
-          make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a"
+          RUN_CLONE=0 RUN_OS=APPLE_X86_64 bash src/compile.sh
+          shasum src/build/honestosqp_macosx86_64.plugin
+          shasum src/build/honestecos_macosx86_64.plugin
+          otool -L src/build/honestosqp_macosx86_64.plugin
+          otool -L src/build/honestecos_macosx86_64.plugin
+      - name: compile arm64
+        run: |
+          RUN_CLONE=0 RUN_OS=APPLE_ARM64 bash src/compile.sh
+          shasum src/build/honestosqp_macosxarm64.plugin
+          shasum src/build/honestecos_macosxarm64.plugin
+          otool -L src/build/honestosqp_macosxarm64.plugin
+          otool -L src/build/honestecos_macosxarm64.plugin
+      - name: combine plugins
+        run: |
+          lipo -create -output src/build/honestosqp_macosx.plugin src/build/honestosqp_macosx86_64.plugin src/build/honestosqp_macosxarm64.plugin
+          lipo -create -output src/build/honestecos_macosx.plugin src/build/honestecos_macosx86_64.plugin src/build/honestecos_macosxarm64.plugin
           shasum src/build/honestosqp_macosx.plugin
           shasum src/build/honestecos_macosx.plugin
           otool -L src/build/honestosqp_macosx.plugin
@@ -48,8 +54,8 @@ jobs:
           git config --global user.name 'Mauricio Caceres'
           git config --global user.email 'mauricio.caceres.bravo@gmail.com'
           git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
-          git add -f src/build/honestosqp_macosx.plugin
-          git add -f src/build/honestecos_macosx.plugin
+          git add -f src/build/honestosqp_macosx*.plugin
+          git add -f src/build/honestecos_macosx*.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
           git fetch
