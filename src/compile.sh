@@ -39,7 +39,7 @@ cd ${ROOT}
 (( ${RUN_CLONE} )) && git clone --recursive https://github.com/osqp/osqp
 
 cd ecos
-make clean
+make purge
 cp ecos.mk ecos.mk.bak
 [[ "${RUN_OS}" == "APPLE_ARM64"  ]] && sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch arm64/'     ecos.mk
 [[ "${RUN_OS}" == "APPLE_X86_64" ]] && sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch x86_64/'    ecos.mk
@@ -52,6 +52,7 @@ rm -f ecos.mk.bak
 
 cd ../osqp
 cp CMakeLists.txt CMakeLists.txt.bak
+CMAKE_FLAGS=
 if [[ "${RUN_OS}" == "APPLE_X86_64" ]]; then
     sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE INTERNAL "" FORCE)\
         ' CMakeLists.txt
@@ -59,13 +60,15 @@ elif [[ "${RUN_OS}" == "APPLE_ARM64" ]]; then
     sed -i -e '/^elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin").*/a\'$'\n''set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)\
         ' CMakeLists.txt
 elif [[ "${RUN_OS}" == "CYGWIN" ]]; then
-    echo "set(CMAKE_C_COMPILER "x86_64-w64-mingw32-gcc")" >>  CMakeLists.txt
     CMAKE_FLAGS="-DIS_WINDOWS=ON"
 fi
+[[ "${RUN_OS}" == *"APPLE"* ]] && echo "set(CMAKE_C_COMPILER "clang")"                  >>  CMakeLists.txt
+[[ "${RUN_OS}" == "CYGWIN"  ]] && echo "set(CMAKE_C_COMPILER "x86_64-w64-mingw32-gcc")" >>  CMakeLists.txt
 
 [ -d "build" ] && rm -rf build
 mkdir build && cd build
 cmake ${CMAKE_FLAGS} -G "Unix Makefiles" ..
+CMAKE_FLAGS=
 (( ${RUN_BUILD} )) && cmake --build .
 cd ..
 cp -f CMakeLists.txt.bak CMakeLists.txt
