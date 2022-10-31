@@ -76,7 +76,8 @@ net install honestdid, from(`github'/mcaceresb/stata-honestdid/main) replace
 message saying "Failed to load OSQP/ECOS plugin" then you will need
 to compile the plugin in order to use `honestdid`. While we provide
 pre-compiled binaries, they may not work on every system. If you are
-using OSX or Linux, some helper code is provided in order to do this:
+using OSX or Linux, compiling is relatively straightforward. From a
+terminal, run:
 
 ```bash
 git clone https://github.com/mcaceresb/stata-honestdid
@@ -86,14 +87,28 @@ bash src/compile.sh
 
 (you're required to have `make`, `cmake`, and `gcc` installed for this
 code to run; all three should be readily available on any OSX or
-Linux system). Then from a Stata session, run
+Linux system). On Windows:
+
+1. Install [Cygwin](https://www.cygwin.com).
+2. Install `make`, `cmake`, `mingw64-x86_64-gcc-core`, `mingw64-x86_64-gcc-g++`, `mingw64-x86_64-dlfcn`
+3. Open the Cygwin terminal and run
+
+```bash
+git clone https://github.com/mcaceresb/stata-honestdid
+cd stata-honestdid
+sed -i 's/\r$//' src/compile.sh
+bash src/compile.sh
+```
+
+Once the plugin is compiled, from a Stata session run
 
 ```stata
 do /path/to/stata-honestdid/src/install.do
 ```
 
-If you are on Windows and you receive this error message, or if
-compiling the plugin yourself does not fix it, please open an issue.
+(On Windows, the repo will likely be somewhere in `C:\cygwin64\home\..`,
+depending on where you installed Cygwin.) If compiling the plugin yourself does
+not fix it, please open an issue.
 
 ## Example usage -- Medicaid expansions
 
