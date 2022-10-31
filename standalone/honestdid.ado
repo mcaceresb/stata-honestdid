@@ -1,4 +1,4 @@
-*! version 1.0.1 26Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.1.0 30Oct2022 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -189,6 +189,9 @@ program honestdid, sclass
             }
             else `results' = _honestPLLLoad(`"`honestfile'"')
             _honestPrintCI(`results')
+
+            OSQP_cleanup()
+            ECOS_cleanup()
         }
     }
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)

@@ -1,6 +1,7 @@
 cap mata mata drop OSQP()
 cap mata mata drop OSQP_setup()
 cap mata mata drop OSQP_solve()
+cap mata mata drop OSQP_read()
 cap mata mata drop OSQP_cleanup()
 cap mata mata drop OSQP_csc_convert()
 cap mata mata drop OSQP_vec_export()
@@ -29,7 +30,7 @@ cap mata mata drop OSQP_workspace_abridged()
 * Following this notation, with P, q, A, u, l the corresponding stata
 * matrices, run
 *
-*     result = OSQP(P, q, A, u, l)
+*     result = OSQP(P, q, A, u, l, 1)
 *
 * result will be a structure of type OSQP_workspace_abridged with components
 *
@@ -56,9 +57,8 @@ cap mata mata drop OSQP_workspace_abridged()
 * to create your own sparce matrices using the OSQP_csc_matrix structure,
 * you can access the internals as follows:
 *
-*     fname = st_tempfilename()
-*     OSQP_setup(fname, P, q, A, u, l)
-*     result = OSQP_solve(fname)
+*     bufvar = OSQP_setup(P, q, A, u, l)
+*     result = OSQP_solve(bufvar, 1)
 *
 * Where P, A are already of type OSQP_csc_matrix. IMPORTANT: In
 * this case, P needs to be upper-triangular. Since P is meant to be
@@ -88,53 +88,86 @@ struct OSQP_workspace_abridged scalar OSQP(real matrix P,
                                            real vector q,
                                            real matrix A,
                                            real vector u,
-                                           real vector l)
+                                           real vector l,
+                                           | real scalar cleanup,
+                                           real scalar verbose)
 {
-    string scalar fname
-    fname = st_tempfilename()
-    OSQP_setup(fname, OSQP_csc_convert(uppertriangle(P)), q, OSQP_csc_convert(A), u, l)
-    return(OSQP_solve(fname))
+    if ( args() < 6 ) cleanup = 0
+    if ( args() < 7 ) verbose = 0
+    string scalar bufvar
+    bufvar = OSQP_setup(OSQP_csc_convert(uppertriangle(P)), q, OSQP_csc_convert(A), u, l, verbose)
+    return(OSQP_solve(bufvar, cleanup))
 }
 
-void OSQP_setup (string scalar fname,
-                 struct OSQP_csc_matrix P,
-                 real vector q,
-                 struct OSQP_csc_matrix A,
-                 real vector u,
-                 real vector l)
+string scalar OSQP_setup (struct OSQP_csc_matrix P,
+                          real vector q,
+                          struct OSQP_csc_matrix A,
+                          real vector u,
+                          real vector l,
+                          | real scalar verbose)
 {
-    real scalar fh
-    fh = fopen(fname, "rw")
-    OSQP_csc_export(fh, P)
-    OSQP_csc_export(fh, A)
-    OSQP_vec_export(fh, q)
-    OSQP_vec_export(fh, u)
-    OSQP_vec_export(fh, l)
-    fclose(fh)
+    if ( args() < 6 ) verbose = 0
+
+    string scalar buf, bufvar
+    real scalar off
+
+    st_numscalar("__honestosqp_rc", .)
+    st_numscalar("__honestosqp_obj", .)
+    st_matrix("__honestosqp_x", J(1, length(q), .))
+
+    off = 0
+    buf = 32 * char(0)
+
+    OSQP_int_export(buf, verbose, off)
+    OSQP_csc_export(buf, P, off)
+    OSQP_csc_export(buf, A, off)
+    OSQP_vec_export(buf, q, off)
+    OSQP_vec_export(buf, u, off)
+    OSQP_vec_export(buf, l, off)
+
+    if ( st_nobs() < 1 ) stata("qui set obs 1")
+    if ( st_global("__HONESTBUFVAR") == "" ) {
+        bufvar = st_tempname()
+        (void) st_addvar("strL", bufvar)
+        st_global("__HONESTBUFVAR", bufvar)
+    }
+    else {
+        bufvar = st_global("__HONESTBUFVAR")
+    }
+    (void) st_sstore(1, bufvar, buf)
+    return(bufvar)
 }
 
-struct OSQP_workspace_abridged scalar OSQP_solve (string scalar fname) {
+struct OSQP_workspace_abridged scalar OSQP_solve(string scalar bufvar, | real scalar cleanup) {
+    if ( args() < 2 ) cleanup = 0
     struct OSQP_workspace_abridged scalar work
-    stata(sprintf(`"plugin call honestosqp_plugin, `"%s"'"', fname))
-    OSQP_cleanup(work, fname)
+    stata(sprintf(`"plugin call honestosqp_plugin %s, _plugin_run"', bufvar))
+    OSQP_read(work, cleanup)
     return(work)
 }
 
-void OSQP_cleanup (struct OSQP_workspace_abridged scalar work, string scalar fname) {
-    real scalar fh
-    colvector C
-    fh = fopen(fname, "rw")
-    C = bufio()
-    work.rc = fbufget(C, fh, "%4bu", 1)
+void OSQP_read(struct OSQP_workspace_abridged scalar work, | real scalar cleanup) {
+    if ( args() < 2 ) cleanup = 0
+    work.rc = st_numscalar("__honestosqp_rc")
     if ( work.rc == 0 ) {
-        work.info_status = strtrim(fbufget(C, fh, "%32s", 1))
+        work.info_status = st_local("__honestosqp_status")
         if ( work.info_status == "solved" ) {
-            work.info_obj_val = fbufget(C, fh, "%8z", 1)
-            work.solution_x   = fbufget(C, fh, "%8z", fbufget(C, fh, "%4bu", 1))
+            work.info_obj_val = st_numscalar("__honestosqp_obj")
+            work.solution_x   = st_matrix("__honestosqp_x")
         }
     }
-    fclose(fh)
-    unlink(fname)
+    if ( cleanup ) OSQP_cleanup()
+}
+
+void OSQP_cleanup() {
+    real scalar ix
+    ix = _st_varindex(st_global("__HONESTBUFVAR"))
+    if ( !missing(ix) ) (void) st_dropvar(ix)
+    st_global("__HONESTBUFVAR", "")
+    st_local("__honestosqp_status", "")
+    st_numscalar("__honestosqp_rc",  J(0, 0, .))
+    st_numscalar("__honestosqp_obj", J(0, 0, .))
+    st_matrix("__honestosqp_x", J(0, 0, .))
 }
 
 struct OSQP_csc_matrix scalar OSQP_csc_convert(real matrix A) {
@@ -158,31 +191,33 @@ struct OSQP_csc_matrix scalar OSQP_csc_convert(real matrix A) {
     return(S)
 }
 
-void function OSQP_int_export(real scalar fh, real scalar n)
+void function OSQP_int_export(string scalar buf, real scalar n, real scalar off)
 {
     colvector C
     C = bufio()
-    fbufput(C, fh, "%4bu", n)
+    buf = buf + 4 * char(0);
+    bufput(C, buf, off, "%4bu", n); off = off + 4;
 }
 
-void function OSQP_vec_export(real scalar fh, real vector v)
+void function OSQP_vec_export(string scalar buf, real vector v, real scalar off)
 {
     colvector C
     C = bufio()
-    fbufput(C, fh, "%4bu", length(v))
-    fbufput(C, fh, "%8z",  v)
+    buf = buf + (4 + 8 * length(v)) * char(0);
+    bufput(C, buf, off, "%4bu", length(v)); off = off + 4;
+    bufput(C, buf, off, "%8z",  v);         off = off + 8 * length(v);
 }
 
-void function OSQP_csc_export(real scalar fh, struct OSQP_csc_matrix scalar A)
+void function OSQP_csc_export(string scalar buf, struct OSQP_csc_matrix scalar A, real scalar off)
 {
     colvector C
     C = bufio()
-    fbufput(C, fh, "%4bu", length(A.data))
-    fbufput(C, fh, "%4bu", length(A.indices))
-    fbufput(C, fh, "%4bu", length(A.indptr))
-    fbufput(C, fh, "%8z",  A.data)
-    fbufput(C, fh, "%4bu", A.indices)
-    fbufput(C, fh, "%4bu", A.indptr)
+    buf = buf + (12 + 8 * length(A.data) + 4 * length(A.indices) + 4 * length(A.indptr)) * char(0);
+    bufput(C, buf, off, "%4bu", length(A.data));    off = off + 4;
+    bufput(C, buf, off, "%4bu", length(A.indices)); off = off + 4;
+    bufput(C, buf, off, "%4bu", length(A.indptr));  off = off + 4;
+    bufput(C, buf, off, "%8z",  A.data);            off = off + 8 * length(A.data);
+    bufput(C, buf, off, "%4bu", A.indices);         off = off + 4 * length(A.indices);
+    bufput(C, buf, off, "%4bu", A.indptr);          off = off + 4 * length(A.indptr);
 }
-
 end

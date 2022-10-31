@@ -7,7 +7,7 @@ mata: mata set mataoptimize on
 cap noi mkdir src
 cap noi mkdir src/build
 cap noi erase src/build/lhonestdid.mlib
-{
+qui {
     do src/mata/osqp.mata
     do src/mata/ecos.mata
     do src/mata/utilities.mata

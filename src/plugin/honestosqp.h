@@ -15,8 +15,9 @@
 #define HONESTOSQP_PWMAX(a, b) ( (a) > (b) ? (a) : (b) )
 #define HONESTOSQP_PWMIN(a, b) ( (a) > (b) ? (b) : (a) )
 
-ST_retcode honestosqp_read_vector(FILE *fhandle, c_float **x, c_int *nn);
-ST_retcode honestosqp_read_matrix(FILE *fhandle, c_float **A, c_int **i, c_int **p, c_int *A_nnz);
-ST_retcode honestosqp(char *fname);
+ST_retcode honestosqp_read_vector(char **bufptr, c_float **x, c_int *nn);
+ST_retcode honestosqp_read_matrix(char **bufptr, c_float **A, c_int **i, c_int **p, c_int *A_nnz);
+c_int      honestosqp_read_int(char **bufptr);
+ST_retcode honestosqp();
 
 #endif
