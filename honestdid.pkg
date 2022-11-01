@@ -25,5 +25,7 @@ f src/build/honestecos_windows.plugin
 f src/build/honestosqp_windows.plugin
 f src/build/honestecos_macosx.plugin
 f src/build/honestosqp_macosx.plugin
+f src/build/honestecos_macosx86_64.plugin
+f src/build/honestosqp_macosx86_64.plugin
 f src/build/honestecos_macosxarm64.plugin
 f src/build/honestosqp_macosxarm64.plugin

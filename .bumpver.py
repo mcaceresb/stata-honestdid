@@ -43,6 +43,7 @@ config_standalone = {
         'test/LWdata_RawData.dta',
         'src/build/lhonestdid.mlib',
         'src/ado/honestdid.ado',
+        'src/ado//honestwork.ado',
         'doc/honestdid.sthlp',
         'src/mata/ecos.mata',
         'src/mata/flci.mata',

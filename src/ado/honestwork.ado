@@ -26,8 +26,20 @@ if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {
 
     if `rc' {
         local c_os_ macosxarm64
+        local rc = 0
         cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        local rc = _rc | `rc'
         cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+        local rc = _rc | `rc'
+    }
+
+    if `rc' {
+        local c_os_ macosx86_64
+        local rc = 0
+        cap program honestosqp_plugin, plugin using("honestosqp_`c_os_'.plugin")
+        local rc = _rc | `rc'
+        cap program honestecos_plugin, plugin using("honestecos_`c_os_'.plugin")
+        local rc = _rc | `rc'
     }
 }
 else {
