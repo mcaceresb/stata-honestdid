@@ -3,10 +3,10 @@
 CWD=$(pwd -P)
 ROOT=$(cd "$(dirname "$0")"; pwd -P)/..
 
-[ ! -x "$(command -v git)"   ] && { echo "git executable not found";   exit 1; }
-[ ! -x "$(command -v make)"  ] && { echo "make executable not found";  exit 1; }
-[ ! -x "$(command -v cmake)" ] && { echo "cmake executable not found"; exit 1; }
-[ ! -x "$(command -v sed)"   ] && { echo "sed executable not found";   exit 1; }
+[ ! -x "$(command -v git)"   ] && { echo "git executable not found; please install git";     exit 1; }
+[ ! -x "$(command -v make)"  ] && { echo "make executable not found; please install make";   exit 1; }
+[ ! -x "$(command -v cmake)" ] && { echo "cmake executable not found; please install cmake"; exit 1; }
+[ ! -x "$(command -v sed)"   ] && { echo "sed executable not found; please install sed";     exit 1; }
 
 if [[ $(uname -s) == *'CYGWIN'* ]]; then
     DETECT_OS=CYGWIN
@@ -96,7 +96,13 @@ fi
 echo "Compiling honestdid plugin"
 [[ "${HONEST_FLAGS}" != "" ]] && echo "    with flags ${HONEST_FLAGS}"
 [[ "${HONEST_OUT}"   != "" ]] && echo "    with opts  ${HONEST_OUT}"
-(( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT} OSFLAGS="${HONEST_FLAGS}"
+if (( ${RUN_BUILD} )); then
+    make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT} OSFLAGS="${HONEST_FLAGS}"
+    HONEST_RC=$?
+    [[ ${HONEST_RC} -eq 0 ]] && echo "Plugin compiled successfully" || echo "Plugin compiletion failed; please report issue"
+else
+    HONEST_RC=0
+fi
 
 if (( ${RUN_COPY} )) && [[ "${RUN_OS}" == *"APPLE"* ]]; then
     echo "Overriding OSX plugin with locally compiled plugin"
@@ -107,4 +113,4 @@ fi
 
 (( ${RUN_CLONE} )) && rm -rf ecos osqp
 cd ${CWD}
-exit 0
+exit ${HONEST_RC}
