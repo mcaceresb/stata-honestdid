@@ -104,7 +104,8 @@ bash src/compile.sh
 Once the plugin is compiled, from a Stata session run
 
 ```stata
-do /path/to/stata-honestdid/src/install.do
+cd /path/to/stata-honestdid/
+do src/install.do
 ```
 
 (On Windows, the repo will likely be somewhere in `C:\cygwin64\home\..`,
