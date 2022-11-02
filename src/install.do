@@ -4,8 +4,8 @@ cap noi net uninstall honestdid
 mata: mata clear
 mata: mata set matastrict on
 mata: mata set mataoptimize on
-cap noi mkdir src
-cap noi mkdir src/build
+cap mkdir src
+cap mkdir src/build
 cap noi erase src/build/lhonestdid.mlib
 qui {
     do src/mata/osqp.mata
