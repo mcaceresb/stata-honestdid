@@ -39,6 +39,7 @@ cd ${ROOT}
 (( ${RUN_CLONE} )) && git clone --recursive https://github.com/embotech/ecos
 (( ${RUN_CLONE} )) && git clone --recursive https://github.com/osqp/osqp
 
+echo "Compiling ECOS plugin"
 cd ecos
 make purge
 cp ecos.mk ecos.mk.bak
@@ -51,6 +52,7 @@ cp ecos.mk ecos.mk.bak
 cp -f ecos.mk.bak ecos.mk
 rm -f ecos.mk.bak
 
+echo "Compiling OSQP plugin"
 cd ../osqp
 cp CMakeLists.txt CMakeLists.txt.bak
 CMAKE_FLAGS=
@@ -66,6 +68,7 @@ fi
 [[ "${RUN_OS}" == *"APPLE"* ]] && echo "set(CMAKE_C_COMPILER "clang")"                  >>  CMakeLists.txt
 [[ "${RUN_OS}" == "CYGWIN"  ]] && echo "set(CMAKE_C_COMPILER "x86_64-w64-mingw32-gcc")" >>  CMakeLists.txt
 
+[[ "${CMAKE_FLAGS}" != "" ]] && echo "running cmake with added flags ${CMAKE_FLAGS}"
 [ -d "build" ] && rm -rf build
 mkdir build && cd build
 cmake ${CMAKE_FLAGS} -G "Unix Makefiles" ..
@@ -90,10 +93,14 @@ elif [[ "${RUN_OS}" == "LINUX"  ]]; then
     HONEST_FLAGS="-shared -fPIC -DSYSTEM=OPUNIX"
 fi
 
+echo "Compiling honestdid plugin"
+[[ "${HONEST_FLAGS}" != "" ]] && echo "    with flags ${HONEST_FLAGS}"
+[[ "${HONEST_OUT}"   != "" ]] && echo "    with opts  ${HONEST_OUT}"
 (( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT} OSFLAGS="${HONEST_FLAGS}"
 
-if (( ${RUN_COPY} )); then
-    echo ${HONEST_OUT} | xargs
+if (( ${RUN_COPY} )) && [[ "${RUN_OS}" == *"APPLE"* ]]; then
+    echo "Overriding OSX plugin with locally compiled plugin"
+    eval `echo ${HONEST_OUT}`
     cp -f ${OSQP_OUT} src/build/honestosqp_macosx.plugin
     cp -f ${ECOS_OUT} src/build/honestecos_macosx.plugin
 fi
