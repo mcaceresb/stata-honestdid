@@ -39,16 +39,11 @@ config_files = [
 
 config_standalone = {
     'honestdid': [
-        'test/test-replication.do',
         'test/LWdata_RawData.dta',
         'src/build/lhonestdid.mlib',
         'src/ado/honestdid.ado',
         'src/ado//honestwork.ado',
         'doc/honestdid.sthlp',
-        'src/mata/ecos.mata',
-        'src/mata/flci.mata',
-        'src/mata/honestdid.mata',
-        'src/mata/osqp.mata',
         'src/build/honestosqp_unix.plugin',
         'src/build/honestosqp_macosx.plugin',
         'src/build/honestosqp_macosx86_64.plugin',

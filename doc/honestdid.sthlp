@@ -12,6 +12,9 @@
 {p2col :{cmd:honestdid} {hline 2}}Stata implementation of the HonestDiD R package{p_end}
 {p2colreset}{...}
 
+{pstd}
+{it:Important}: Please run {stata honestdid _plugin_check} before first use to check {cmd:honestdid} was installed correctly. Please refer to the {browse "https://github.com/mcaceresb/stata-honestdid#compiling":online documentation} if this check fails.
+
 {marker syntax}{...}
 {title:Syntax}
 
@@ -58,7 +61,7 @@ Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are req
 {title:Description}
 
 {pstd}
-{cmd:honestdid} See the {browse "https://github.com/asheshrambachan/HonestDiD/blob/master/doc/HonestDiD_Example.pdf":HonestDiD Vignette}. While not all the functionality is mirrored, the base functionality has been implemented (see examples below).
+See the {browse "https://github.com/mcaceresb/stata-honestdid#readme":online examples} for details or refer to the examples below (note not all the functionality of the R package HonestDiD is mirrored, but the core functionality has been implemented).
 
 {marker example}{...}
 {title:Example 1: Benzarti and Carloni (2019)}

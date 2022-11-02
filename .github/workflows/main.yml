@@ -29,20 +29,22 @@ jobs:
           submodules: recursive
       - name: compile x86_64
         run: |
-          RUN_CLONE=0 RUN_OS=APPLE_X86_64 bash src/compile.sh
+          RUN_CLONE=0 RUN_OS=APPLE_X86_64 RUN_COPY=0 bash src/compile.sh
           shasum src/build/honestosqp_macosx86_64.plugin
           shasum src/build/honestecos_macosx86_64.plugin
           otool -L src/build/honestosqp_macosx86_64.plugin
           otool -L src/build/honestecos_macosx86_64.plugin
       - name: compile arm64
         run: |
-          RUN_CLONE=0 RUN_OS=APPLE_ARM64 bash src/compile.sh
+          RUN_CLONE=0 RUN_OS=APPLE_ARM64 RUN_COPY=0 bash src/compile.sh
           shasum src/build/honestosqp_macosxarm64.plugin
           shasum src/build/honestecos_macosxarm64.plugin
           otool -L src/build/honestosqp_macosxarm64.plugin
           otool -L src/build/honestecos_macosxarm64.plugin
       - name: combine plugins
         run: |
+          rm -f src/build/honestosqp_macosx.plugin
+          rm -f src/build/honestecos_macosx.plugin
           lipo -create -output src/build/honestosqp_macosx.plugin src/build/honestosqp_macosx86_64.plugin src/build/honestosqp_macosxarm64.plugin
           lipo -create -output src/build/honestecos_macosx.plugin src/build/honestecos_macosx86_64.plugin src/build/honestecos_macosxarm64.plugin
           shasum src/build/honestosqp_macosx.plugin

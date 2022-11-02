@@ -22,6 +22,7 @@ fi
 : RUN_OS=${RUN_OS:=${DETECT_OS}}
 : RUN_CLONE=${RUN_CLONE:=1}
 : RUN_BUILD=${RUN_BUILD:=1}
+: RUN_COPY=${RUN_COPY:=1}
 
 if [[ "${RUN_OS}" != "${DETECT_OS}" ]]; then
     echo "OS detected as '${DETECT_OS}' but running as ${RUN_OS}"
@@ -88,7 +89,14 @@ elif [[ "${RUN_OS}" == "LINUX"  ]]; then
     HONEST_OUT=
     HONEST_FLAGS="-shared -fPIC -DSYSTEM=OPUNIX"
 fi
+
 (( ${RUN_BUILD} )) && make all OSQP_H=./osqp/include OSQP_A=./osqp/build/out/libosqp.a ECOS_H="./ecos/include -I./ecos/external/SuiteSparse_config" ECOS_A="./ecos/libecos.a ./ecos/libecos_bb.a" ${HONEST_OUT} OSFLAGS="${HONEST_FLAGS}"
+
+if (( ${RUN_COPY} )); then
+    echo ${HONEST_OUT} | xargs
+    cp -f ${OSQP_OUT} src/build/honestosqp_macosx.plugin
+    cp -f ${ECOS_OUT} src/build/honestecos_macosx.plugin
+fi
 
 (( ${RUN_CLONE} )) && rm -rf ecos osqp
 cd ${CWD}
