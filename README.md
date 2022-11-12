@@ -91,7 +91,7 @@ You're required to have `make`, `cmake`, and `clang` (OSX) or `gcc`
 Linux system. On Windows:
 
 1. Install [Cygwin](https://www.cygwin.com).
-2. Install `make`, `cmake`, `mingw64-x86_64-gcc-core`, `mingw64-x86_64-gcc-g++`, `mingw64-x86_64-dlfcn`
+2. Install `binutils`, `make`, `cmake`, `gcc-core`, `gcc-g++`, `mingw64-x86_64-gcc-core`, `mingw64-x86_64-gcc-g++`, `mingw64-x86_64-dlfcn`
 3. Open the Cygwin terminal and run
 
 ```bash
