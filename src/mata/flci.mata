@@ -357,7 +357,8 @@ real scalar function _flciFindLowestH(real matrix sigma,
     varResult = OSQP(P, q, A, u, l)
 
     if ( (varResult.rc != 0) | (varResult.info_status != "solved") ) {
-        errprintf("Error in optimization for h0\n")
+        errprintf("Error in optimization for hMin\n")
+        _error(17390)
     }
     minimalVariance = varResult.info_obj_val + A_matrices.A_constant_sd
     minimalH = sqrt(minimalVariance)

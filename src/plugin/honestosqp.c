@@ -80,6 +80,42 @@ ST_retcode honestosqp()
         if ( SF_is_missing(u[i]) ) u[i] = OSQP_INFTY;
     }
 
+    // Debugging
+    // ---------
+
+// printf("bytes = %d\n", bytes);
+// printf("n = %lld\n", n);
+// for(i = 0; i < n; i++) {
+//     printf("\tq[%lld] = %.9f\n", i, q[i]);
+// }
+//     printf("\n\n");
+// printf("m = %lld\n", m);
+// for(i = 0; i < m; i++) {
+//     if ( l[i] == -OSQP_INFTY && u[i] == OSQP_INFTY ) {
+//         printf("\t(l, u)[%lld] = -infty, infty\n", i);
+//     }
+//     else if ( l[i] == -OSQP_INFTY ) {
+//         printf("\t(l, u)[%lld] = -infty, %.9f\n", i, u[i]);
+//     }
+//     else if ( u[i] == OSQP_INFTY ) {
+//         printf("\t(l, u)[%lld] = %.9f, infty\n", i, l[i]);
+//     }
+//     else {
+//         printf("\t(l, u)[%lld] = %.9f, %.9f\n", i, l[i], u[i]);
+//     }
+// }
+//     printf("\n\n");
+// printf("P_nnz = %lld\n", P_nnz);
+// for(i = 0; i < P_nnz; i++) {
+//     printf("\tP[%lld] = %.9f\n", i, P_x[i]);
+// }
+//     printf("\n\n");
+// printf("A_nnz = %lld\n", A_nnz);
+// for(i = 0; i < A_nnz; i++) {
+//     printf("\tP[%lld] = %.9f\n", i, A_x[i]);
+// }
+//     printf("\n\n");
+
     // Populate data
     // -------------
 
@@ -110,6 +146,15 @@ ST_retcode honestosqp()
         settings->eps_prim_inf = 1e-4;
         settings->eps_dual_inf = 1e-4;
         settings->max_iter     = 10000;
+
+        // rho is adapted every 25 iterations (by default) if some
+        // fraction of elapsed time is greater than the setup time.  I
+        // suppose the thought is that it's not necessary to adapt rho
+        // when the algorithm is converging quickly; however, this leads
+        // to non-deterministic output in certain cases when rho is not
+        // adapted (this is the culprit of GH issue #7, and the reason
+        // why it's hard to replicate).
+        settings->adaptive_rho_interval = 25;
     }
     else {
         rc = 17292;

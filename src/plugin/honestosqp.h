@@ -6,7 +6,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define HONESTOSQP_VERSION "1.1.1"
+#define HONESTOSQP_VERSION "1.1.2"
 
 #define HONESTOSQP_CHAR(cvar, len)                \
     char *(cvar) = malloc(sizeof(char) * (len)); \
