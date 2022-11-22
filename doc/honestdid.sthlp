@@ -13,7 +13,7 @@
 {p2colreset}{...}
 
 {pstd}
-{it:Important}: Please run {stata honestdid _plugin_check} before first use to check {cmd:honestdid} was installed correctly. Please refer to the {browse "https://github.com/mcaceresb/stata-honestdid#compiling":online documentation} if this check fails.
+{it:Important}: Please run {stata honestdid _plugin_check} before first use to check {cmd:honestdid} is installed correctly and up to date. Please refer to the {browse "https://github.com/mcaceresb/stata-honestdid#compiling":online documentation} if this check fails and to the {browse "https://github.com/mcaceresb/stata-honestdid/#package-installation":online instructions} for the latest version.
 
 {marker syntax}{...}
 {title:Syntax}
