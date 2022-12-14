@@ -406,6 +406,20 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
+## Heterogeneous Treatment Effects
+
+HonestDiD is also compatible with the estimator introduced in
+Chaisemartin and D'Haultfoeuille (2020), available for Stata
+via the `did_multiplegt` package.
+
+```stata
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+gen byte D = (year >= yexp2) & !mi(yexp2)
+did_multiplegt dins stfips year D, robust_dynamic dynamic(5) placebo(5) breps(50) cluster(stfips)
+honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg)
+```
+
 ## Additional options and resources
 
 You can view a video presentation about this paper [here](https://www.youtube.com/watch?v=6-NkiA2jN7U).
