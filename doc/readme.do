@@ -69,3 +69,11 @@ estimates restore csdid
 local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 graph export doc/readme_deltarm_csdid.png, replace width(1600)
+
+* CS
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+gen byte D = (year >= yexp2) & !mi(yexp2)
+did_multiplegt dins stfips year D, robust_dynamic dynamic(5) placebo(5) breps(50) cluster(stfips)
+honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg) coefplot xlabel(,angle(45))
+graph export doc/readme_did_multiplegt.png, replace width(1600)
