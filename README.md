@@ -406,7 +406,7 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
-## Heterogeneous Treatment Effects
+## Staggered Timing
 
 HonestDiD is also compatible with the estimator introduced in
 Chaisemartin and D'Haultfoeuille (2020), available for Stata
@@ -419,6 +419,9 @@ gen byte D = (year >= yexp2) & !mi(yexp2)
 did_multiplegt dins stfips year D, robust_dynamic dynamic(5) placebo(5) breps(50) cluster(stfips)
 honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg)
 ```
+
+<!-- -->
+![fig](doc/readme_did_multiplegt.png)
 
 ## Additional options and resources
 
