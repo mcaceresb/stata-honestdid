@@ -367,8 +367,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
-            Results[m].lopen  = open & (temp_mat[1, 2] == 1)
-            Results[m].uopen  = open & (temp_mat[gridPoints, 2] == 1)
+            Results[m].lopen  = open & (temp_mat[1, 2] == 1) + 4 * all(temp_mat[., 2] :== 0)
+            Results[m].uopen  = open & (temp_mat[gridPoints, 2] == 1) + 4 * all(temp_mat[., 2] :== 0)
         }
     }
     else if ( Delta == "DeltaRM" ) {
@@ -391,8 +391,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].method = method
             Results[m].Delta  = Delta
             Results[m].M      = Mvec[m]
-            Results[m].lopen  = open & (temp_mat[1, 2] == 1)
-            Results[m].uopen  = open & (temp_mat[gridPoints, 2] == 1)
+            Results[m].lopen  = (open & (temp_mat[1, 2] == 1)) + 4 * all(temp_mat[., 2] :== 0)
+            Results[m].uopen  = (open & (temp_mat[gridPoints, 2] == 1)) + 4 * all(temp_mat[., 2] :== 0)
         }
     }
     else {
@@ -452,7 +452,7 @@ void function _honestPrintCI(struct HonestEventStudy scalar EventStudy)
 {
     real scalar i
     string vector asterisks
-    asterisks = "", "(-)", "(+)", "(*)"
+    asterisks = "", "(-)", "(+)", "(*)", J(1, 2, ("(!)", "", "", "")), "(!)"
 
     printf("\n")
     printf("|    M    |   lb   |   ub   |\n")
@@ -485,6 +485,12 @@ void function _honestPrintCI(struct HonestEventStudy scalar EventStudy)
     }
     if ( any(EventStudy.open :== 3) ) {
         errprintf("(*) CI is open at both endpoints; CI length may not be accurate.\n")
+    }
+    if ( any(EventStudy.open :== 12) ) {
+        errprintf("(!) Could not find upper and lower bounds using the default grid.\n")
+    }
+    if ( any(EventStudy.open ) ) {
+        errprintf("Try expanding the grid using the grid_lb() and grid_ub() options\n")
     }
 }
 end

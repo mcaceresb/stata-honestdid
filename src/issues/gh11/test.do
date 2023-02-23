@@ -13,16 +13,30 @@ V = makesymmetric(V)
 st_matrix("b", b)
 st_matrix("V", V)
 end
+honestdid, pre(1/5) post(7/8) b(b) vcov(V) mvec(0.5(0.5)2)
 honestdid, pre(1/5) post(7/8) b(b) vcov(V)
 honestdid, pre(1/5) post(7/8) b(b) vcov(V) delta(sd)
 honestdid, pre(1/5) post(7/8) b(b) vcov(V) grid_lb(-0.5) grid_ub(0.5)
 
+* do src/install
+* exit, clear
+* stata14-mp
+* cd src/issues/gh11
+* cd ../../..
+
 * mata st_matrix("e(V)")[7, 7]
 * mata sigma[7, 7]
-* mata 20 * .000594
-*     sel = (numPrePeriods+1)::(numPrePeriods+numPostPeriods)
-*     sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
-*     gridlb = missing(grid_lb)? -20*sdTheta: grid_lb
+* mata sqrt(V[7, 7])
+* mata 20 * .0005941
+* mata numPrePeriods = 5
+* mata numPostPeriods = 2
+* mata betahat = b
+* mata sdTheta = 20 * .0005941
+* mata maxpre = max(abs((betahat, 0)[2..(numPrePeriods+1)] :- (betahat, 0)[1..numPrePeriods]))
+*
+* mata sel = (numPrePeriods+1)::(numPrePeriods+numPostPeriods)
+* mata sdTheta = sqrt(l_vec' * sigma[sel, sel] * l_vec)
+* mata gridlb = missing(grid_lb)? -20*sdTheta: grid_lb
 *
 * findfile honestdid.ado
 * qui do `r(fn)'
