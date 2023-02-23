@@ -79,8 +79,8 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     if ( args() < 11 ) grid_ub     = .
     if ( args() < 12 ) gridPoints  = 1e3
 
-    gridlb = missing(grid_lb)? -20*sdTheta: grid_lb
-    gridub = missing(grid_ub)?  20*sdTheta: grid_ub
+    gridlb = missing(grid_lb)? ((betahat * l_vec) - 20*sdTheta): grid_lb
+    gridub = missing(grid_ub)? ((betahat * l_vec) + 20*sdTheta): grid_ub
 
     // Loop over s values for (+), (-), left join the resulting CIs based on the grid
     CIs_RM_plus_allS  = J(gridPoints, length(s_indices), 0)
