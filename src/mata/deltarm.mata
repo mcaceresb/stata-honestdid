@@ -31,9 +31,9 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
 {
 
     real matrix CIs_RM_plus_allS, CIs_RM_minus_allS, CI_s_minus, CI_s_plus, resultsGrid
-    real scalar maxpre, hybrid_kappa, returnLength, postPeriodMomentsOnly, sdTheta, s_i
+    real scalar gridoff, gridhalf, maxpre, hybrid_kappa, returnLength, postPeriodMomentsOnly, sdTheta, s_i
     real colvector s_indices, sel, CIs_RM_plus_maxS, CIs_RM_minus_maxS
-    real rowvector maxsel, thetaGrid, thetaDiff, gridLength, gridlb, gridub
+    real rowvector thetaGrid, thetaDiff, gridLength, gridlb, gridub
 
     // This function computes the ARP CI that includes nuisance parameters
     // for Delta^{RM}(Mbar). This functions uses ARP_computeCI for all
@@ -85,10 +85,13 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     else {
         maxpre = abs(betahat)
     }
-    maxpre = sign(betahat[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)] * l_vec) * maxpre
-    // maxpre = betahat[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)] * l_vec
-    gridlb = missing(grid_lb)? (maxpre - 20*sdTheta): grid_lb
-    gridub = missing(grid_ub)? (maxpre + 20*sdTheta): grid_ub
+    gridoff  = betahat[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)] * l_vec
+    gridhalf = (Mbar * (1..numPostPeriods) * abs(l_vec) * maxpre) + (20 * sdTheta)
+    gridlb   = missing(grid_lb)? (gridoff - gridhalf): grid_lb
+    gridub   = missing(grid_ub)? (gridoff + gridhalf): grid_ub
+    // printf("debug grid: %9.4f, %9.4f\n", gridlb, gridub)
+    // gridlb = missing(grid_lb)? (-20*sdTheta): grid_lb
+    // gridub = missing(grid_ub)? (+20*sdTheta): grid_ub
 
     // Loop over s values for (+), (-), left join the resulting CIs based on the grid
     CIs_RM_plus_allS  = J(gridPoints, length(s_indices), 0)
