@@ -1,4 +1,5 @@
 cap mata mata drop ECOS()
+cap mata mata drop ECOS_get()
 cap mata mata drop ECOS_sol()
 cap mata mata drop ECOS_obj()
 cap mata mata drop ECOS_setup()
@@ -132,6 +133,16 @@ struct ECOS_workspace_abridged {
     real scalar rc
 }
 
+real matrix ECOS_get(struct ECOS_workspace_abridged scalar work, string scalar element) {
+    if ( element == "info_exitcode" ) return(work.info_exitcode);
+    if ( element == "info_obj_val"  ) return(work.info_obj_val);
+    if ( element == "solution_x"    ) return(work.solution_x);
+    if ( element == "solution_y"    ) return(work.solution_y);
+    if ( element == "solution_z"    ) return(work.solution_z);
+    if ( element == "success"       ) return(work.success);
+    if ( element == "rc"            ) return(work.rc);
+}
+
 real scalar ECOS_obj(real vector c,
                      real matrix G,
                      real vector h,
@@ -231,9 +242,10 @@ string scalar ECOS_setup(real scalar n,
     string scalar buf, bufvar
     real scalar off
 
-    st_numscalar("__honestecos_rc",   .)
-    st_numscalar("__honestecos_exit", .)
-    st_numscalar("__honestecos_obj",  .)
+    st_numscalar("__honestecos_rc",    .)
+    st_numscalar("__honestecos_exit",  .)
+    st_numscalar("__honestecos_obj",   .)
+    st_numscalar("__honestecos_maxit", length(st_numscalar("__honestecos_maxit"))? st_numscalar("__honestecos_maxit"): .)
 
     st_matrix("__honestecos_x", J(1, n, .))
     st_matrix("__honestecos_y", J(1, p, .))
@@ -302,9 +314,10 @@ void ECOS_cleanup() {
     if ( !missing(ix) ) (void) st_dropvar(ix)
     st_global("__HONESTBUFVAR", "")
 
-    st_numscalar("__honestecos_rc",   J(0, 0, .))
-    st_numscalar("__honestecos_exit", J(0, 0, .))
-    st_numscalar("__honestecos_obj",  J(0, 0, .))
+    st_numscalar("__honestecos_rc",    J(0, 0, .))
+    st_numscalar("__honestecos_exit",  J(0, 0, .))
+    st_numscalar("__honestecos_obj",   J(0, 0, .))
+    st_numscalar("__honestecos_maxit", J(0, 0, .))
 
     st_matrix("__honestecos_x", J(0, 0, .))
     st_matrix("__honestecos_y", J(0, 0, .))

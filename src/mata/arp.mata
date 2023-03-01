@@ -105,6 +105,10 @@ real matrix function _honestARPComputeCI(real rowvector betahat,
             AGammaInv_minusOne,
             rowsForARP)
     }
+    // sigma_bak    = sigma
+    // sigma        = sigmaY
+    // hybrid_kappa = hybrid_list.hybrid_kappa
+    // X_T          = AGammaInv_minusOne
 
     // Loop over theta grid and store acceptances
     testResultsGrid = J(gridPoints, 1, .)
@@ -228,12 +232,13 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
                                                 real vector rowsForARP,
                                                 real scalar sims) {
 
-    real scalar i, dimDelta
+    real scalar i, dimDelta, s, scale, maxs
     real matrix xi_draws, Cons, C0
     real colvector eta_vec, sdVec
     real rowvector f, f0, A0
     real matrix _X_T, _sigma
     string scalar rseedcache
+    struct ECOS_workspace_abridged scalar res
 
     // Computes the least favorable critical value following the algorithm in
     // Section 6.2 of Andrews, Roth, Pakes (2019).
@@ -250,6 +255,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
     // algorithm where I jumble the Halton sequences, so the coverage
     // is preserved and the correlation disappears.
 
+    maxs = 100
     rseedcache = rseed()
     rseed(0)
     if ( args() < 5 ) sims = 1000
@@ -291,9 +297,20 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
         A0 = (J(1, length(f), 0), 1)
         C0 = -Cons, J(rows(Cons), 1, 0)
 
+        // NB: I'm twisting ECOS here into doing linear programing becasue I can
+        // and I don't want to add dependencies. However, it's not _really_ a
+        // dediccated linear programing package so apparently 100 iterations
+        // can sometimes be too few given some numerically small inputs (default
+        // tolerance is 1e-8). I try to scale the inequality if it fails.
         eta_vec = J(sims, 1, .)
         for (i = 1; i <= sims; i++) {
-            eta_vec[i] = ECOS_obj(f0, C0, -xi_draws[i, .]', rows(C0), 0, 0, A0, 1)
+            res = ECOS(f0, C0, -xi_draws[i, .]', rows(C0), 0, 0, A0, 1)
+            scale = 0; s = 0
+            while ( (s++ < maxs) & (!ECOS_get(res, "success")) ) {
+                scale = scale + 10
+                res = ECOS(f0, C0 * scale, -xi_draws[i, .]' * scale, rows(C0), 0, 0, A0, 1)
+            }
+            eta_vec[i] = ECOS_get(res, "info_obj_val")
         }
 
         // We compute the 1-kappa quantile of eta_vec and return this value

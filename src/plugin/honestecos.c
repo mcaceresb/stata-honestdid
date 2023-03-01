@@ -31,7 +31,7 @@ ST_retcode honestecos()
 {
     ST_retcode rc = 0;
     char *buf = NULL, *bufptr;
-    ST_double *x = NULL, *y = NULL, *z = NULL, obj;
+    ST_double *x = NULL, *y = NULL, *z = NULL, obj, maxit;
     uint32_t i;
     ST_int bytes = SF_sdatalen(1, 1);
 
@@ -67,6 +67,9 @@ ST_retcode honestecos()
     ncones  = honestecos_read_int(&bufptr);
     if ((rc = honestecos_read_intvector(&bufptr, &q, &nq))) goto exit;
     e       = honestecos_read_int(&bufptr);
+ 
+
+    if ((rc = SF_scal_use("__honestecos_maxit", &maxit))) goto exit;
 
     if ((rc = honestecos_read_matrix(&bufptr, &G_x, &G_i, &G_p, &G_nnz))) goto exit;
     if ((rc = honestecos_read_matrix(&bufptr, &A_x, &A_i, &A_p, &A_nnz))) goto exit;
@@ -94,7 +97,7 @@ ST_retcode honestecos()
         work->stgs->reltol  = 1e-8;
         work->stgs->abstol  = 1e-8;
         work->stgs->feastol = 1e-8;
-        work->stgs->maxit   = 100;
+        work->stgs->maxit   = (idxint) (SF_is_missing(maxit)? 100: maxit);
         exitflag = ECOS_solve(work);
     }
     else {

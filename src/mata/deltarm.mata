@@ -83,7 +83,7 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
         maxpre = max(abs((betahat[2..numPrePeriods], 0) :- (betahat[1..(numPrePeriods-1)], 0)))
     }
     else {
-        maxpre = abs(betahat)
+        maxpre = abs(betahat[1])
     }
     gridoff  = betahat[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)] * l_vec
     gridhalf = (Mbar * (1..numPostPeriods) * abs(l_vec) * maxpre) + (20 * sdTheta)

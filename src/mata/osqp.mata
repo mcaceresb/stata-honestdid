@@ -1,4 +1,5 @@
 cap mata mata drop OSQP()
+cap mata mata drop OSQP_get()
 cap mata mata drop OSQP_setup()
 cap mata mata drop OSQP_solve()
 cap mata mata drop OSQP_read()
@@ -84,6 +85,12 @@ struct OSQP_csc_matrix {
     real vector indptr
 }
 
+real matrix OSQP_get(struct OSQP_workspace_abridged scalar work, string scalar element) {
+    if ( element == "info_obj_val" ) return(work.info_obj_val);
+    if ( element == "solution_x"   ) return(work.solution_x);
+    if ( element == "rc"           ) return(work.rc);
+}
+
 struct OSQP_workspace_abridged scalar OSQP(real matrix P,
                                            real vector q,
                                            real matrix A,
@@ -113,6 +120,7 @@ string scalar OSQP_setup (struct OSQP_csc_matrix P,
 
     st_numscalar("__honestosqp_rc", .)
     st_numscalar("__honestosqp_obj", .)
+    st_numscalar("__honestosqp_max_iter", length(st_numscalar("__honestosqp_max_iter"))? st_numscalar("__honestosqp_max_iter"): .)
     st_matrix("__honestosqp_x", J(1, length(q), .))
 
     off = 0
@@ -165,8 +173,9 @@ void OSQP_cleanup() {
     if ( !missing(ix) ) (void) st_dropvar(ix)
     st_global("__HONESTBUFVAR", "")
     st_local("__honestosqp_status", "")
-    st_numscalar("__honestosqp_rc",  J(0, 0, .))
-    st_numscalar("__honestosqp_obj", J(0, 0, .))
+    st_numscalar("__honestosqp_rc",       J(0, 0, .))
+    st_numscalar("__honestosqp_obj",      J(0, 0, .))
+    st_numscalar("__honestosqp_max_iter", J(0, 0, .))
     st_matrix("__honestosqp_x", J(0, 0, .))
 }
 
