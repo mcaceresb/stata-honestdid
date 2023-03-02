@@ -306,7 +306,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
         for (i = 1; i <= sims; i++) {
             res = ECOS(f0, C0, -xi_draws[i, .]', rows(C0), 0, 0, A0, 1)
             scale = 0; s = 0
-            while ( (s++ < maxs) & (!ECOS_get(res, "success")) ) {
+            while ( (++s < maxs) & (!ECOS_get(res, "success")) ) {
                 scale = scale + 10
                 res = ECOS(f0, C0 * scale, -xi_draws[i, .]' * scale, rows(C0), 0, 0, A0, 1)
             }

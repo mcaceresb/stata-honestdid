@@ -1,10 +1,13 @@
-library(lfe)
+# remove.packages("HonestDiD")
+# install.packages(".", repos=NULL, type="source")
+# quit(save="no")
+# R
+# source('~/projects/ra/roth/honestDiD/references/HonestDiD/R/arp-nuisance.R')
+# Rscript --no-save --no-restore --verbose test/unit-tests-consistency.R > test/unit-tests-consistency.R.log 2>&1
+
 library(HonestDiD)
 data(BCdata_EventStudy)
 data(LWdata_EventStudy)
-# install.packages(".", repos=NULL, type="source")
-# source('~/projects/ra/roth/honestDiD/references/HonestDiD/R/arp-nuisance.R')
-# Rscript --no-save --no-restore --verbose test/unit-tests-consistency.R > test/unit-tests-consistency.R.log 2>&1
 
 BC_numPrePeriods  <- length(BCdata_EventStudy$prePeriodIndices)
 BC_numPostPeriods <- length(BCdata_EventStudy$postPeriodIndices)
