@@ -3,19 +3,19 @@
        log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdi
 > d/test/unit-tests-consistency.do.log
   log type:  text
- opened on:  12 Nov 2022, 16:30:53
+ opened on:   4 Mar 2023, 19:26:57
 
 . set rmsg on
-r; t=0.00 16:30:53
+r; t=0.00 19:26:57
 
 . tempname beta sigma
-r; t=0.00 16:30:53
+r; t=0.00 19:26:57
 
 . mata {
 >     st_matrix(st_local("beta"),  _honestExampleBCBeta())
 >     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 > }
-r; t=0.01 16:30:53
+r; t=0.02 19:26:57
 
 . 
 . * Base relative magnitudes comparison
@@ -25,28 +25,27 @@ r; t=0.01 16:30:53
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
 |       . |  0.159 |  0.233 | (Original)
-|  0.2222 |  0.143 |  0.248 | 
+|  0.2222 |  0.144 |  0.248 | 
 |  0.4444 |  0.124 |  0.266 | 
-|  0.6667 |  0.101 |  0.287 | 
+|  0.6667 |  0.102 |  0.287 | 
 |  0.8889 |  0.079 |  0.308 | 
 |  1.1111 |  0.056 |  0.329 | 
 |  1.3333 |  0.032 |  0.351 | 
 |  1.5556 |  0.008 |  0.375 | 
-|  1.7778 | -0.016 |  0.379 | (+)
-|  2.0000 | -0.041 |  0.379 | (+)
+|  1.7778 | -0.016 |  0.399 | 
+|  2.0000 | -0.041 |  0.423 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-(+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=11.17 16:31:04
+r; t=9.11 19:27:06
 
 . 
 . mata st_matrix("l_vec", _honestBasis(1, 4))
-r; t=0.00 16:31:04
+r; t=0.00 19:27:06
 
 . mata st_matrix("l_alt", J(4, 1, 1)/4)
-r; t=0.00 16:31:04
+r; t=0.00 19:27:06
 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_vec)
-r; t=0.00 16:31:04
+r; t=0.00 19:27:06
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -62,7 +61,7 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=3.29 16:31:07
+r; t=2.72 19:27:09
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -78,11 +77,11 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=2.30 16:31:10
+r; t=1.59 19:27:11
 
 . 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_alt)
-r; t=0.00 16:31:10
+r; t=0.00 19:27:11
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -98,7 +97,7 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=3.59 16:31:13
+r; t=3.12 19:27:14
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -114,7 +113,7 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=0.96 16:31:14
+r; t=0.79 19:27:15
 
 . 
 . * Base non-rm comparison
@@ -135,11 +134,11 @@ r; t=0.96 16:31:14
 |  0.1797 |  0.040 |  0.498 | 
 |  0.2022 |  0.017 |  0.521 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.74 16:31:15
+r; t=0.59 19:27:15
 
 . 
 . local opts mvec(0(0.1)0.3) l_vec(l_vec)
-r; t=0.00 16:31:15
+r; t=0.00 19:27:15
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
 (note: running execution using -parallel-; see help parallel for details)
@@ -152,7 +151,7 @@ r; t=0.00 16:31:15
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.619 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.63 16:31:16
+r; t=0.61 19:27:16
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditio
 > nal)
@@ -166,7 +165,7 @@ r; t=0.63 16:31:16
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
-r; t=2.23 16:31:18
+r; t=1.83 19:27:18
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
 (note: running execution using -parallel-; see help parallel for details)
@@ -179,7 +178,7 @@ r; t=2.23 16:31:18
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=2.48 16:31:20
+r; t=2.34 19:27:20
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
 (note: running execution using -parallel-; see help parallel for details)
@@ -192,11 +191,11 @@ r; t=2.48 16:31:20
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.618 | 
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
-r; t=1.53 16:31:22
+r; t=1.42 19:27:21
 
 . 
 . local opts mvec(0(0.1)0.3) l_vec(l_alt)
-r; t=0.00 16:31:22
+r; t=0.00 19:27:21
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
 (note: running execution using -parallel-; see help parallel for details)
@@ -209,7 +208,7 @@ r; t=0.00 16:31:22
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.186 |  1.988 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.50 16:31:22
+r; t=0.60 19:27:22
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditio
 > nal)
@@ -224,7 +223,8 @@ r; t=0.50 16:31:22
 |  0.3000 | -1.185 |  1.853 | (+)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=0.93 16:31:23
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=1.08 19:27:23
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
 (note: running execution using -parallel-; see help parallel for details)
@@ -237,7 +237,7 @@ r; t=0.93 16:31:23
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.183 |  1.985 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=1.19 16:31:25
+r; t=1.27 19:27:24
 
 . honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
 (note: running execution using -parallel-; see help parallel for details)
@@ -251,14 +251,15 @@ r; t=1.19 16:31:25
 |  0.3000 | -1.185 |  1.853 | (+)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=1.14 16:31:26
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=1.14 19:27:25
 
 . 
 . * Large non-rm comparison
 . * -----------------------
 . 
 . use test/LWdata_RawData.dta, clear
-r; t=0.01 16:31:26
+r; t=0.01 19:27:25
 
 . mata stata(_honestExampleLWCall())
 (MWFE estimator converged in 4 iterations)
@@ -327,19 +328,19 @@ Absorbed degrees of freedom:
    PUS_SURVEY_YEAR#BIRTHYEAR |       120           8         112     |
 ---------------------------------------------------------------------+
 * = FE nested within cluster; treated as redundant for DoF computation
-r; t=0.48 16:31:26
+r; t=0.43 19:27:26
 
 . matrix b = 100 * e(b)
-r; t=0.00 16:31:26
+r; t=0.00 19:27:26
 
 . matrix V = 100^2 * e(V) * 1.038349
-r; t=0.00 16:31:26
+r; t=0.00 19:27:26
 
 . mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
-r; t=0.00 16:31:26
+r; t=0.00 19:27:26
 
 . mata st_matrix("l_alt", J(23, 1, 1)/23)
-r; t=0.00 16:31:26
+r; t=0.00 19:27:26
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd)
 (note: running execution using -parallel-; see help parallel for details)
@@ -358,11 +359,11 @@ r; t=0.00 16:31:26
 |  3.5453 | -5.323 |  3.443 | 
 |  3.9884 | -5.766 |  3.886 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=1.16 16:31:27
+r; t=1.11 19:27:27
 
 . 
 . local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-r; t=0.00 16:31:27
+r; t=0.00 19:27:27
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
 (note: running execution using -parallel-; see help parallel for details)
@@ -380,7 +381,7 @@ r; t=0.00 16:31:27
 |  0.0350 | -12.772 |  5.047 | 
 |  0.0400 | -14.104 |  5.390 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=1.16 16:31:29
+r; t=1.04 19:27:28
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
 (note: running execution using -parallel-; see help parallel for details)
@@ -399,7 +400,8 @@ r; t=1.16 16:31:29
 |  0.0400 | -18.879 |  1.266 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=36.06 16:32:05
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=18.67 19:27:47
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
 (note: running execution using -parallel-; see help parallel for details)
@@ -417,7 +419,7 @@ r; t=36.06 16:32:05
 |  0.0350 | -10.082 |  0.732 | 
 |  0.0400 | -12.632 |  1.419 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=23.68 16:32:28
+r; t=18.50 19:28:05
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
 (note: running execution using -parallel-; see help parallel for details)
@@ -436,11 +438,12 @@ r; t=23.68 16:32:28
 |  0.0400 | -18.879 |  1.342 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=17.34 16:32:46
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=15.59 19:28:21
 
 . 
 . local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_alt)
-r; t=0.00 16:32:46
+r; t=0.00 19:28:21
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
 (note: running execution using -parallel-; see help parallel for details)
@@ -458,7 +461,7 @@ r; t=0.00 16:32:46
 |  0.0350 | -8.525 |  3.832 | 
 |  0.0400 | -9.610 |  3.851 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.93 16:32:47
+r; t=0.90 19:28:22
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
 (note: running execution using -parallel-; see help parallel for details)
@@ -477,7 +480,8 @@ r; t=0.93 16:32:47
 |  0.0400 | -14.510 |  0.973 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=8.84 16:32:55
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=7.51 19:28:29
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
 (note: running execution using -parallel-; see help parallel for details)
@@ -495,7 +499,7 @@ r; t=8.84 16:32:55
 |  0.0350 | -6.599 |  0.649 | 
 |  0.0400 | -8.463 |  1.102 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=8.51 16:33:04
+r; t=7.55 19:28:37
 
 . honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
 (note: running execution using -parallel-; see help parallel for details)
@@ -514,14 +518,15 @@ r; t=8.51 16:33:04
 |  0.0400 | -14.510 |  1.031 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
-r; t=13.20 16:33:17
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=12.10 19:28:49
 
 . 
 . * One post-period
 . * ---------------
 . 
 . local opts mvec(0(0.1)0.3) delta(sd) numpre(7)
-r; t=0.00 16:33:17
+r; t=0.00 19:28:49
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(FLCI)
 (note: running execution using -parallel-; see help parallel for details)
@@ -534,7 +539,7 @@ r; t=0.00 16:33:17
 |  0.2000 |  0.092 |  0.639 | 
 |  0.3000 | -0.008 |  0.739 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.82 16:33:18
+r; t=0.41 19:28:49
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
 (note: running execution using -parallel-; see help parallel for details)
@@ -547,7 +552,7 @@ r; t=0.82 16:33:18
 |  0.2000 |  0.079 |  0.659 | 
 |  0.3000 | -0.008 |  0.741 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
-r; t=0.81 16:33:19
+r; t=0.50 19:28:50
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
 (note: running execution using -parallel-; see help parallel for details)
@@ -562,7 +567,8 @@ r; t=0.81 16:33:19
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 (+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=0.77 16:33:19
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=0.79 19:28:50
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
 (note: running execution using -parallel-; see help parallel for details)
@@ -570,16 +576,18 @@ r; t=0.77 16:33:19
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
 |       . |  0.072 |  0.180 | (Original)
-|  0.0000 |      . |      . | 
+|  0.0000 |      . |      . | (*)
 |  0.1000 |  0.117 |  0.614 | 
 |  0.2000 |  0.078 |  0.662 | 
 |  0.3000 | -0.009 |  0.743 | 
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
-r; t=0.71 16:33:20
+(*) CI is open at both endpoints; CI length may not be accurate.
+Try expanding the grid using the grid_lb() and grid_ub() options
+r; t=0.63 19:28:51
 
 . 
 . local opts mvec(0(0.5)2) delta(rm) numpre(7)
-r; t=0.00 16:33:20
+r; t=0.00 19:28:51
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -590,13 +598,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 | ------- | ------ | ------ |
 |       . |  0.072 |  0.180 | (Original)
 |  0.0000 | -0.293 |  0.550 | 
-|  0.5000 | -0.295 |  0.418 | 
-|  1.0000 | -0.316 |  0.454 | 
-|  1.5000 | -0.365 |  0.552 | (+)
-|  2.0000 | -0.459 |  0.552 | (+)
+|  0.5000 | -0.294 |  0.568 | 
+|  1.0000 | -0.315 |  0.631 | 
+|  1.5000 | -0.366 |  0.720 | 
+|  2.0000 | -0.459 |  0.823 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-(+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=2.65 16:33:23
+r; t=2.72 19:28:54
 
 . honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
@@ -608,13 +615,12 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |       . |  0.072 |  0.180 | (Original)
 |  0.0000 |  0.071 |  0.181 | 
 |  0.5000 | -0.031 |  0.306 | 
-|  1.0000 | -0.151 |  0.441 | 
-|  1.5000 | -0.278 |  0.552 | (+)
-|  2.0000 | -0.411 |  0.552 | (+)
+|  1.0000 | -0.150 |  0.441 | 
+|  1.5000 | -0.278 |  0.578 | 
+|  2.0000 | -0.410 |  0.713 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-(+) CI is open at upper endpoint; CI length may not be accurate.
-r; t=1.79 16:33:25
+r; t=1.71 19:28:56
 
 . 
 end of do-file
-r; t=0.00 16:33:25
+r; t=0.00 19:28:56
