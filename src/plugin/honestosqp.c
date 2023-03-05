@@ -31,7 +31,7 @@ ST_retcode honestosqp()
 {
     ST_retcode rc = 0;
     char *buf = NULL, *bufptr;
-    ST_double *x = NULL, obj;
+    ST_double *x = NULL, obj, max_iter;
     ST_int bytes = SF_sdatalen(1, 1);
 
     c_int verbose, n, m, i;
@@ -65,6 +65,8 @@ ST_retcode honestosqp()
     }
     else rc = 0;
     verbose = honestosqp_read_int(&bufptr);
+
+    if ((rc = SF_scal_use("__honestosqp_max_iter", &max_iter))) goto exit;
 
     if ((rc = honestosqp_read_matrix(&bufptr, &P_x, &P_i, &P_p, &P_nnz))) goto exit;
     if ((rc = honestosqp_read_matrix(&bufptr, &A_x, &A_i, &A_p, &A_nnz))) goto exit;
@@ -145,7 +147,7 @@ ST_retcode honestosqp()
         settings->eps_rel      = 1e-5;
         settings->eps_prim_inf = 1e-4;
         settings->eps_dual_inf = 1e-4;
-        settings->max_iter     = 10000;
+        settings->max_iter     = (c_int) (SF_is_missing(max_iter)? 10000: max_iter);
 
         // rho is adapted every 25 iterations (by default) if some
         // fraction of elapsed time is greater than the setup time.  I
