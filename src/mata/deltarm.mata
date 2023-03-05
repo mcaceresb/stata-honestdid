@@ -85,7 +85,7 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     else {
         maxpre = abs(betahat[1])
     }
-    gridoff  = betahat[(numPrePeriods+1)..(numPrePeriods+numPostPeriods)] * l_vec
+    gridoff  = betahat[sel] * l_vec
     gridhalf = (Mbar * (1..numPostPeriods) * abs(l_vec) * maxpre) + (20 * sdTheta)
     gridlb   = missing(grid_lb)? (gridoff - gridhalf): grid_lb
     gridub   = missing(grid_ub)? (gridoff + gridhalf): grid_ub
