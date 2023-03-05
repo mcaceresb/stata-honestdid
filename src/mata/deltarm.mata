@@ -80,7 +80,7 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     if ( args() < 12 ) gridPoints  = 1e3
 
     if ( numPrePeriods > 1 ) {
-        maxpre = max(abs((betahat[2..numPrePeriods], 0) :- (betahat[1..(numPrePeriods-1)], 0)))
+        maxpre = max(abs((betahat[2..numPrePeriods], 0) :- (betahat[1..numPrePeriods])))
     }
     else {
         maxpre = abs(betahat[1])
