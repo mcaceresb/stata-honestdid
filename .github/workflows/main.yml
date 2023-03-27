@@ -10,7 +10,7 @@ on:
       - 'src/plugin'
   workflow_dispatch:
 jobs:
-  build:
+  buildos:
     name: Compile MacOS
     runs-on: macos-latest
     steps:
@@ -53,12 +53,31 @@ jobs:
           otool -L src/build/honestecos_macosx.plugin
       - name: commit plugin
         run: |
-          git config --global user.name 'Mauricio Caceres'
-          git config --global user.email 'mauricio.caceres.bravo@gmail.com'
-          git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
+          git config --global user.name "{{ github.COMMITTER_EMAIL }}"
+          git config --global user.email "{{ github.COMMITTER_EMAIL }}"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add -f src/build/honestosqp_macosx*.plugin
           git add -f src/build/honestecos_macosx*.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
+          git fetch
+          git push -f origin HEAD:${GITHUB_REF##*/}
+  buildlinux:
+    name: Compile Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Compile Linux
+        run: |
+          bash src/compile.sh
+      - name: commit plugin
+        run: |
+          git config --global user.name "{{ github.actor }}"
+          git config --global user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add -f src/build/honestosqp_unix.plugin
+          git add -f src/build/honestecos_unix.plugin
+          echo ${GITHUB_REF##*/}
+          [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] Linux plugin"
           git fetch
           git push -f origin HEAD:${GITHUB_REF##*/}
