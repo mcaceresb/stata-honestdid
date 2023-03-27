@@ -1,4 +1,4 @@
-name: compile-macosx-plugin
+name: compile-nix-plugins
 on:
   push:
     branches: [ main ]
