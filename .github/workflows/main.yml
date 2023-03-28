@@ -1,4 +1,4 @@
-name: compile-macosx-plugin
+name: compile-nix-plugins
 on:
   push:
     branches: [ main ]
@@ -10,7 +10,7 @@ on:
       - 'src/plugin'
   workflow_dispatch:
 jobs:
-  build:
+  buildos:
     name: Compile MacOS
     runs-on: macos-latest
     steps:
@@ -53,12 +53,41 @@ jobs:
           otool -L src/build/honestecos_macosx.plugin
       - name: commit plugin
         run: |
-          git config --global user.name 'Mauricio Caceres'
-          git config --global user.email 'mauricio.caceres.bravo@gmail.com'
-          git remote set-url origin https://x-access-token:${{ secrets.COMPILE_TOKEN }}@github.com/${{ github.repository }}
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git add -f src/build/honestosqp_macosx*.plugin
           git add -f src/build/honestecos_macosx*.plugin
           echo ${GITHUB_REF##*/}
           [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] OSX plugin"
+          git fetch
+          git push -f origin HEAD:${GITHUB_REF##*/}
+  buildlinux:
+    name: Compile Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Clone OSQP
+        uses: actions/checkout@main
+        with:
+          repository: osqp/osqp
+          path: './osqp'
+          submodules: recursive
+      - name: Clone ECOS
+        uses: actions/checkout@main
+        with:
+          repository: embotech/ecos
+          path: './ecos'
+          submodules: recursive
+      - name: Compile Linux
+        run: |
+          RUN_CLONE=0 RUN_OS=LINUX bash src/compile.sh
+      - name: Commit plugin
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -f src/build/honestosqp_unix.plugin
+          git add -f src/build/honestecos_unix.plugin
+          echo ${GITHUB_REF##*/}
+          [ -n "$(git status --porcelain)" ] && git commit -m "[Automated Commit] Linux plugin"
           git fetch
           git push -f origin HEAD:${GITHUB_REF##*/}
