@@ -66,10 +66,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Clone OSQP
+        uses: actions/checkout@main
+        with:
+          repository: osqp/osqp
+          path: './osqp'
+          submodules: recursive
+      - name: Clone ECOS
+        uses: actions/checkout@main
+        with:
+          repository: embotech/ecos
+          path: './ecos'
+          submodules: recursive
       - name: Compile Linux
         run: |
-          bash src/compile.sh
-      - name: commit plugin
+          RUN_CLONE=0 RUN_OS=LINUX bash src/compile.sh
+      - name: Commit plugin
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
