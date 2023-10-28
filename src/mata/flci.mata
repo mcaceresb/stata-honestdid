@@ -548,16 +548,20 @@ real rowvector function _flciFindWorstCaseBiasGivenH(real scalar hh,
     u  = A_matrices.A_constant_sd - hh^2
 
     invPeriodIndices = _honestInverseIndex(1..numPrePeriods, 2 * numPrePeriods)
-    _W0 = makesymmetric(W[invPeriodIndices, invPeriodIndices])
-    eigensystem(_W0, C=., L=.)
-    _W1 = makesymmetric(Re((C :* sqrt(L)) * C'))
-    _W2 = makesymmetric(Re((C :/ sqrt(L)) * C'))
-    _W3 = makesymmetric(Re((C :/     (L)) * C'))
+    _W0 = ((W + W')/2)[invPeriodIndices, invPeriodIndices]
+    symeigensystem(_W0, C=., L=.)
+    _W1 = (C :* sqrt(L)) * C'
+    _W2 = (C :/ sqrt(L)) * C'
+    _W3 = (C :/     (L)) * C'
+    _W1 = (_W1 + _W1')/2
+    _W2 = (_W2 + _W2')/2
+    _W3 = (_W3 + _W3')/2
 
-    assert(max(abs((C * diag(L) * C') - _W0)) < 1e-12)
-    assert(max(abs(_W1 * _W1 - _W0)) < 1e-12)
-    assert(max(abs(_W1 * _W2 - I(numPrePeriods))) < 1e-12)
-    assert(max(abs(_W3 * _W0 - I(numPrePeriods))) < 1e-12)
+    // manually check the eigendecomposition succeeded
+    assert(max(reldif((C * diag(L) * C'), _W0))     < epsilon(1)^(3/4))
+    assert(max(reldif(_W1 * _W1, _W0))              < epsilon(1)^(3/4))
+    assert(max(reldif(_W1 * _W2, I(numPrePeriods))) < epsilon(1)^(3/4))
+    assert(max(reldif(_W3 * _W0, I(numPrePeriods))) < epsilon(1)^(3/4))
 
     W1 = J(n, n, 0)
     W2 = J(n, n, 0)
