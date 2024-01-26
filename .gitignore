@@ -1,4 +1,5 @@
 src/releases
+src/issues/email2
 standalone
 ecos
 osqp

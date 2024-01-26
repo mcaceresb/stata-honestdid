@@ -278,7 +278,7 @@ real scalar function _honestARPLeastFavorableCV(real matrix sigma,
 
         // Nuisance parameter case
         // Compute elements for LP that will be re-used
-        sdVec    = sqrt(diagonal(_sigma)) // standard deviation of y_T elements
+        sdVec    = editmissing(sqrt(diagonal(_sigma)), 0) // standard deviation of y_T elements
         dimDelta = cols(_X_T)             // dimension of delta
         f        = 1, J(1, dimDelta, 0)   // Define objective function
         Cons     = (sdVec, _X_T)          // Define linear constraint
@@ -548,7 +548,7 @@ real scalar function _honestARPConditionalTest(real scalar theta,
         // primal approach
         // ---------------
         size_B   = sum(B_index)
-        sdVec    = sqrt(diagonal(sigma_ARP))
+        sdVec    = editmissing(sqrt(diagonal(sigma_ARP)), 0)
         sdVec_B  = sdVec[selectindex(B_index)]
         sdVec_Bc = sdVec[selectindex(Bc_index)]
 
@@ -649,8 +649,8 @@ struct ECOS_workspace_abridged scalar function _honestARPDeltaTest(
     //     max f' X
     //     s.t. C X \leq b
 
-    dimDelta = cols(X_T)             // dimension of delta
-    sdVec    = sqrt(diagonal(sigma)) // standard deviation of y_T elements
+    dimDelta = cols(X_T)                             // dimension of delta
+    sdVec    = editmissing(sqrt(diagonal(sigma)), 0) // standard deviation of y_T elements
 
     // Define objective function
     f = 1, J(1, dimDelta+1, 0)

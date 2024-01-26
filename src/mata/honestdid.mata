@@ -222,6 +222,8 @@ struct _honestResults colvector function HonestSensitivityHelper(
     real scalar m, alpha, rm, debug, grid_lb, grid_ub, gridPoints, open
     real matrix temp_mat
 
+    _honestWarnIfNotSymmPSD(sigma)
+
     alpha      = options.alpha
     Mvec       = options.Mvec
     l_vec      = options.l_vec
