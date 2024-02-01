@@ -185,7 +185,7 @@ real vector function _honestQuantiles(real vector x, real vector p) {
     real scalar n
     real colvector m, i, g, sel
     real matrix orderx
-    n   = length(x)
+    n   = length(x)-missing(x)
     m   = 1 :- colshape(p, 1)
     i   = floor(n * colshape(p, 1) + m)
     sel = i \ i :+ 1
@@ -196,7 +196,7 @@ real vector function _honestQuantiles(real vector x, real vector p) {
     if ( any(i :>= n) ) {
         sel[selectindex(sel :> n)] = n
     }
-    orderx = rowshape(sort(colshape(x, 1), 1)[sel], 2)'
+    orderx = rowshape(sort(colshape(x[selectindex(x:<.)], 1), 1)[sel], 2)'
     return(((1 :- g) :* orderx[., 1] + g :* orderx[., 2]))
 }
 
@@ -410,6 +410,21 @@ real scalar function _honestTruncNormInv(real scalar p,
     while ( (++index < n) & (pscale > area[index]) ) {}
     a = (pscale - area[index-1]) / (area[index] - area[index-1])
     return(index < n? mu + sd * (a * grid[index] + (1 - a) * grid[index-1]): .)
+}
+
+real matrix function _honestWarnIfNotSymmPSD(real matrix sigma) {
+    real matrix L
+    if ( issymmetric(sigma) ) {
+        symeigensystem(sigma, ., L=.)
+        if ( any(L :< 0) ) {
+            errprintf("warning: sigma is not numerically positive semi-definite\n")
+        }
+        else if ( any(L :== 0) ) {
+            errprintf("warning: sigma is not full-rank\n")
+        }
+    } else {
+        errprintf("warning: sigma is not a symmetric matrix")
+    }
 }
 
 real rowvector function _honestExampleBCBeta() {

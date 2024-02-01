@@ -1,4 +1,4 @@
-*! version 1.2.1 27Oct2023 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.3.0 25Jan2024 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid

@@ -178,7 +178,7 @@ real matrix function _honestRMConditionalCSFixedS(real scalar s,
 
     struct _honestHybridList scalar hybrid_list
     real matrix A_RM_s, CI
-    real vector d_RM, rowsForARP, postPeriodIndices
+    real vector d_RM, rowsForARP
 
     // This function computes the ARP CI that includes nuisance parameters
     // for Delta^{RM}(Mbar) for a fixed s and (+),(-). This functions uses ARP_computeCI for all
@@ -199,9 +199,14 @@ real matrix function _honestRMConditionalCSFixedS(real scalar s,
     d_RM   = _honestRMCreated(numPrePeriods, numPostPeriods)
 
     // If only use post period moments, construct indices for the post period moments only.
-    if ( postPeriodMomentsOnly & (numPostPeriods > 1) ) {
-        postPeriodIndices = (numPrePeriods +1)..cols(A_RM_s)
-        rowsForARP = selectindex(rowsum(A_RM_s[., postPeriodIndices] :!= 0) :> 0)
+    if ( postPeriodMomentsOnly ) {
+        // NB: t = 0 is dropped from A, d creation, so rowsForARP is just last col
+        // with 1 period and doing the sum doesn't matter in that case
+        rowsForARP = selectindex(rowsum(A_RM_s[., (numPrePeriods+1)..cols(A_RM_s)] :!= 0) :> 0)
+        if (numPostPeriods == 1) {
+            A_RM_s = A_RM_s[rowsForARP, .]
+            d_RM   = d_RM[rowsForARP]
+        }
     }
     else {
         rowsForARP = 1::rows(A_RM_s)
