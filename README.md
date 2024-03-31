@@ -63,11 +63,18 @@ value of $\bar{M}$ for which the effect is still significant.
 
 ## Package installation
 
-The package may be installed by using `net install`:
+The package may be installed by using `net install` for the latest version:
 
 ```stata
 local github https://raw.githubusercontent.com
 net install honestdid, from(`github'/mcaceresb/stata-honestdid/main) replace
+honestdid _plugin_check
+```
+
+Version `version 1.3.0 25Jan2024` of the package is currently available via SSC:
+
+```stata
+ssc install honestdid
 honestdid _plugin_check
 ```
 
