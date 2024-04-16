@@ -41,6 +41,8 @@ cd ${ROOT}
 
 echo "Compiling ECOS plugin"
 cd ecos
+git reset --hard v2.0.10
+git submodule update --init --recursive
 make purge
 cp ecos.mk ecos.mk.bak
 [[ "${RUN_OS}" == "APPLE_ARM64"  ]] && sed -i -e 's/^CFLAGS\(.*\)/CFLAGS\1 -arch arm64/'     ecos.mk
@@ -54,6 +56,8 @@ rm -f ecos.mk.bak
 
 echo "Compiling OSQP plugin"
 cd ../osqp
+git reset --hard v0.6.3
+git submodule update --init --recursive
 cp CMakeLists.txt CMakeLists.txt.bak
 CMAKE_FLAGS=
 if [[ "${RUN_OS}" == "APPLE_X86_64" ]]; then
