@@ -71,7 +71,7 @@ net install honestdid, from(`github'/mcaceresb/stata-honestdid/main) replace
 honestdid _plugin_check
 ```
 
-Version `version 1.3.1 16Apr2024` of the package is currently available via SSC:
+Version `1.3.0` (`25Jan2024`) of the package is currently available via SSC:
 
 ```stata
 ssc install honestdid
