@@ -162,6 +162,17 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         expected = 0
     }
 
+    // NOTE: I implemented the switch here to hedge against the possibility of
+    // the CI being outside the range in hGrid. I don't quite remember why it
+    // happens. However, the problem here is that I update optimal_l even when
+    // I break the loop because of this issue, which doesn't seem like a good
+    // idea. So I'm moving the update to only happen if the estimation will
+    // not get broken otherwise.
+    //
+    // Further note for these iterations, I've had problems allowing for
+    // a success on code 10 (reduced feasibility) where ECOS can give bad
+    // results (it can restore a run with tolerances that are too wide).
+
     while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
         hGrid  = _honestLinspace(hGrid[selmin] - step, hGrid[selmin] + step, numPoints), hGrid[selmin]
         step   = 2 * step / (numPoints-1)
@@ -169,7 +180,8 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         for (i = 1; i <= numPoints+1; i++) {
             biasDF[i, .] = _flciFindWorstCaseBiasGivenH(hGrid[i], sigma, numPrePeriods, numPostPeriods, l_vec)
         }
-        sel     = selectindex(((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10)) :& (biasDF[., 2] :< .))
+        // sel     = selectindex(((biasDF[., 1] :== 0) :| (biasDF[., 1] :== 10)) :& (biasDF[., 2] :< .))
+        sel     = selectindex((biasDF[., 1] :== 0) :& (biasDF[., 2] :< .))
         biasDF  = biasDF[sel, .]
         hGrid   = hGrid'[sel, .]
         maxBias = biasDF[., 2] :* M
@@ -177,10 +189,12 @@ struct _flciResults scalar function _flciFindOptimalHelper(
         CI_halflength = _flciFoldedNormalQuantiles(1-alpha, maxBias :/ hGrid) :* hGrid
         selmin = selectindex(min(CI_halflength) :== CI_halflength)[1]
         diff = max(reldif(optimal_l, biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]') \ (max(hGrid) - min(hGrid)))
-        optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
         if ( first & (selmin :== 1) & (min(hGrid) < hMin) ) {
             diff = 0
             expected = 0
+        }
+        else {
+            optimal_l = biasDF[selmin, (2 + n + nn + 1)..cols(biasDF)]'
         }
         first = (selmin :== 1)
     }
