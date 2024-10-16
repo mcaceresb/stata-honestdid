@@ -173,6 +173,7 @@ struct _flciResults scalar function _flciFindOptimalHelper(
     // a success on code 10 (reduced feasibility) where ECOS can give bad
     // results (it can restore a run with tolerances that are too wide).
 
+printf("DEBUG: Check for issue_email_ecosprecision\n")
     while ( ((diff > xtol) | (++iter <= expected)) & (iter < maxiter) ) {
         hGrid  = _honestLinspace(hGrid[selmin] - step, hGrid[selmin] + step, numPoints), hGrid[selmin]
         step   = 2 * step / (numPoints-1)
