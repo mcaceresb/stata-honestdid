@@ -1,4 +1,4 @@
-*! version 1.3.1 16Apr2024 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.3.4 27Feb2025 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -17,6 +17,7 @@ program honestdid, sclass
 
     if `"`0'"' == "_plugin_check" {
         which honestdid
+        mata _honestVersion()
         plugin call honestosqp_plugin, _plugin_check
         plugin call honestecos_plugin, _plugin_check
         exit 0
