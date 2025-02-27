@@ -455,6 +455,6 @@ string scalar function _honestExampleLWCall() {
 }
 
 void function _honestVersion() {
-    printf("(note: HonestDiD mata functions v1.3.3 successfully loaded)\n")
+    printf("(note: HonestDiD mata functions v1.3.4 successfully loaded)\n")
 }
 end
