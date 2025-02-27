@@ -40,9 +40,10 @@ mata vcov = st_data(., "*")
 mata st_matrix("vcov", vcov)
 
 matrix l_vec = 0.1429 \ 0.1429 \ 0.1429 \ 0.1429 \ 0.1429 \ 0.1429 \ 0.1429
-forvalues i = 1 / 20 {
-    honestdid, b(beta) vcov(vcov) l_vec(l_vec) pre(1/11) post(12/18) delta(sd) mvec(0(0.0008)0.0016) parallel(0)
-}
+honestdid, b(beta) vcov(vcov) l_vec(l_vec) pre(1/11) post(12/18) delta(sd) mvec(0(0.0008)0.0016) parallel(0)
+* forvalues i = 1 / 20 {
+*     honestdid, b(beta) vcov(vcov) l_vec(l_vec) pre(1/11) post(12/18) delta(sd) mvec(0(0.0008)0.0016) parallel(0)
+* }
 
 /*
 * mata st_matrix("l_vec", J(1, 7, 1)/7)
