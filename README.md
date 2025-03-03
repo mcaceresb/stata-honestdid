@@ -413,8 +413,6 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
-## Staggered Timing
-
 HonestDiD is also compatible with the estimator introduced in
 Chaisemartin and D'Haultfoeuille (2020), available for Stata
 via the `did_multiplegt` package.
@@ -429,6 +427,20 @@ honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg)
 
 <!-- -->
 ![fig](doc/readme_did_multiplegt.png)
+
+HonestDiD is also compatible with the `jwdid` estimator that implements the
+estimation approach proposed by Wooldridge (2021).
+
+```stata
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+jwdid dins, ivar(stfips) time(year) gvar(yexp2) cluster(stfips) never
+estat event, post
+honestdid, pre(1/8) post(10/14) vcov(e(V)) b(e(b)) mvec(0(0.1)1) delta(rm)
+```
+
+<!-- -->
+![fig](doc/readme_jwdid.png)
 
 ## Additional options and resources
 
