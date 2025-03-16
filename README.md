@@ -387,7 +387,7 @@ package creates several temporary files in the current working directory;
 `honestdid` runs `parallel clean` to delete them after a successful
 run, but in case of an error the user may need to delete them manually.
 
-## Staggered timing
+## Staggered Timing
 
 So far we have focused on a simple case without staggered
 timing.  Fortunately, the HonestDiD approach works well with
@@ -413,9 +413,12 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
-HonestDiD is also compatible with the estimator introduced in
-Chaisemartin and D'Haultfoeuille (2020), available for Stata
-via the `did_multiplegt` package.
+## Additional Estimators
+
+More generally, HonestDiD is compatible with any estimator that produces a
+vector of event study coefficients.  For example, HonestDiD is also compatible
+with the estimator introduced in Chaisemartin and D'Haultfoeuille (2020),
+available for Stata via the `did_multiplegt` package.
 
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
