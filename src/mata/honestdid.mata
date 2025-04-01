@@ -347,6 +347,7 @@ struct _honestResults colvector function HonestSensitivityHelper(
             Results[m].M      = Mvec[m]
             Results[m].lopen  = 0
             Results[m].uopen  = 0
+            Results[m].flci   = temp_flci
         }
     }
     else if ( Delta == "DeltaSD" ) {

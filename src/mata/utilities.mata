@@ -53,6 +53,7 @@ struct _honestResults {
     real scalar M
     real scalar lopen
     real scalar uopen
+    struct _flciResults scalar flci
 }
 
 struct _honestHybridList {
@@ -455,6 +456,6 @@ string scalar function _honestExampleLWCall() {
 }
 
 void function _honestVersion() {
-    printf("(note: HonestDiD mata functions v1.3.4 successfully loaded)\n")
+    printf("(note: HonestDiD mata functions v1.3.5 successfully loaded)\n")
 }
 end

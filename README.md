@@ -6,7 +6,7 @@ sensitivity analysis for differences-in-differences and event study
 designs developed in [Rambachan and Roth (2022)](https://asheshrambachan.github.io/assets/files/hpt-draft.pdf).
 This is the Stata version of the [R package of the same name](https://github.com/asheshrambachan/HonestDiD). There is also a [Shiny app](https://ccfang2.shinyapps.io/HonestDiDSenAnlys/) developed by Chengcheng Fang.
 
-`version 1.3.4 27Feb2025` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
+`version 1.3.5 01Apr2025` | [Background](#background) | [Installation](#package-installation) | [Examples](#example-usage----medicaid-expansions) | [Acknowledgements](#acknowledgements)
 
 ## Background
 

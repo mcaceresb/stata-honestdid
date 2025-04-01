@@ -62,6 +62,7 @@ struct _flciResults {
     real vector FLCI
     real vector optimalVec
     real vector optimalPrePeriodVec
+    real vector weights
     real scalar optimalHalfLength
     real scalar M
     real scalar exitcode
@@ -95,6 +96,7 @@ struct _flciResults scalar function _flciFindOptimal(
     results = _flciFindOptimalHelper(sigma, M, numPrePeriods, numPostPeriods, l_vec, alpha, numPoints)
     results.FLCI = (results.optimalVec' * betahat' - results.optimalHalfLength,
                     results.optimalVec' * betahat' + results.optimalHalfLength)
+    results.weights = runningsum(results.optimalPrePeriodVec)
 
     return(results)
 }
