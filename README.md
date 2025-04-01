@@ -392,10 +392,9 @@ run, but in case of an error the user may need to delete them manually.
 So far we have focused on a simple case without staggered
 timing.  Fortunately, the HonestDiD approach works well with
 recently-introduced methods for DiD under staggered treatment
-timing. Below, we show how the package can be used with the
-[did package](https://github.com/bcallaway11/did#difference-in-differences-)
-implementing Callaway and Sant’Anna. We are hoping to more formally
-integrate the did and HonestDiD packages in the future---stay tuned!
+timing. Specifically, the HonestDiD can be used with any estimator that produces a
+vector of (asymptotically normal) event study coefficients, provided one is willing to impose relative magnitudes or smoothness restricts that relate the bias of the "post-treatment" estimates to the "pre-treatment" estimates.  Below, we show how the package can be used with several recent methods for DiD with staggered treatment timing. We start with an example implementing using the [did package](https://github.com/bcallaway11/did#difference-in-differences-)
+implementing Callaway and Sant’Anna.
 
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
@@ -413,10 +412,7 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
-## Additional Estimators
-
-More generally, HonestDiD is compatible with any estimator that produces a
-vector of event study coefficients.  For example, HonestDiD is also compatible
+HonestDiD is also compatible
 with the estimator introduced in Chaisemartin and D'Haultfoeuille (2020),
 available for Stata via the `did_multiplegt` package.
 
