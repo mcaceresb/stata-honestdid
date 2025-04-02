@@ -387,15 +387,14 @@ package creates several temporary files in the current working directory;
 `honestdid` runs `parallel clean` to delete them after a successful
 run, but in case of an error the user may need to delete them manually.
 
-## Staggered timing
+## Staggered Timing
 
 So far we have focused on a simple case without staggered
 timing.  Fortunately, the HonestDiD approach works well with
 recently-introduced methods for DiD under staggered treatment
-timing. Below, we show how the package can be used with the
-[did package](https://github.com/bcallaway11/did#difference-in-differences-)
-implementing Callaway and Sant’Anna. We are hoping to more formally
-integrate the did and HonestDiD packages in the future---stay tuned!
+timing. Specifically, the HonestDiD can be used with any estimator that produces a
+vector of (asymptotically normal) event study coefficients, provided one is willing to impose relative magnitudes or smoothness restricts that relate the bias of the "post-treatment" estimates to the "pre-treatment" estimates.  Below, we show how the package can be used with several recent methods for DiD with staggered treatment timing. We start with an example implementing using the [did package](https://github.com/bcallaway11/did#difference-in-differences-)
+implementing Callaway and Sant’Anna.
 
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
@@ -413,11 +412,9 @@ honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 <!-- -->
 ![fig](doc/readme_deltarm_csdid.png)
 
-## Staggered Timing
-
-HonestDiD is also compatible with the estimator introduced in
-Chaisemartin and D'Haultfoeuille (2020), available for Stata
-via the `did_multiplegt` package.
+HonestDiD is also compatible
+with the estimator introduced in Chaisemartin and D'Haultfoeuille (2020),
+available for Stata via the `did_multiplegt` package.
 
 ```stata
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
@@ -429,6 +426,20 @@ honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg)
 
 <!-- -->
 ![fig](doc/readme_did_multiplegt.png)
+
+HonestDiD is also compatible with the `jwdid` estimator that implements the
+estimation approach proposed by Wooldridge (2021).
+
+```stata
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+jwdid dins, ivar(stfips) time(year) gvar(yexp2) cluster(stfips) never
+estat event, post
+honestdid, pre(1/8) post(10/14) vcov(e(V)) b(e(b)) mvec(0(0.1)1) delta(rm)
+```
+
+<!-- -->
+![fig](doc/readme_jwdid.png)
 
 ## Additional options and resources
 

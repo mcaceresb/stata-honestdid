@@ -3,6 +3,7 @@
 * ssc install coefplot,      replace
 * ssc install ftools,        replace
 * ssc install reghdfe,       replace
+* ssc install jwdid,         replace
 * net install scheme-modern, replace from(`github'/mdroste/stata-scheme-modern/master)
 * net install csdid,         replace from(`github'/friosavila/csdid_drdid/main/code)
 * set scheme modern
@@ -70,10 +71,18 @@ local plotopts xtitle(Mbar) ytitle(95% Robust CI)
 honestdid, pre(3/6) post(7/12) mvec(0.5(0.5)2) coefplot `plotopts'
 graph export doc/readme_deltarm_csdid.png, replace width(1600)
 
-* CS
+* did_multiplegt
 local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
 use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
 gen byte D = (year >= yexp2) & !mi(yexp2)
 did_multiplegt dins stfips year D, robust_dynamic dynamic(5) placebo(5) breps(50) cluster(stfips)
 honestdid, pre(7/11) post(1/6) vcov(didmgt_vcov) b(didmgt_results_no_avg) coefplot xlabel(,angle(45))
 graph export doc/readme_did_multiplegt.png, replace width(1600)
+
+* jwdid
+local mixtape https://raw.githubusercontent.com/Mixtape-Sessions
+use `mixtape'/Advanced-DID/main/Exercises/Data/ehec_data.dta, clear
+jwdid dins, ivar(stfips) time(year) gvar(yexp2) cluster(stfips) never
+estat event, post
+honestdid, pre(1/8) post(10/14) vcov(e(V)) b(e(b)) mvec(0(0.1)1) delta(rm) coefplot xlabel(,angle(45))
+graph export doc/readme_jwdid.png, replace width(1600)
