@@ -28,6 +28,7 @@ program honestdid, sclass
         b(str)                             /// name of coefficient matrix; default is e(b)
         vcov(str)                          /// name of vcov matrix; default is e(V)
         l_vec(str)                         /// Vector with parameters of interest (default is first period post event)
+        l_vecs(str)                        /// List of vector names for multiple l_vecs
         mvec(str)                          /// Vector or list with with M-values
         grid_lb(str)                       /// Lower bound for grid
         grid_ub(str)                       /// Upper bound for grid
@@ -110,7 +111,7 @@ program honestdid, sclass
     if "`grid_ub'"    != "." confirm number `grid_ub'
     if "`gridPoints'" != ""  confirm number `gridPoints'
 
-    local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
+    local dohonest = ("`b'`v'`l_vec'`l_vecs'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
     local dohonest = `dohonest' | `changegrid' | (`numpreperiods' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
@@ -118,7 +119,7 @@ program honestdid, sclass
     }
 
     if ( `dohonest' | ("`cached'" == "") ) {
-        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
+        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') l_vecs(`l_vecs') mvec(`mvec') method(`method') `alpha' ///
             numpre(`numpreperiods') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
@@ -151,6 +152,8 @@ program honestdid, sclass
         }
     }
 
+    if ( "`l_vecs'" != "" ) local parallel 0
+
     tempname rc frname
     if ( `c(stata_version)' >= 16 ) {
         frame create `frname'
@@ -165,6 +168,7 @@ program honestdid, sclass
                                            "`preperiodindices'",   ///
                                            "`postperiodindices'",  ///
                                            "`l_vec'",              ///
+                                           "`l_vecs'",             ///
                                            "`mvec'",               ///
                                            `alpha',                ///
                                            "`method'",             ///
@@ -189,6 +193,7 @@ program honestdid, sclass
                                       "`preperiodindices'",   ///
                                       "`postperiodindices'",  ///
                                       "`l_vec'",              ///
+                                      "`l_vecs'",             ///
                                       "`mvec'",               ///
                                       `alpha',                ///
                                       "`method'",             ///
@@ -209,6 +214,11 @@ program honestdid, sclass
     if ( `c(stata_version)' >= 16 ) frame drop `frname'
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
     * `results'.referencePeriod = 2008
+
+    if ( "`coefplot'" != "" & "`l_vecs'" != "" ) {
+        disp as err "{bf:warning:} coefplot not supported with l_vecs(); option ignored"
+        local coefplot
+    }
 
     tempname plotmatrix cimatrix dummycoef labels
     if ( "`coefplot'" != "" ) {
@@ -295,6 +305,7 @@ program HonestSanityChecks
         b(str)                      /// name of coefficient matrix; default is e(b)
         vcov(str)                   /// name of vcov matrix; default is e(V)
         l_vec(str)                  /// Vector with parameters of interest (default is first period post event)
+        l_vecs(str)                 /// List of vector names for multiple l_vecs
         mvec(str)                   /// Vector or list with with M-values
         alpha(real 0.05)            /// 1 - level of CI
         NUMPREperiods(int 0)        /// number of pre-treatment periods
@@ -405,7 +416,16 @@ program HonestSanityChecks
         }
     }
 
+    if ( "`l_vec'" != "" & "`l_vecs'" != "" ) {
+        disp as err "Specify only one of l_vec() or l_vecs()"
+        exit 198
+    }
     if ( "`l_vec'" != "" ) confirm matrix `l_vec'
+    if ( "`l_vecs'" != "" ) {
+        foreach lv of local l_vecs {
+            confirm matrix `lv'
+        }
+    }
     if ( "`mvec'"  != "" ) {
         local 0, mvec(`mvec')
         cap syntax, mvec(numlist)

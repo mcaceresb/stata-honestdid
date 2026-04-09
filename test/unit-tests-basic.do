@@ -68,6 +68,40 @@ program basic_failures
     assert _rc == 198
 end
 
+* Each matrix is a separate linear combination of post-period coefficients.
+* The call below is equivalent to calling honestdid three times with
+* l_vec(lvec0), l_vec(lvec1), l_vec(lvec2) separately, but returns
+* all results in a single s(HonestEventStudy) mata object with a
+* 4-column CI matrix [lvec_idx, M, lb, ub] and matching open matrix.
+* 
+* do src/install.do
+* exit, clear
+* stata14-mp
+capture program drop basic_multilvec
+program basic_multilvec
+    tempname beta sigma
+    mata {
+        st_matrix(st_local("beta"),  _honestExampleBCBeta())
+        st_matrix(st_local("sigma"), _honestExampleBCSigma())
+    }
+    matrix l_vec0 = 1 \ 0 \ 0 \ 0
+    matrix l_vec1 = 0 \ 1 \ 0 \ 0
+    matrix l_vec2 = 0 \ 0 \ 1 \ 0
+    local opts b(`beta') vcov(`sigma') numpre(4) delta(sd) method(FLCI)
+    honestdid, `opts' mvec(0(0.1)0.3) l_vecs(l_vec0 l_vec1 l_vec2) debug
+    mata `s(HonestEventStudy)'.CI
+    mata `s(HonestEventStudy)'.options.l_vec_names
+    mata `s(HonestEventStudy)'.options.l_vec
+    mata rows(`s(HonestEventStudy)'.OG)
+
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec0) parallel(0)
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec1) parallel(0)
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec2) parallel(0)
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec0)
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec1)
+    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec2)
+end
+
 * qui do src/install.do
 * qui do src/ado/honestdid.ado
 * local 0 basic_checks, numpre(4) method(FLCI)

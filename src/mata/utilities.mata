@@ -32,7 +32,8 @@ cap mata mata drop _honestExampleLWCall()
 mata
 struct _honestOptions {
     real scalar alpha
-    real vector l_vec
+    real matrix l_vec
+    string rowvector l_vec_names
     real vector Mvec
     real scalar rm
     real scalar omit

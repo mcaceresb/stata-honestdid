@@ -44,7 +44,7 @@ cap mata mata drop _honestPrintCI()
 mata
 struct HonestEventStudy {
     struct _honestResults colvector Results
-    struct _honestResults scalar OG
+    struct _honestResults colvector OG
     struct _honestOptions scalar options
 
     real matrix CI
@@ -55,7 +55,7 @@ struct HonestEventStudy {
     real scalar numPostPeriods
     real vector prePeriodIndices
     real vector postPeriodIndices
-    real vector open
+    real matrix open
 }
 
 struct HonestEventStudy scalar HonestDiD(string scalar b,
@@ -64,6 +64,7 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
                                          string scalar pre,
                                          string scalar post,
                                          string scalar l_vec,
+                                         string scalar l_vecs,
                                          string scalar Mvec,
                                          real scalar alpha,
                                          string scalar method,
@@ -76,14 +77,42 @@ struct HonestEventStudy scalar HonestDiD(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+    struct _honestOptions scalar opts_k
+    struct _honestResults colvector R_k
+    struct _honestResults scalar OG_k
+    real matrix CI_k
+    real colvector open_k
+    real scalar k, K, L
 
-    results = HonestDiDParse(b, V, numPrePeriods, pre, post, l_vec, Mvec, alpha,
+    results = HonestDiDParse(b, V, numPrePeriods, pre, post, l_vec, l_vecs, Mvec, alpha,
                              method, debug, omit, rm, grid_lb, grid_ub, gridPoints)
 
-    results.Results = HonestSensitivityResults(results, results.options)
-    results.OG      = HonestOriginalCS(results, results.options)
-    results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
-    results.open    = _honestSensitivityCIOpen(results.Results, results.OG)
+    K = cols(results.options.l_vec)
+    L = length(results.options.Mvec)
+    if ( K == 1 ) {
+        results.Results = HonestSensitivityResults(results, results.options)
+        results.OG      = HonestOriginalCS(results, results.options)
+        results.CI      = _honestSensitivityCIMatrix(results.Results, results.OG)
+        results.open    = _honestSensitivityCIOpen(results.Results, results.OG)
+    }
+    else {
+        results.CI      = J(0, 4, .)
+        results.open    = J(0, 2, .)
+        results.Results = J(0, 1, _honestResults())
+        results.OG      = J(0, 1, _honestResults())
+        for (k = 1; k <= K; k++) {
+            opts_k       = results.options
+            opts_k.l_vec = results.options.l_vec[., k]
+            R_k          = HonestSensitivityResults(results, opts_k)
+            OG_k         = HonestOriginalCS(results, opts_k)
+            CI_k         = _honestSensitivityCIMatrix(R_k, OG_k)
+            open_k       = colshape(_honestSensitivityCIOpen(R_k, OG_k), 1)
+            results.Results = results.Results \ R_k
+            results.OG      = results.OG      \ OG_k
+            results.CI      = results.CI      \ (J(rows(CI_k),   1, k), CI_k)
+            results.open    = results.open    \ (J(rows(open_k), 1, k), open_k)
+        }
+    }
     return(results)
 }
 
@@ -93,6 +122,7 @@ struct HonestEventStudy scalar HonestDiDParse(string scalar b,
                                               string scalar pre,
                                               string scalar post,
                                               string scalar l_vec,
+                                              string scalar l_vecs,
                                               string scalar Mvec,
                                               real scalar alpha,
                                               string scalar method,
@@ -105,8 +135,9 @@ struct HonestEventStudy scalar HonestDiDParse(string scalar b,
 {
     struct _honestOptions scalar options
     struct HonestEventStudy scalar results
+    string rowvector lvnames
     real vector selomit, sel
-    real scalar Mub
+    real scalar Mub, k, K
 
     stata(sprintf("_ms_omit_info %s", b))
     selomit = selectindex(!editvalue(st_matrix("r(omit)"), omit == "", 0))
@@ -182,8 +213,20 @@ struct HonestEventStudy scalar HonestDiDParse(string scalar b,
         }
     }
 
-    options.Mvec    = rowshape(sort(colshape(options.Mvec, 1), 1), 1)
-    options.l_vec   = (l_vec == "")? _honestBasis(1, results.numPostPeriods): colshape(st_matrix(l_vec), 1)
+    options.Mvec = rowshape(sort(colshape(options.Mvec, 1), 1), 1)
+    if ( l_vecs != "" ) {
+        lvnames = tokens(l_vecs)
+        K = length(lvnames)
+        options.l_vec = J(results.numPostPeriods, K, .)
+        for (k = 1; k <= K; k++) {
+            options.l_vec[., k] = colshape(st_matrix(lvnames[k]), 1)
+        }
+        options.l_vec_names = lvnames
+    }
+    else {
+        options.l_vec       = (l_vec == "")? _honestBasis(1, results.numPostPeriods): colshape(st_matrix(l_vec), 1)
+        options.l_vec_names = J(1, 0, "")
+    }
 
     if ( min(options.Mvec) < 0 ) {
         errprintf("M must be greater than or equal to 0 (see mvec() option)\n")
@@ -452,46 +495,77 @@ struct _honestResults scalar function HonestOriginalCSHelper(
 
 void function _honestPrintCI(struct HonestEventStudy scalar EventStudy)
 {
-    real scalar i
+    real scalar i, k_i, nm
+    string scalar name_i
     string vector asterisks
+    real colvector open_flags
+
     asterisks = "", "(-)", "(+)", "(*)", J(1, 2, ("(!)", "", "", "")), "(!)"
 
     printf("\n")
-    printf("|    M    |   lb   |   ub   |\n")
-    printf("| ------- | ------ | ------ |\n")
-    for (i = 1; i <= rows(EventStudy.CI); i++) {
-        if ( i == 1 ) {
-            printf("| %7.4f | %6.3f | %6.3f | (Original)\n",
-                   EventStudy.CI[i, 1],
-                   EventStudy.CI[i, 2],
-                   EventStudy.CI[i, 3])
+    if ( cols(EventStudy.CI) == 3 ) {
+        printf("|    M    |   lb   |   ub   |\n")
+        printf("| ------- | ------ | ------ |\n")
+        for (i = 1; i <= rows(EventStudy.CI); i++) {
+            if ( i == 1 ) {
+                printf("| %7.4f | %6.3f | %6.3f | (Original)\n",
+                       EventStudy.CI[i, 1],
+                       EventStudy.CI[i, 2],
+                       EventStudy.CI[i, 3])
+            }
+            else {
+                printf("| %7.4f | %6.3f | %6.3f | %s\n",
+                       EventStudy.CI[i, 1],
+                       EventStudy.CI[i, 2],
+                       EventStudy.CI[i, 3],
+                       asterisks[EventStudy.open[i]+1])
+            }
         }
-        else {
-            printf("| %7.4f | %6.3f | %6.3f | %s\n",
-                   EventStudy.CI[i, 1],
-                   EventStudy.CI[i, 2],
-                   EventStudy.CI[i, 3],
-                   asterisks[EventStudy.open[i]+1])
+        open_flags = colshape(EventStudy.open, 1)
+    }
+    else {
+        nm = length(EventStudy.options.l_vec_names)
+        printf("| %6s | %-20s |    M    |   lb   |   ub   |\n", "l_vec", "l_vec name")
+        printf("| ------ | -------------------- | ------- | ------ | ------ |\n")
+        for (i = 1; i <= rows(EventStudy.CI); i++) {
+            k_i    = EventStudy.CI[i, 1]
+            name_i = (nm >= k_i)? EventStudy.options.l_vec_names[k_i]: ""
+            if ( EventStudy.CI[i, 2] == . ) {
+                printf("| %6.0f | %-20s | %7.4f | %6.3f | %6.3f | (Original)\n",
+                       k_i, name_i,
+                       EventStudy.CI[i, 2],
+                       EventStudy.CI[i, 3],
+                       EventStudy.CI[i, 4])
+            }
+            else {
+                printf("| %6.0f | %-20s | %7.4f | %6.3f | %6.3f | %s\n",
+                       k_i, name_i,
+                       EventStudy.CI[i, 2],
+                       EventStudy.CI[i, 3],
+                       EventStudy.CI[i, 4],
+                       asterisks[EventStudy.open[i, 2]+1])
+            }
         }
+        open_flags = EventStudy.open[., 2]
     }
     printf("(method = %s, Delta = %s, alpha = %5.3f)\n",
            EventStudy.options.method,
            EventStudy.options.Delta,
            EventStudy.options.alpha)
 
-    if ( any(EventStudy.open :== 1) ) {
+    if ( any(open_flags :== 1) ) {
         errprintf("(-) CI is open at lower endpoint; CI length may not be accurate.\n")
     }
-    if ( any(EventStudy.open :== 2) ) {
+    if ( any(open_flags :== 2) ) {
         errprintf("(+) CI is open at upper endpoint; CI length may not be accurate.\n")
     }
-    if ( any(EventStudy.open :== 3) ) {
+    if ( any(open_flags :== 3) ) {
         errprintf("(*) CI is open at both endpoints; CI length may not be accurate.\n")
     }
-    if ( any(EventStudy.open :== 12) ) {
+    if ( any(open_flags :== 12) ) {
         errprintf("(!) Could not find upper and lower bounds using the default grid.\n")
     }
-    if ( any(EventStudy.open ) ) {
+    if ( any(open_flags) ) {
         errprintf("Try expanding the grid using the grid_lb() and grid_ub() options\n")
     }
 }

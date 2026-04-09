@@ -44,7 +44,7 @@ void function _honestPLLFinish(struct HonestEventStudy scalar EventStudy)
 void function _honestPLLSave(string scalar fname, struct HonestEventStudy scalar EventStudy)
 {
     colvector C
-    real scalar m, fh
+    real scalar m, fh, ki
     fh = fopen(fname, "rw")
     C = bufio()
 
@@ -68,6 +68,11 @@ void function _honestPLLSave(string scalar fname, struct HonestEventStudy scalar
     fbufput(C, fh, "%8z",  EventStudy.options.alpha)
     fbufput(C, fh, "%4bu", length(EventStudy.options.l_vec))
     fbufput(C, fh, "%8z",  EventStudy.options.l_vec)
+    fbufput(C, fh, "%4bu", length(EventStudy.options.l_vec_names))
+    for (ki = 1; ki <= length(EventStudy.options.l_vec_names); ki++) {
+        fbufput(C, fh, "%4bu", strlen(EventStudy.options.l_vec_names[ki]))
+        fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.options.l_vec_names[ki])), EventStudy.options.l_vec_names[ki])
+    }
     fbufput(C, fh, "%4bu", length(EventStudy.options.Mvec))
     fbufput(C, fh, "%8z",  EventStudy.options.Mvec)
     fbufput(C, fh, "%8z",  EventStudy.options.rm)
@@ -96,15 +101,20 @@ void function _honestPLLSave(string scalar fname, struct HonestEventStudy scalar
         fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.Results[m].Delta)),  EventStudy.Results[m].Delta)
     }
 
-    fbufput(C, fh, "%8z", EventStudy.OG.lb)
-    fbufput(C, fh, "%8z", EventStudy.OG.ub)
-    fbufput(C, fh, "%8z", EventStudy.OG.M)
-    fbufput(C, fh, "%8z", EventStudy.OG.lopen)
-    fbufput(C, fh, "%8z", EventStudy.OG.uopen)
-    fbufput(C, fh, "%4bu", strlen(EventStudy.OG.method))
-    fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.OG.method)), EventStudy.OG.method)
-    fbufput(C, fh, "%4bu", strlen(EventStudy.OG.Delta))
-    fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.OG.Delta)),  EventStudy.OG.Delta)
+    fbufput(C, fh, "%4bu", rows(EventStudy.OG))
+    if ( rows(EventStudy.OG) > 0 ) {
+        for(m = 1; m <= rows(EventStudy.OG); m++) {
+            fbufput(C, fh, "%8z", EventStudy.OG[m].lb)
+            fbufput(C, fh, "%8z", EventStudy.OG[m].ub)
+            fbufput(C, fh, "%8z", EventStudy.OG[m].M)
+            fbufput(C, fh, "%8z", EventStudy.OG[m].lopen)
+            fbufput(C, fh, "%8z", EventStudy.OG[m].uopen)
+            fbufput(C, fh, "%4bu", strlen(EventStudy.OG[m].method))
+            fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.OG[m].method)), EventStudy.OG[m].method)
+            fbufput(C, fh, "%4bu", strlen(EventStudy.OG[m].Delta))
+            fbufput(C, fh, sprintf("%%%gs", strlen(EventStudy.OG[m].Delta)),  EventStudy.OG[m].Delta)
+        }
+    }
 
     fclose(fh)
 }
@@ -114,7 +124,7 @@ struct HonestEventStudy scalar function _honestPLLLoad(string scalar fname)
     struct HonestEventStudy scalar results
 
     colvector C
-    real scalar m, fh, rows, cols
+    real scalar m, fh, rows, cols, k_lvnames, k_og, ki
 
     results         = HonestEventStudy()
     results.options = _honestOptions()
@@ -141,6 +151,17 @@ struct HonestEventStudy scalar function _honestPLLLoad(string scalar fname)
     results.options.alpha      = fbufget(C, fh, "%8z")
     rows                       = fbufget(C, fh, "%4bu")
     results.options.l_vec      = fbufget(C, fh, "%8z", rows, 1)
+    k_lvnames                  = fbufget(C, fh, "%4bu")
+    if ( k_lvnames > 0 ) {
+        results.options.l_vec       = colshape(results.options.l_vec, k_lvnames)
+        results.options.l_vec_names = J(1, k_lvnames, "")
+        for (ki = 1; ki <= k_lvnames; ki++) {
+            results.options.l_vec_names[ki] = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
+        }
+    }
+    else {
+        results.options.l_vec_names = J(1, 0, "")
+    }
     cols                       = fbufget(C, fh, "%4bu")
     results.options.Mvec       = fbufget(C, fh, "%8z", 1, cols)
     results.options.rm         = fbufget(C, fh, "%8z")
@@ -166,14 +187,17 @@ struct HonestEventStudy scalar function _honestPLLLoad(string scalar fname)
         results.Results[m].Delta  = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
     }
 
-    results.OG        = _honestResults()
-    results.OG.lb     = fbufget(C, fh, "%8z")
-    results.OG.ub     = fbufget(C, fh, "%8z")
-    results.OG.M      = fbufget(C, fh, "%8z")
-    results.OG.lopen  = fbufget(C, fh, "%8z")
-    results.OG.uopen  = fbufget(C, fh, "%8z")
-    results.OG.method = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
-    results.OG.Delta  = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
+    k_og       = fbufget(C, fh, "%4bu")
+    results.OG = J(k_og, 1, _honestResults())
+    for(m = 1; m <= k_og; m++) {
+        results.OG[m].lb     = fbufget(C, fh, "%8z")
+        results.OG[m].ub     = fbufget(C, fh, "%8z")
+        results.OG[m].M      = fbufget(C, fh, "%8z")
+        results.OG[m].lopen  = fbufget(C, fh, "%8z")
+        results.OG[m].uopen  = fbufget(C, fh, "%8z")
+        results.OG[m].method = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
+        results.OG[m].Delta  = fbufget(C, fh, sprintf("%%%gs", fbufget(C, fh, "%4bu")))
+    }
 
     fclose(fh)
 
