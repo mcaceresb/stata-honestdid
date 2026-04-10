@@ -152,8 +152,6 @@ program honestdid, sclass
         }
     }
 
-    if ( "`l_vecs'" != "" ) local parallel 0
-
     tempname rc frname
     if ( `c(stata_version)' >= 16 ) {
         frame create `frname'
@@ -447,27 +445,42 @@ program HonestParallel
     * }
     disp as txt "(note: running execution using -parallel-; see {stata help parallel} for details)"
 
-    cap parallel initialize `=min(`ncores', `mveclen')', f
+    * Load EventStudy and determine K (number of l_vecs)
+    tempname results M K_lvec orig_l_vec orig_l_vec_names kvecVec pf_k
+    mata `results' = _honestPLLLoad(`"`honestfile'"')
+    mata st_numscalar("`K_lvec'", cols(`results'.options.l_vec))
+    local K_lvec = `=scalar(`K_lvec')'
+
+    * For multi-l_vec: K workers (one per l_vec); for single: min(ncores, L) workers
+    local pll_nobs   = cond(`K_lvec' > 1, `K_lvec', `mveclen')
+    local pll_ncores = min(`ncores', `pll_nobs')
+
+    cap parallel initialize `pll_ncores', f
     if ( _rc ) {
         disp as err "(note: unable to initialize -parallel-; falling back on sequential execution)"
         exit 1234
     }
 
-    tempname results M
-    forvalues p = 1 / `mveclen' {
+    forvalues p = 1 / `pll_nobs' {
         tempfile pf`p'
     }
-    mata `results' = _honestPLLLoad(`"`honestfile'"')
+
     preserve
         clear
         qui {
-            set obs `mveclen'
-            gen mindex  = _n
+            set obs `pll_nobs'
+            if ( `K_lvec' > 1 ) {
+                * Multi-l_vec: one row per l_vec; kvec = l_vec index
+                gen long kvec   = _n
+            }
+            else {
+                * Single l_vec: one row per M value
+                gen long mindex = _n
+            }
             gen resfile = `"`honestfile'"'
             gen parfile = ""
-            sort mindex
-            forvalues p = 1 / `mveclen' {
-            replace parfile = "`pf`p''" in `p'
+            forvalues p = 1 / `pll_nobs' {
+                replace parfile = "`pf`p''" in `p'
             }
         }
         global HONEST_CALLER honestdid
@@ -477,11 +490,30 @@ program HonestParallel
         mata `M' = `results'.options.Mvec
         mata `results'.options.Mvec = J(1, 0, .)
         local nfiles = 0
-        forvalues p = 1 / `mveclen' {
-            cap confirm file `"`=parfile[`p']'"'
-            if ( _rc == 0 ) {
-                mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
-                local ++nfiles
+
+        if ( `K_lvec' > 1 ) {
+            * Multi-l_vec assembly: extract kvecVec from each parfile's l_vec_names
+            mata `orig_l_vec'       = `results'.options.l_vec
+            mata `orig_l_vec_names' = `results'.options.l_vec_names
+            mata `kvecVec' = J(0, 1, .)
+            forvalues p = 1 / `K_lvec' {
+                cap confirm file `"`=parfile[`p']'"'
+                if ( _rc == 0 ) {
+                    mata `pf_k' = _honestPLLLoad(st_sdata(`p', "parfile"))
+                    mata _honestPLLAppendReplace(`results', `pf_k')
+                    mata `kvecVec' = `kvecVec' \ _honestPLLGetKvecVec(`pf_k', `mveclen')
+                    local ++nfiles
+                }
+            }
+        }
+        else {
+            * Single l_vec assembly: existing behavior
+            forvalues p = 1 / `mveclen' {
+                cap confirm file `"`=parfile[`p']'"'
+                if ( _rc == 0 ) {
+                    mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
+                    local ++nfiles
+                }
             }
         }
 
@@ -490,16 +522,42 @@ program HonestParallel
             exit 1234
         }
 
+        * NOTE: An if block wrapping a mata block inside a program causes a syntax error
+
+        * Multi-l_vec Mvec check: unique assembled Mvec values should match original M
+        tempname _unique_Mvec
         mata {
-            `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
-            if ( !all(`M' :== `results'.options.Mvec) ) {
-                errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
-                _error(1234)
+            if ( `K_lvec' > 1 ) {
+                `_unique_Mvec' = uniqrows(colshape(`results'.options.Mvec, 1))
+                if ( rows(`_unique_Mvec') != `mveclen' ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+                if ( !all(`_unique_Mvec' :== sort(colshape(`M', 1), 1)) ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+                `results'.options.Mvec = `M'
             }
         }
-
+        * Single l_vec Mvec check: assembled Mvec should equal original M
+        mata {
+            if ( `K_lvec' <= 1 ) {
+                `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
+                if ( !all(`M' :== `results'.options.Mvec) ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+            }
+        }
     restore
-    mata _honestPLLFinish(`results')
+
+    if ( `K_lvec' > 1 ) {
+        mata _honestPLLFinishMultiK(`results', `kvecVec', `orig_l_vec', `orig_l_vec_names', `mveclen')
+    }
+    else {
+        mata _honestPLLFinish(`results')
+    }
     mata _honestPLLSave(`"`honestfile'"', `results')
 
     if ( `nfiles' != ${PLL_CHILDREN} ) {

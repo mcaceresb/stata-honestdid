@@ -73,13 +73,14 @@ end
 * l_vec(lvec0), l_vec(lvec1), l_vec(lvec2) separately, but returns
 * all results in a single s(HonestEventStudy) mata object with a
 * 4-column CI matrix [lvec_idx, M, lb, ub] and matching open matrix.
-* 
+*
 * do src/install.do
 * exit, clear
 * stata14-mp
+
 capture program drop basic_multilvec
 program basic_multilvec
-    tempname beta sigma
+    tempname beta sigma r0 r1 r2 rmulti
     mata {
         st_matrix(st_local("beta"),  _honestExampleBCBeta())
         st_matrix(st_local("sigma"), _honestExampleBCSigma())
@@ -87,19 +88,66 @@ program basic_multilvec
     matrix l_vec0 = 1 \ 0 \ 0 \ 0
     matrix l_vec1 = 0 \ 1 \ 0 \ 0
     matrix l_vec2 = 0 \ 0 \ 1 \ 0
-    local opts b(`beta') vcov(`sigma') numpre(4) delta(sd) method(FLCI)
-    honestdid, `opts' mvec(0(0.1)0.3) l_vecs(l_vec0 l_vec1 l_vec2) debug
-    mata `s(HonestEventStudy)'.CI
-    mata `s(HonestEventStudy)'.options.l_vec_names
-    mata `s(HonestEventStudy)'.options.l_vec
-    mata rows(`s(HonestEventStudy)'.OG)
+    local opts b(`beta') vcov(`sigma') numpre(4) delta(sd) method(FLCI) mvec(0(0.1)0.3)
 
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec0) parallel(0)
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec1) parallel(0)
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec2) parallel(0)
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec0)
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec1)
-    * honestdid, `opts' mvec(0(0.1)0.3) l_vec(l_vec2)
+    * Individual calls (sequential, reference)
+    honestdid, `opts' l_vec(l_vec0) parallel(0) matasave(`r0')
+    honestdid, `opts' l_vec(l_vec1) parallel(0) matasave(`r1')
+    honestdid, `opts' l_vec(l_vec2) parallel(0) matasave(`r2')
+
+    * Multi-l_vec sequential call
+    honestdid, `opts' l_vecs(l_vec0 l_vec1 l_vec2) parallel(0) matasave(`rmulti')
+    * mata `rmulti'.CI
+    * mata `rmulti'.options.l_vec_names
+    * mata `rmulti'.options.l_vec
+    * mata rows(`rmulti'.OG)
+
+    * Assert multi-l_vec matches individual sequential calls (skip original CS rows where M=.)
+    mata {
+        m = `rmulti'.CI[selectindex(`rmulti'.CI[.,1]:==1), 2..4]
+        s = `r0'.CI
+        assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+        m = `rmulti'.CI[selectindex(`rmulti'.CI[.,1]:==2), 2..4]
+        s = `r1'.CI
+        assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+        m = `rmulti'.CI[selectindex(`rmulti'.CI[.,1]:==3), 2..4]
+        s = `r2'.CI
+        assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+    }
+
+    * Test with parallel if available
+    cap parallel numprocessors
+    if ( !_rc ) {
+        tempname r0p r1p r2p rmultip
+
+        * Individual calls (parallel)
+        honestdid, `opts' l_vec(l_vec0) matasave(`r0p')
+        honestdid, `opts' l_vec(l_vec1) matasave(`r1p')
+        honestdid, `opts' l_vec(l_vec2) matasave(`r2p')
+
+        * Multi-l_vec parallel call
+        honestdid, `opts' l_vecs(l_vec0 l_vec1 l_vec2) matasave(`rmultip')
+
+        * Parallel individual should match sequential individual
+        mata {
+            m = `r0p'.CI
+            s = `r0'.CI
+            assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+            m = `r1p'.CI
+            s = `r1'.CI
+            assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+            m = `r2p'.CI
+            s = `r2'.CI
+            assert(mreldif(select(m, m[.,1]:!=.), select(s, s[.,1]:!=.)) < 1e-10)
+        }
+
+        * Parallel multi-l_vec should match sequential multi-l_vec
+        mata {
+            m = `rmultip'.CI
+            s = `rmulti'.CI
+            assert(mreldif(select(m, m[.,2]:!=.), select(s, s[.,2]:!=.)) < 1e-10)
+        }
+    }
 end
 
 * qui do src/install.do

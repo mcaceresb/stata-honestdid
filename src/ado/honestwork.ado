@@ -5,11 +5,17 @@ program honestwork
         exit 198
     }
     tempname results
-    mata {
-        `results' = _honestPLLLoad(st_sdata(1, "resfile"))
-        (void) HonestDiDPLL(`results', st_data(., "mindex"))
-        _honestPLLSave(st_sdata(., "parfile")[1], `results')
+    mata `results' = _honestPLLLoad(st_sdata(1, "resfile"))
+    capture confirm variable kvec
+    if ( !_rc ) {
+        * Multi-l_vec mode: compute full Mvec for each l_vec in this worker's rows
+        mata (void) HonestDiDPLL(`results', 1..length(`results'.options.Mvec), st_data(., "kvec"))
     }
+    else {
+        * Single l_vec mode: compute subset of M values
+        mata (void) HonestDiDPLL(`results', st_data(., "mindex"))
+    }
+    mata _honestPLLSave(st_sdata(., "parfile")[1], `results')
 end
 
 if ( inlist("`c(os)'", "MacOSX") | strpos("`c(machine_type)'", "Mac") ) {

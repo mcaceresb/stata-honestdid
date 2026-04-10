@@ -15,6 +15,7 @@ program main
     matrix l_vec4 = -1 \ 2 \ -3 \ 4 \ -5 \ 6 \ -7
 
     unit_test basic_failures
+    unit_test basic_multilvec
 
     unit_test basic_checks, delta(sd) numpre(4) method(FLCI)
     unit_test basic_checks, delta(sd) numpre(4) method(C-F)
@@ -47,7 +48,6 @@ program main
             unit_test basic_checks, `rm' numpre(1) l_vec(l_vec`i') method(C-LF)
         }
     }
-    unit_test basic_multilvec
 
     * NB: checks l_vec1 and l_vec2 took forever and a day
     matrix l_vec0 = J(23, 1, 0)
