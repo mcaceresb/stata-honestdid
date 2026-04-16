@@ -1,33 +1,26 @@
 running
   '/usr/lib/R/bin/R --no-echo --no-restore --no-save --no-restore --file=test/unit-tests-consistency.R'
 
+Loading required package: Matrix
 
 Base relative magnitudes comparison
 -----------------------------------
 
-Warning messages:
-1: In .ARP_computeCI(betahat = betahat, sigma = sigma, numPrePeriods = numPrePeriods,  :
-  CI is open at one of the endpoints; CI length may not be accurate
-2: In .ARP_computeCI(betahat = betahat, sigma = sigma, numPrePeriods = numPrePeriods,  :
-  CI is open at one of the endpoints; CI length may not be accurate
-3: In .ARP_computeCI(betahat = betahat, sigma = sigma, numPrePeriods = numPrePeriods,  :
-  CI is open at one of the endpoints; CI length may not be accurate
-4: In .ARP_computeCI(betahat = betahat, sigma = sigma, numPrePeriods = numPrePeriods,  :
-  CI is open at one of the endpoints; CI length may not be accurate
 # A tibble: 10 × 5
          lb    ub method Delta    Mbar
       <dbl> <dbl> <chr>  <chr>   <dbl>
  1  0.159   0.233 C-LF   DeltaRM 0    
- 2  0.143   0.248 C-LF   DeltaRM 0.222
- 3  0.123   0.266 C-LF   DeltaRM 0.444
+ 2  0.143   0.249 C-LF   DeltaRM 0.222
+ 3  0.124   0.267 C-LF   DeltaRM 0.444
  4  0.102   0.287 C-LF   DeltaRM 0.667
- 5  0.0786  0.308 C-LF   DeltaRM 0.889
- 6  0.0551  0.329 C-LF   DeltaRM 1.11 
- 7  0.0315  0.352 C-LF   DeltaRM 1.33 
- 8  0.00722 0.376 C-LF   DeltaRM 1.56 
- 9 -0.0171  0.379 C-LF   DeltaRM 1.78 
-10 -0.0422  0.379 C-LF   DeltaRM 2    
-Time difference of 1.178113 mins
+ 5  0.0793  0.308 C-LF   DeltaRM 0.889
+ 6  0.0553  0.329 C-LF   DeltaRM 1.11 
+ 7  0.0312  0.352 C-LF   DeltaRM 1.33 
+ 8  0.00721 0.376 C-LF   DeltaRM 1.56 
+ 9 -0.0168  0.4   C-LF   DeltaRM 1.78 
+10 -0.0420  0.424 C-LF   DeltaRM 2    
+  -> bc_rm_default.csv (10 rows)
+Time difference of 1.242512 mins
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -36,7 +29,8 @@ Time difference of 1.178113 mins
 3  0.0707 0.313 C-LF   DeltaRM   1  
 4  0.0303 0.354 C-LF   DeltaRM   1.5
 5 -0.0303 0.414 C-LF   DeltaRM   2  
-Time difference of 11.08828 secs
+  -> bc_rm_lvec_clf.csv (5 rows)
+Time difference of 17.0536 secs
 # A tibble: 5 × 5
        lb    ub method      Delta    Mbar
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -45,7 +39,8 @@ Time difference of 11.08828 secs
 3  0.0707 0.313 Conditional DeltaRM   1  
 4  0.0303 0.354 Conditional DeltaRM   1.5
 5 -0.0303 0.414 Conditional DeltaRM   2  
-Time difference of 9.407607 secs
+  -> bc_rm_lvec_conditional.csv (5 rows)
+Time difference of 10.35169 secs
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -54,7 +49,8 @@ Time difference of 9.407607 secs
 3 -0.0505 0.495 C-LF   DeltaRM   1  
 4 -0.192  0.636 C-LF   DeltaRM   1.5
 5 -0.333  0.778 C-LF   DeltaRM   2  
-Time difference of 11.05962 secs
+  -> bc_rm_lalt_clf.csv (5 rows)
+Time difference of 12.84344 secs
 # A tibble: 5 × 5
        lb    ub method      Delta    Mbar
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -63,7 +59,8 @@ Time difference of 11.05962 secs
 3 -0.0505 0.495 Conditional DeltaRM   1  
 4 -0.192  0.636 Conditional DeltaRM   1.5
 5 -0.333  0.778 Conditional DeltaRM   2  
-Time difference of 2.351904 secs
+  -> bc_rm_lalt_conditional.csv (5 rows)
+Time difference of 2.447063 secs
 
 Base non-rm comparison
 ----------------------
@@ -81,7 +78,8 @@ Base non-rm comparison
  8 0.0622 0.476 FLCI   DeltaSD 0.157 
  9 0.0397 0.498 FLCI   DeltaSD 0.180 
 10 0.0173 0.521 FLCI   DeltaSD 0.202 
-Time difference of 20.1854 secs
+  -> bc_sd_default.csv (10 rows)
+Time difference of 10.52557 secs
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -89,7 +87,8 @@ Time difference of 20.1854 secs
 2  0.119  0.419 FLCI   DeltaSD   0.1
 3  0.0194 0.519 FLCI   DeltaSD   0.2
 4 -0.0806 0.619 FLCI   DeltaSD   0.3
-Time difference of 5.286144 secs
+  -> bc_sd_lvec_flci.csv (4 rows)
+Time difference of 1.943308 secs
 # A tibble: 4 × 5
        lb    ub method      Delta       M
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -97,7 +96,15 @@ Time difference of 5.286144 secs
 2  0.120  0.418 Conditional DeltaSD   0.1
 3  0.0203 0.518 Conditional DeltaSD   0.2
 4 -0.0796 0.618 Conditional DeltaSD   0.3
-Time difference of 9.502109 secs
+  -> bc_sd_lvec_conditional.csv (4 rows)
+Time difference of 8.078822 secs
+'as(<ngCMatrix>, "dgCMatrix")' is deprecated.
+Use 'as(., "dMatrix")' instead.
+See help("Deprecated") and help("Matrix-deprecated").
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -105,7 +112,8 @@ Time difference of 9.502109 secs
 2  0.120  0.418 C-F    DeltaSD   0.1
 3  0.0195 0.518 C-F    DeltaSD   0.2
 4 -0.0801 0.618 C-F    DeltaSD   0.3
-Time difference of 14.54118 secs
+  -> bc_sd_lvec_cf.csv (4 rows)
+Time difference of 9.969394 secs
 # A tibble: 4 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -113,7 +121,8 @@ Time difference of 14.54118 secs
 2  0.119  0.419 C-LF   DeltaSD   0.1
 3  0.0191 0.519 C-LF   DeltaSD   0.2
 4 -0.0809 0.618 C-LF   DeltaSD   0.3
-Time difference of 4.98658 secs
+  -> bc_sd_lvec_clf.csv (4 rows)
+Time difference of 4.288223 secs
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -121,7 +130,8 @@ Time difference of 4.98658 secs
 2 -0.186 0.988 FLCI   DeltaSD   0.1
 3 -0.686 1.49  FLCI   DeltaSD   0.2
 4 -1.19  1.99  FLCI   DeltaSD   0.3
-Time difference of 4.691444 secs
+  -> bc_sd_lalt_flci.csv (4 rows)
+Time difference of 1.871321 secs
 # A tibble: 4 × 5
       lb    ub method      Delta       M
    <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -129,7 +139,12 @@ Time difference of 4.691444 secs
 2 -0.185 0.853 Conditional DeltaSD   0.1
 3 -0.684 1.35  Conditional DeltaSD   0.2
 4 -1.19  1.85  Conditional DeltaSD   0.3
-Time difference of 2.185169 secs
+  -> bc_sd_lalt_conditional.csv (4 rows)
+Time difference of 2.023837 secs
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -137,7 +152,8 @@ Time difference of 2.185169 secs
 2 -0.185 0.987 C-F    DeltaSD   0.1
 3 -0.686 1.49  C-F    DeltaSD   0.2
 4 -1.18  1.99  C-F    DeltaSD   0.3
-Time difference of 7.668351 secs
+  -> bc_sd_lalt_cf.csv (4 rows)
+Time difference of 4.80268 secs
 # A tibble: 4 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -145,7 +161,8 @@ Time difference of 7.668351 secs
 2 -0.187 0.853 C-LF   DeltaSD   0.1
 3 -0.687 1.35  C-LF   DeltaSD   0.2
 4 -1.19  1.85  C-LF   DeltaSD   0.3
-Time difference of 2.731696 secs
+  -> bc_sd_lalt_clf.csv (4 rows)
+Time difference of 2.583207 secs
 Warning messages:
 1: In .ARP_computeCI(betahat = betahat, sigma = sigma, numPrePeriods = numPrePeriods,  :
   CI is open at one of the endpoints; CI length may not be accurate
@@ -167,126 +184,134 @@ Warning messages:
 Large non-rm comparison
 -----------------------
 
+There were 11 warnings (use warnings() to see them)
 # A tibble: 10 × 5
        lb    ub method Delta       M
     <dbl> <dbl> <chr>  <chr>   <dbl>
- 1  0.795 1.76  FLCI   DeltaSD 0    
- 2 -2.25  0.192 FLCI   DeltaSD 0.443
- 3 -2.68  0.758 FLCI   DeltaSD 0.886
- 4 -3.11  1.23  FLCI   DeltaSD 1.33 
- 5 -3.55  1.67  FLCI   DeltaSD 1.77 
- 6 -3.99  2.11  FLCI   DeltaSD 2.22 
- 7 -4.44  2.56  FLCI   DeltaSD 2.66 
- 8 -4.88  3.00  FLCI   DeltaSD 3.10 
- 9 -5.32  3.44  FLCI   DeltaSD 3.55 
-10 -5.77  3.89  FLCI   DeltaSD 3.99 
-Time difference of 28.01306 secs
+ 1  0.800 1.75  FLCI   DeltaSD 0    
+ 2 -2.23  0.175 FLCI   DeltaSD 0.438
+ 3 -2.65  0.734 FLCI   DeltaSD 0.875
+ 4 -3.08  1.20  FLCI   DeltaSD 1.31 
+ 5 -3.51  1.63  FLCI   DeltaSD 1.75 
+ 6 -3.95  2.07  FLCI   DeltaSD 2.19 
+ 7 -4.39  2.51  FLCI   DeltaSD 2.63 
+ 8 -4.83  2.95  FLCI   DeltaSD 3.06 
+ 9 -5.26  3.38  FLCI   DeltaSD 3.50 
+10 -5.70  3.82  FLCI   DeltaSD 3.94 
+  -> lw_sd_default.csv (10 rows)
+Time difference of 9.790477 secs
 # A tibble: 9 × 5
         lb    ub method Delta       M
      <dbl> <dbl> <chr>  <chr>   <dbl>
-1   3.91    8.37 FLCI   DeltaSD 0    
-2   2.11    8.16 FLCI   DeltaSD 0.005
-3  -0.0829  8.19 FLCI   DeltaSD 0.01 
-4  -2.38    8.03 FLCI   DeltaSD 0.015
-5  -4.95    7.51 FLCI   DeltaSD 0.02 
-6  -8.13    6.22 FLCI   DeltaSD 0.025
-7 -10.6     5.55 FLCI   DeltaSD 0.03 
-8 -12.8     5.04 FLCI   DeltaSD 0.035
-9 -14.1     5.38 FLCI   DeltaSD 0.04 
-Time difference of 1.129884 mins
+1   3.91    8.31 FLCI   DeltaSD 0    
+2   2.17    8.16 FLCI   DeltaSD 0.005
+3  -0.0884  8.13 FLCI   DeltaSD 0.01 
+4  -2.43    7.92 FLCI   DeltaSD 0.015
+5  -5.02    7.36 FLCI   DeltaSD 0.02 
+6  -8.32    5.95 FLCI   DeltaSD 0.025
+7 -10.6     5.38 FLCI   DeltaSD 0.03 
+8 -12.8     4.89 FLCI   DeltaSD 0.035
+9 -14.1     5.29 FLCI   DeltaSD 0.04 
+  -> lw_sd_lvec_flci.csv (9 rows)
+Time difference of 28.99532 secs
 # A tibble: 9 × 5
      lb     ub method      Delta       M
   <dbl>  <dbl> <chr>       <chr>   <dbl>
-1 -12.8 -3.95  Conditional DeltaSD 0    
-2 -13.5 -3.37  Conditional DeltaSD 0.005
-3 -14.3 -2.76  Conditional DeltaSD 0.01 
-4 -15.1 -2.12  Conditional DeltaSD 0.015
-5 -15.8 -1.47  Conditional DeltaSD 0.02 
-6 -16.6 -0.813 Conditional DeltaSD 0.025
-7 -17.3 -0.156 Conditional DeltaSD 0.03 
-8 -18.1  0.562 Conditional DeltaSD 0.035
-9 -18.9  1.27  Conditional DeltaSD 0.04 
-Time difference of 48.4675 secs
+1 -12.6 -4.06  Conditional DeltaSD 0    
+2 -13.3 -3.46  Conditional DeltaSD 0.005
+3 -14.1 -2.86  Conditional DeltaSD 0.01 
+4 -14.9 -2.22  Conditional DeltaSD 0.015
+5 -15.6 -1.58  Conditional DeltaSD 0.02 
+6 -16.4 -0.935 Conditional DeltaSD 0.025
+7 -17.2 -0.258 Conditional DeltaSD 0.03 
+8 -17.9  0.448 Conditional DeltaSD 0.035
+9 -18.7  1.14  Conditional DeltaSD 0.04 
+  -> lw_sd_lvec_conditional.csv (9 rows)
+Time difference of 32.45881 secs
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
 # A tibble: 9 × 5
        lb      ub method Delta       M
     <dbl>   <dbl> <chr>  <chr>   <dbl>
-1   2.95   3.23   C-F    DeltaSD 0    
-2   1.40   1.80   C-F    DeltaSD 0.005
-3  -0.389  0.198  C-F    DeltaSD 0.01 
-4  -2.19  -1.24   C-F    DeltaSD 0.015
-5  -4.02  -1.31   C-F    DeltaSD 0.02 
-6  -5.91  -0.644  C-F    DeltaSD 0.025
-7  -7.90   0.0285 C-F    DeltaSD 0.03 
-8 -10.1    0.719  C-F    DeltaSD 0.035
-9 -12.6    1.42   C-F    DeltaSD 0.04 
-Time difference of 2.455598 mins
+1   2.97   3.25   C-F    DeltaSD 0    
+2   1.44   1.83   C-F    DeltaSD 0.005
+3  -0.353  0.197  C-F    DeltaSD 0.01 
+4  -2.16  -1.25   C-F    DeltaSD 0.015
+5  -4.00  -1.42   C-F    DeltaSD 0.02 
+6  -5.91  -0.745  C-F    DeltaSD 0.025
+7  -7.93  -0.0640 C-F    DeltaSD 0.03 
+8 -10.2    0.627  C-F    DeltaSD 0.035
+9 -12.8    1.32   C-F    DeltaSD 0.04 
+  -> lw_sd_lvec_cf.csv (9 rows)
+Time difference of 1.197918 mins
 # A tibble: 9 × 5
-     lb      ub method Delta       M
-  <dbl>   <dbl> <chr>  <chr>   <dbl>
-1 -12.8 -3.95   C-LF   DeltaSD 0    
-2 -13.5 -3.34   C-LF   DeltaSD 0.005
-3 -14.3 -2.73   C-LF   DeltaSD 0.01 
-4 -15.1 -2.09   C-LF   DeltaSD 0.015
-5 -15.8 -1.44   C-LF   DeltaSD 0.02 
-6 -16.6 -0.747  C-LF   DeltaSD 0.025
-7 -17.3 -0.0868 C-LF   DeltaSD 0.03 
-8 -18.1  0.598  C-LF   DeltaSD 0.035
-9 -18.9  1.30   C-LF   DeltaSD 0.04 
-Time difference of 39.34838 secs
-There were 19 warnings (use warnings() to see them)
-# A tibble: 9 × 5
+     lb     ub method Delta       M
+  <dbl>  <dbl> <chr>  <chr>   <dbl>
+1 -12.6 -4.06  C-LF   DeltaSD 0    
+2 -13.3 -3.46  C-LF   DeltaSD 0.005
+3 -14.1 -2.84  C-LF   DeltaSD 0.01 
+4 -14.9 -2.19  C-LF   DeltaSD 0.015
+5 -15.6 -1.55  C-LF   DeltaSD 0.02 
+6 -16.4 -0.869 C-LF   DeltaSD 0.025
+7 -17.2 -0.189 C-LF   DeltaSD 0.03 
+8 -17.9  0.520 C-LF   DeltaSD 0.035
+9 -18.7  1.22  C-LF   DeltaSD 0.04 
+  -> lw_sd_lvec_clf.csv (9 rows)
+Time difference of 35.34809 secs
+There were 41 warnings (use warnings() to see them)
+# A tibble: 5 × 5
       lb    ub method Delta       M
    <dbl> <dbl> <chr>  <chr>   <dbl>
-1  3.47   6.90 FLCI   DeltaSD 0    
-2  2.20   6.66 FLCI   DeltaSD 0.005
-3  0.619  6.59 FLCI   DeltaSD 0.01 
-4 -1.05   6.37 FLCI   DeltaSD 0.015
-5 -2.92   5.88 FLCI   DeltaSD 0.02 
-6 -5.27   4.80 FLCI   DeltaSD 0.025
-7 -7.03   4.20 FLCI   DeltaSD 0.03 
-8 -8.53   3.83 FLCI   DeltaSD 0.035
-9 -9.61   3.85 FLCI   DeltaSD 0.04 
-Time difference of 1.144431 mins
-# A tibble: 9 × 5
+1  3.50   6.88 FLCI   DeltaSD  0   
+2  0.615  6.54 FLCI   DeltaSD  0.01
+3 -2.98   5.76 FLCI   DeltaSD  0.02
+4 -7.09   4.08 FLCI   DeltaSD  0.03
+5 -9.60   3.78 FLCI   DeltaSD  0.04
+  -> lw_sd_lalt_flci.csv (5 rows)
+Time difference of 20.55231 secs
+# A tibble: 5 × 5
      lb      ub method      Delta       M
   <dbl>   <dbl> <chr>       <chr>   <dbl>
-1 -10.5 -2.39   Conditional DeltaSD 0    
-2 -11.0 -2.02   Conditional DeltaSD 0.005
-3 -11.5 -1.60   Conditional DeltaSD 0.01 
-4 -12.0 -1.21   Conditional DeltaSD 0.015
-5 -12.5 -0.789  Conditional DeltaSD 0.02 
-6 -13.0 -0.352  Conditional DeltaSD 0.025
-7 -13.5  0.0676 Conditional DeltaSD 0.03 
-8 -14.0  0.519  Conditional DeltaSD 0.035
-9 -14.5  0.973  Conditional DeltaSD 0.04 
-Time difference of 13.84791 secs
-# A tibble: 9 × 5
+1 -10.3 -2.48   Conditional DeltaSD  0   
+2 -11.3 -1.69   Conditional DeltaSD  0.01
+3 -12.3 -0.878  Conditional DeltaSD  0.02
+4 -13.3 -0.0134 Conditional DeltaSD  0.03
+5 -14.3  0.905  Conditional DeltaSD  0.04
+  -> lw_sd_lalt_conditional.csv (5 rows)
+Time difference of 8.278013 secs
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+Polishing not needed - no active set detected at optimal point
+# A tibble: 5 × 5
       lb     ub method Delta       M
    <dbl>  <dbl> <chr>  <chr>   <dbl>
-1  2.76   2.99  C-F    DeltaSD 0    
-2  2.15   2.40  C-F    DeltaSD 0.005
-3  0.384  0.829 C-F    DeltaSD 0.01 
-4 -0.902 -0.213 C-F    DeltaSD 0.015
-5 -2.21  -0.666 C-F    DeltaSD 0.02 
-6 -3.57  -0.232 C-F    DeltaSD 0.025
-7 -5.00   0.206 C-F    DeltaSD 0.03 
-8 -6.59   0.641 C-F    DeltaSD 0.035
-9 -8.44   1.11  C-F    DeltaSD 0.04 
-Time difference of 1.607623 mins
-# A tibble: 9 × 5
+1  2.78   3.00  C-F    DeltaSD  0   
+2  0.411  0.837 C-F    DeltaSD  0.01
+3 -2.20  -0.741 C-F    DeltaSD  0.02
+4 -5.03   0.124 C-F    DeltaSD  0.03
+5 -8.58   1.02  C-F    DeltaSD  0.04
+  -> lw_sd_lalt_cf.csv (5 rows)
+Time difference of 26.87758 secs
+# A tibble: 5 × 5
      lb      ub method Delta       M
   <dbl>   <dbl> <chr>  <chr>   <dbl>
-1 -10.5 -2.43   C-LF   DeltaSD 0    
-2 -11.0 -2.02   C-LF   DeltaSD 0.005
-3 -11.5 -1.62   C-LF   DeltaSD 0.01 
-4 -12.0 -1.19   C-LF   DeltaSD 0.015
-5 -12.5 -0.764  C-LF   DeltaSD 0.02 
-6 -13.0 -0.352  C-LF   DeltaSD 0.025
-7 -13.5  0.0947 C-LF   DeltaSD 0.03 
-8 -14.0  0.547  C-LF   DeltaSD 0.035
-9 -14.5  1.00   C-LF   DeltaSD 0.04 
-Time difference of 1.901819 mins
-There were 19 warnings (use warnings() to see them)
+1 -10.3 -2.50   C-LF   DeltaSD  0   
+2 -11.3 -1.69   C-LF   DeltaSD  0.01
+3 -12.3 -0.853  C-LF   DeltaSD  0.02
+4 -13.3  0.0134 C-LF   DeltaSD  0.03
+5 -14.3  0.934  C-LF   DeltaSD  0.04
+  -> lw_sd_lalt_clf.csv (5 rows)
+Time difference of 1.083541 mins
+There were 24 warnings (use warnings() to see them)
 
 One post-period
 ---------------
@@ -298,7 +323,8 @@ One post-period
 2  0.192    0.539 FLCI   DeltaSD   0.1
 3  0.0919   0.639 FLCI   DeltaSD   0.2
 4 -0.00812  0.739 FLCI   DeltaSD   0.3
-Time difference of 5.107027 secs
+  -> onepost_sd_flci.csv (4 rows)
+Time difference of 1.761349 secs
 # A tibble: 4 × 5
         lb    ub method      Delta       M
      <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -306,7 +332,8 @@ Time difference of 5.107027 secs
 2  0.0999  0.623 Conditional DeltaSD   0.1
 3  0.0790  0.659 Conditional DeltaSD   0.2
 4 -0.00768 0.741 Conditional DeltaSD   0.3
-Time difference of 0.4171863 secs
+  -> onepost_sd_conditional.csv (4 rows)
+Time difference of 0.3943069 secs
 # A tibble: 4 × 5
         lb      ub method Delta       M
      <dbl>   <dbl> <chr>  <chr>   <dbl>
@@ -314,7 +341,8 @@ Time difference of 0.4171863 secs
 2  0.150    0.581  C-F    DeltaSD   0.1
 3  0.0807   0.656  C-F    DeltaSD   0.2
 4 -0.00781  0.741  C-F    DeltaSD   0.3
-Time difference of 23.70631 secs
+  -> onepost_sd_cf.csv (4 rows)
+Time difference of 7.569006 secs
 # A tibble: 4 × 5
          lb       ub method Delta       M
       <dbl>    <dbl> <chr>  <chr>   <dbl>
@@ -322,16 +350,9 @@ Time difference of 23.70631 secs
 2   0.125      0.606 C-LF   DeltaSD   0.1
 3   0.0775     0.662 C-LF   DeltaSD   0.2
 4  -0.00938    0.743 C-LF   DeltaSD   0.3
-Time difference of 0.2966211 secs
-Warning messages:
-1: In seq_len(length.out - 2L) * (del/n1) :
-  Recycling array of length 1 in vector-array arithmetic is deprecated.
-  Use c() or as.vector() instead.
-
-2: In base::min(temp$grid[temp$accept == 1]) :
-  no non-missing arguments to min; returning Inf
-3: In base::max(temp$grid[temp$accept == 1]) :
-  no non-missing arguments to max; returning -Inf
+  -> onepost_sd_clf.csv (4 rows)
+Time difference of 0.2547052 secs
+There were 13 warnings (use warnings() to see them)
 # A tibble: 5 × 5
        lb    ub method      Delta    Mbar
     <dbl> <dbl> <chr>       <chr>   <dbl>
@@ -340,7 +361,8 @@ Warning messages:
 3 -0.150  0.439 Conditional DeltaRM   1  
 4 -0.277  0.552 Conditional DeltaRM   1.5
 5 -0.409  0.552 Conditional DeltaRM   2  
-Time difference of 6.192874 secs
+  -> onepost_rm_conditional.csv (5 rows)
+Time difference of 5.248443 secs
 # A tibble: 5 × 5
        lb    ub method Delta    Mbar
     <dbl> <dbl> <chr>  <chr>   <dbl>
@@ -349,7 +371,8 @@ Time difference of 6.192874 secs
 3 -0.151  0.441 C-LF   DeltaRM   1  
 4 -0.278  0.552 C-LF   DeltaRM   1.5
 5 -0.411  0.552 C-LF   DeltaRM   2  
-Time difference of 3.484992 secs
+  -> onepost_rm_clf.csv (5 rows)
+Time difference of 2.908658 secs
 Warning messages:
 1: In .APR_computeCI_NoNuis(betahat = betahat, sigma = sigma, A = A_RM_s,  :
   CI is open at one of the endpoints; CI length may not be accurate

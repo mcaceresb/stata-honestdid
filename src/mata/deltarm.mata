@@ -89,7 +89,9 @@ real matrix function _honestRMConditionalCS(real rowvector betahat,
     gridhalf = (Mbar * (1..numPostPeriods) * abs(l_vec) * maxpre) + (20 * sdTheta)
     gridlb   = missing(grid_lb)? (gridoff - gridhalf): grid_lb
     gridub   = missing(grid_ub)? (gridoff + gridhalf): grid_ub
-    // printf("debug grid: %9.4f, %9.4f\n", gridlb, gridub)
+    if ( debug == 1 ) {
+        printf("\thonest debug: grid is %9.4f, %9.4f\n", gridlb, gridub)
+    }
     // gridlb = missing(grid_lb)? (-20*sdTheta): grid_lb
     // gridub = missing(grid_ub)? (+20*sdTheta): grid_ub
 

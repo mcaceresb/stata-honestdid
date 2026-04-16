@@ -3,23 +3,138 @@
        log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdi
 > d/test/unit-tests-consistency.do.log
   log type:  text
- opened on:  16 Oct 2024, 18:07:27
+ opened on:  15 Apr 2026, 21:47:39
 
 . set rmsg on
-r; t=0.00 18:07:27
+r; t=0.00 21:47:39
+
+. 
+. * Consistency check helper: compare honestdid CI against an R CSV.
+. * Expects to be called right after a honestdid call that populated
+. * the mata struct named in `matasave'.
+. capture program drop consistency_check
+r; t=0.00 21:47:39
+
+. program consistency_check
+  1.     syntax, rfile(str) tol(real) matasave(str) [rm]
+  2.     capture confirm file "`rfile'"
+  3.     if _rc {
+  4.         di as txt "  (skipped: `rfile' not found)"
+  5.         exit 0
+  6.     }
+  7.     else {
+  8.         di as txt "  (checking: `rfile')"
+  9.     }
+ 10. 
+.     preserve
+ 11.     qui import delimited using `"`rfile'"', clear
+ 12.     tempname R_vals S_vals S_ci
+ 13.     tempname mlb mub lb ub mtol msg fail
+ 14.     mata {
+ 15. 
+.         `mtol'   = strtoreal(st_local("tol"))
+ 16.         `R_vals' = st_data(., "m lb ub")
+ 17.         `S_ci'   = `matasave'.CI
+ 18. 
+.         // Strip OG row(s) where M == .
+.         if ( "`rm'" == "" ) {
+ 19.             if ( cols(`S_ci') == 3 ) {
+ 20.                 `S_vals' = select(`S_ci', `S_ci'[.,1] :!= .)
+ 21.             }
+ 22.             else {
+ 23.                 `S_vals' = select(`S_ci'[., 2..4], `S_ci'[., 2] :!= .)
+ 24.             }
+ 25.         }
+ 26.         else {
+ 27.             `S_vals' = editmissing(`S_ci', 0)
+ 28.         }
+ 29. 
+.         if ( rows(`S_vals') != rows(`R_vals') ) {
+ 30.             `msg' = sprintf("check failed: row mismatch: Stata %g vs R %g"
+> , rows(`S_vals'), rows(`R_vals'))
+ 31.             errprintf("%s\n", `msg')
+ 32.             _error(198)
+ 33.         }
+ 34. 
+.         // Check M values match
+.         if ( mreldif(`S_vals'[.,1], `R_vals'[.,1]) > 1e-6 ) {
+ 35.             errprintf("check failed: M values do not match between Stata a
+> nd R\n")
+ 36.             _error(198)
+ 37.         }
+ 38. 
+.         // Check lb and ub
+.         `mlb'  = reldif(`S_vals'[.,2], `R_vals'[.,2])
+ 39.         `mub'  = reldif(`S_vals'[.,3], `R_vals'[.,3])
+ 40.         `lb'   = max(`mlb')
+ 41.         `ub'   = max(`mub')
+ 42.         `fail' = (`lb' > `mtol') | (`ub' > `mtol')
+ 43. 
+.         // Slightly more tolerant fail condition
+.         if ( `fail' ) {
+ 44.             `fail' = (`lb' > sqrt(`mtol')) | (`ub' > sqrt(`mtol'))
+ 45.             if ( `fail' | (sum(`lb' :> `mtol') > 1) | (sum(`ub' :> `mtol')
+>  > 1) ) {
+ 46.                 errprintf("Tolerance exceeded (tol=%g): reldif lb=%g, ub=%
+> g\n", `mtol', `lb', `ub')
+ 47.                 errprintf("  Stata CI:\n"); `S_vals'
+ 48.                 errprintf("  R CI:\n");     `R_vals'
+ 49.                 _error(198)
+ 50.             }
+ 51.             else {
+ 52.                 printf("check WARNING (reldif lb=%g, ub=%g)\n", `lb', `ub'
+> )
+ 53.             }
+ 54.         }
+ 55.         else {
+ 56.             printf("check passed (reldif lb=%g, ub=%g)\n", `lb', `ub')
+ 57.         }
+ 58.     }
+ 59.     restore
+ 60. end
+r; t=0.00 21:47:39
+
+. 
+. * ---------------------------------------------------------------------
+. * Setup
+. * ---------------------------------------------------------------------
+. 
+. local OUT test/r-results
+r; t=0.00 21:47:39
 
 . tempname beta sigma
-r; t=0.00 18:07:27
+r; t=0.00 21:47:39
 
 . mata {
 >     st_matrix(st_local("beta"),  _honestExampleBCBeta())
 >     st_matrix(st_local("sigma"), _honestExampleBCSigma())
 > }
-r; t=0.00 18:07:27
+r; t=0.01 21:47:39
+
+. * tol is 3 significant digits (with rounding)
+. local TOL 5e-3
+r; t=0.00 21:47:39
 
 . 
-. * Base relative magnitudes comparison
-. honestdid, numpre(4) b(`beta') vcov(`sigma')
+. disp _n "-----------------------------------"
+
+-----------------------------------
+r; t=0.00 21:47:39
+
+. disp    "Base relative magnitudes comparison"
+Base relative magnitudes comparison
+r; t=0.00 21:47:39
+
+. disp _n "-----------------------------------"
+
+-----------------------------------
+r; t=0.00 21:47:39
+
+. 
+. tempname r
+r; t=0.00 21:47:39
+
+. honestdid, numpre(4) b(`beta') vcov(`sigma') matasave(`r')
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -35,19 +150,25 @@ r; t=0.00 18:07:27
 |  1.7778 | -0.016 |  0.399 | 
 |  2.0000 | -0.041 |  0.423 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=11.78 18:07:39
+r; t=11.73 21:47:50
+
+. consistency_check, rfile(`OUT'/bc_rm_default.csv) tol(`TOL') matasave(`r') rm
+  (checking: test/r-results/bc_rm_default.csv)
+check passed (reldif lb=.001337934, ub=.000897652)
+r; t=0.08 21:47:50
 
 . 
 . mata st_matrix("l_vec", _honestBasis(1, 4))
-r; t=0.00 18:07:39
+r; t=0.00 21:47:50
 
 . mata st_matrix("l_alt", J(4, 1, 1)/4)
-r; t=0.00 18:07:39
+r; t=0.00 21:47:50
 
+. 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_vec)
-r; t=0.00 18:07:39
+r; t=0.00 21:47:50
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' matasave(`r')
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -61,9 +182,16 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=4.24 18:07:43
+r; t=1.34 21:47:52
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+. consistency_check, rfile(`OUT'/bc_rm_lvec_clf.csv) tol(`TOL') matasave(`r')
+  (checking: test/r-results/bc_rm_lvec_clf.csv)
+check passed (reldif lb=4.1107e-09, ub=9.8540e-09)
+r; t=0.01 21:47:52
+
+. 
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional) matas
+> ave(`r')
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -77,13 +205,19 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 |  0.030 |  0.354 | 
 |  2.0000 | -0.030 |  0.414 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=1.75 18:07:45
+r; t=0.81 21:47:53
+
+. consistency_check, rfile(`OUT'/bc_rm_lvec_conditional.csv) tol(`TOL') matasav
+> e(`r')
+  (checking: test/r-results/bc_rm_lvec_conditional.csv)
+check passed (reldif lb=4.1107e-09, ub=9.8540e-09)
+r; t=0.01 21:47:53
 
 . 
 . local opts mvec(0(0.5)2) gridPoints(100) grid_lb(-1) grid_ub(1) l_vec(l_alt)
-r; t=0.00 18:07:45
+r; t=0.00 21:47:53
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts'
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' matasave(`r')
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -97,9 +231,16 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=3.11 18:07:48
+r; t=1.36 21:47:54
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional)
+. consistency_check, rfile(`OUT'/bc_rm_lalt_clf.csv) tol(`TOL') matasave(`r')
+  (checking: test/r-results/bc_rm_lalt_clf.csv)
+check passed (reldif lb=7.4506e-09, ub=9.8540e-09)
+r; t=0.01 21:47:54
+
+. 
+. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' method(Conditional) matas
+> ave(`r')
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -113,11 +254,31 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.192 |  0.636 | 
 |  2.0000 | -0.333 |  0.778 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=0.89 18:07:49
+r; t=0.32 21:47:54
+
+. consistency_check, rfile(`OUT'/bc_rm_lalt_conditional.csv) tol(`TOL') matasav
+> e(`r')
+  (checking: test/r-results/bc_rm_lalt_conditional.csv)
+check passed (reldif lb=7.4506e-09, ub=9.8540e-09)
+r; t=0.01 21:47:54
 
 . 
-. * Base non-rm comparison
-. honestdid, numpre(4) b(`beta') vcov(`sigma') delta(sd)
+. disp _n "----------------------"
+
+----------------------
+r; t=0.00 21:47:54
+
+. disp    "Base non-rm comparison"
+Base non-rm comparison
+r; t=0.00 21:47:54
+
+. disp _n "----------------------"
+
+----------------------
+r; t=0.00 21:47:54
+
+. 
+. honestdid, numpre(4) b(`beta') vcov(`sigma') delta(sd) matasave(`r')
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -134,13 +295,23 @@ r; t=0.89 18:07:49
 |  0.1797 |  0.040 |  0.498 | 
 |  0.2022 |  0.017 |  0.521 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.56 18:07:49
+r; t=0.22 21:47:55
+
+. consistency_check, rfile(`OUT'/bc_sd_default.csv) tol(`TOL') matasave(`r')
+  (checking: test/r-results/bc_sd_default.csv)
+check passed (reldif lb=.002951586, ub=.002564702)
+r; t=0.01 21:47:55
 
 . 
-. local opts mvec(0(0.1)0.3) l_vec(l_vec)
-r; t=0.00 18:07:49
+. local opts numpre(4) delta(sd) mvec(0(0.1)0.3) l_vec(l_vec)
+r; t=0.00 21:47:55
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth') matasave(`r')
+  4.     consistency_check, rfile(`OUT'/bc_sd_lvec_`tag'.csv) tol(`TOL') matasa
+> ve(`r')
+  5. }
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -151,10 +322,8 @@ r; t=0.00 18:07:49
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.619 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.50 18:07:50
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditio
-> nal)
+  (checking: test/r-results/bc_sd_lvec_flci.csv)
+check passed (reldif lb=.000045181, ub=.000040414)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -165,9 +334,8 @@ r; t=0.50 18:07:50
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
-r; t=1.61 18:07:51
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+  (checking: test/r-results/bc_sd_lvec_conditional.csv)
+check passed (reldif lb=1.0040e-08, ub=1.2148e-08)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -178,9 +346,8 @@ r; t=1.61 18:07:51
 |  0.2000 |  0.020 |  0.518 | 
 |  0.3000 | -0.080 |  0.618 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=1.61 18:07:53
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
+  (checking: test/r-results/bc_sd_lvec_cf.csv)
+check passed (reldif lb=.000197615, ub=.000132672)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -191,13 +358,20 @@ r; t=1.61 18:07:53
 |  0.2000 |  0.019 |  0.519 | 
 |  0.3000 | -0.081 |  0.618 | 
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
-r; t=1.37 18:07:54
+  (checking: test/r-results/bc_sd_lvec_clf.csv)
+check passed (reldif lb=.00085814, ub=1.2148e-08)
+r; t=2.08 21:47:57
 
 . 
-. local opts mvec(0(0.1)0.3) l_vec(l_alt)
-r; t=0.00 18:07:54
+. local opts numpre(4) delta(sd) mvec(0(0.1)0.3) l_vec(l_alt)
+r; t=0.00 21:47:57
 
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(FLCI)
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth') matasave(`r')
+  4.     consistency_check, rfile(`OUT'/bc_sd_lalt_`tag'.csv) tol(`TOL') matasa
+> ve(`r')
+  5. }
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -208,10 +382,8 @@ r; t=0.00 18:07:54
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.186 |  1.988 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.65 18:07:55
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(Conditio
-> nal)
+  (checking: test/r-results/bc_sd_lalt_flci.csv)
+check passed (reldif lb=.000068412, ub=.000040814)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -224,9 +396,8 @@ r; t=0.65 18:07:55
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=0.80 18:07:56
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-F)
+  (checking: test/r-results/bc_sd_lalt_conditional.csv)
+check passed (reldif lb=2.3046e-08, ub=1.6365e-08)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -237,9 +408,8 @@ r; t=0.80 18:07:56
 |  0.2000 | -0.686 |  1.488 | 
 |  0.3000 | -1.183 |  1.985 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=0.96 18:07:57
-
-. honestdid, numpre(4) b(`beta') vcov(`sigma') `opts' delta(sd) method(C-LF)
+  (checking: test/r-results/bc_sd_lalt_cf.csv)
+check passed (reldif lb=.000768767, ub=.000458531)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -252,283 +422,282 @@ r; t=0.96 18:07:57
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (+) CI is open at upper endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=1.02 18:07:58
+  (checking: test/r-results/bc_sd_lalt_clf.csv)
+check passed (reldif lb=.001635668, ub=1.6365e-08)
+r; t=1.24 21:47:58
 
 . 
-. * Large non-rm comparison
-. * -----------------------
+. disp _n "-----------------------"
+
+-----------------------
+r; t=0.00 21:47:58
+
+. disp    "Large non-rm comparison"
+Large non-rm comparison
+r; t=0.00 21:47:58
+
+. disp _n "-----------------------"
+
+-----------------------
+r; t=0.00 21:47:58
+
 . 
-. use test/LWdata_RawData.dta, clear
-r; t=0.00 18:07:58
-
-. mata stata(_honestExampleLWCall())
-(MWFE estimator converged in 4 iterations)
-
-HDFE Linear regression                            Number of obs   =  2,071,260
-Absorbing 3 HDFE groups                           F(  40,     49) =      48.42
-Statistics robust to heteroskedasticity           Prob > F        =     0.0000
-                                                  R-squared       =     0.5134
-                                                  Adj R-squared   =     0.5133
-                                                  Within R-sq.    =     0.0240
-Number of clusters (BIRTHSTATE) =         50      Root MSE        =     0.0299
-
-                            (Std. Err. adjusted for 50 clusters in BIRTHSTATE)
-------------------------------------------------------------------------------
-             |               Robust
-         emp |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
--------------+----------------------------------------------------------------
-     rtESV13 |   .0218326   .0150761     1.45   0.154    -.0084639    .0521292
-     rtESV14 |   .0155924   .0163458     0.95   0.345    -.0172557    .0484405
-     rtESV15 |    .002349   .0100346     0.23   0.816    -.0178162    .0225143
-     rtESV16 |    .009295   .0080027     1.16   0.251     -.006787    .0253769
-     rtESV17 |   .0080775   .0046505     1.74   0.089    -.0012679     .017423
-     rtESV18 |   .0096308   .0051837     1.86   0.069    -.0007862    .0200478
-     rtESV19 |   .0014553   .0043947     0.33   0.742    -.0073762    .0102868
-    rtESV110 |  -.0034589   .0051169    -0.68   0.502    -.0137418     .006824
-    rtESV111 |  -.0046198   .0020348    -2.27   0.028     -.008709   -.0005307
-    rtESV113 |  -.0047816   .0038844    -1.23   0.224    -.0125876    .0030244
-    rtESV114 |   -.009562   .0045469    -2.10   0.041    -.0186994   -.0004246
-    rtESV115 |  -.0136362   .0040365    -3.38   0.001     -.021748   -.0055245
-    rtESV116 |  -.0131881   .0048604    -2.71   0.009    -.0229554   -.0034208
-    rtESV117 |  -.0117635   .0050816    -2.31   0.025    -.0219754   -.0015517
-    rtESV118 |  -.0140831   .0051842    -2.72   0.009    -.0245011   -.0036652
-    rtESV119 |  -.0085938   .0051869    -1.66   0.104    -.0190174    .0018298
-    rtESV120 |  -.0124379   .0057466    -2.16   0.035    -.0239862   -.0008895
-    rtESV121 |   -.013811   .0049909    -2.77   0.008    -.0238405   -.0037814
-    rtESV122 |   -.013069   .0054242    -2.41   0.020    -.0239693   -.0021686
-    rtESV123 |  -.0152452   .0054238    -2.81   0.007    -.0261448   -.0043456
-    rtESV124 |  -.0162461   .0052979    -3.07   0.004    -.0268926   -.0055995
-    rtESV125 |  -.0171394   .0056009    -3.06   0.004    -.0283949   -.0058839
-    rtESV126 |  -.0249014   .0062585    -3.98   0.000    -.0374783   -.0123246
-    rtESV127 |  -.0242801   .0062522    -3.88   0.000    -.0368443   -.0117158
-    rtESV128 |  -.0246493   .0071115    -3.47   0.001    -.0389404   -.0103582
-    rtESV129 |  -.0315922   .0062608    -5.05   0.000    -.0441737   -.0190108
-    rtESV130 |  -.0296503   .0066966    -4.43   0.000    -.0431077   -.0161929
-    rtESV131 |  -.0326207   .0071235    -4.58   0.000    -.0469358   -.0183055
-    rtESV132 |  -.0331873   .0074197    -4.47   0.000    -.0480978   -.0182769
-    rtESV133 |  -.0327007   .0079775    -4.10   0.000    -.0487321   -.0166693
-    rtESV134 |  -.0312616   .0091758    -3.41   0.001     -.049701   -.0128222
-    rtESV135 |  -.0354356   .0091431    -3.88   0.000    -.0538093    -.017062
-   yearsfcor |  -.0014109   .0003749    -3.76   0.000    -.0021642   -.0006576
-    yearsflr |  -.0003817   .0004227    -0.90   0.371    -.0012312    .0004678
-      aveitc |   .0435799   .0199526     2.18   0.034     .0034836    .0836762
-   fscontrol |  -.1424124    .083087    -1.71   0.093     -.309382    .0245573
-       asian |   .1729234   .0504397     3.43   0.001      .071561    .2742857
-       black |  -.0289535   .0202055    -1.43   0.158     -.069558    .0116509
-    hispanic |    .010012   .0298186     0.34   0.738    -.0499107    .0699347
-       other |  -.1014796   .0319118    -3.18   0.003    -.1656087   -.0373505
-------------------------------------------------------------------------------
-
-Absorbed degrees of freedom:
----------------------------------------------------------------------+
-                 Absorbed FE | Categories  - Redundant  = Num. Coefs |
------------------------------+---------------------------------------|
-             PUS_SURVEY_YEAR |         8           1           7     |
-                  BIRTHSTATE |        50          50           0    *|
-   PUS_SURVEY_YEAR#BIRTHYEAR |       120           8         112     |
----------------------------------------------------------------------+
-* = FE nested within cluster; treated as redundant for DoF computation
-r; t=0.52 18:07:58
-
-. matrix b = 100 * e(b)
-r; t=0.00 18:07:58
-
-. matrix V = 100^2 * e(V) * 1.038349
-r; t=0.00 18:07:58
-
 . mata st_matrix("l_vec", _honestBasis(15 - (-2), 23))
-r; t=0.00 18:07:58
+r; t=0.00 21:47:58
 
 . mata st_matrix("l_alt", J(23, 1, 1)/23)
-r; t=0.00 18:07:58
+r; t=0.00 21:47:58
 
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd)
+. 
+. clear
+r; t=0.00 21:47:58
+
+. local rdir test/r-results
+r; t=0.00 21:47:58
+
+. import delimited using "`rdir'/lw_betahat.csv", clear
+(1 var, 32 obs)
+r; t=0.00 21:47:58
+
+. mata st_matrix("b_R", st_data(., "betahat")')
+r; t=0.00 21:47:58
+
+. import delimited using "`rdir'/lw_sigma.csv", clear
+(32 vars, 32 obs)
+r; t=0.00 21:47:58
+
+. mata st_matrix("V_R", st_data(., .))
+r; t=0.00 21:47:58
+
+. 
+. * NOTE: Even though R and Stata regression results are very close, small
+. * NOTE: numerical precision differences propagate and end up causing the
+. * NOTE: checks to fail.
+. *
+. * use test/LWdata_RawData.dta, clear
+. * mata stata(_honestExampleLWCall())
+. *
+. * local adj = (e(N) - e(df_m) - e(df_a)) / (e(N)-e(df_m))
+. * matrix b  = 100 * e(b)
+. * matrix V  = 100^2 * e(V) * `adj'
+. * matrix b  = b[1,1..32]
+. * matrix V  = V[1..32,1..32]
+. *
+. * mata st_matrix("b_R")' :/ st_matrix("b")
+. * mata st_matrix("V_R")  :/ st_matrix("V")
+. matrix b = b_R
+r; t=0.00 21:47:58
+
+. matrix V = V_R
+r; t=0.00 21:47:58
+
+. 
+. honestdid, pre(1/9) post(10/32) b(b) vcov(V) delta(sd) matasave(`r')
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -1.254 |  0.298 | (Original)
-|  0.0000 |  0.796 |  1.763 | 
-|  0.4432 | -2.253 |  0.193 | 
-|  0.8863 | -2.678 |  0.759 | 
-|  1.3295 | -3.107 |  1.227 | 
-|  1.7726 | -3.551 |  1.670 | 
-|  2.2158 | -3.994 |  2.113 | 
-|  2.6590 | -4.437 |  2.557 | 
-|  3.1021 | -4.880 |  3.000 | 
-|  3.5453 | -5.323 |  3.443 | 
-|  3.9884 | -5.766 |  3.886 | 
+|       . | -1.242 |  0.286 | (Original)
+|  0.0000 |  0.803 |  1.756 | 
+|  0.4375 | -2.235 |  0.176 | 
+|  0.8751 | -2.654 |  0.735 | 
+|  1.3126 | -3.078 |  1.197 | 
+|  1.7501 | -3.515 |  1.635 | 
+|  2.1877 | -3.953 |  2.072 | 
+|  2.6252 | -4.390 |  2.510 | 
+|  3.0628 | -4.828 |  2.947 | 
+|  3.5003 | -5.265 |  3.385 | 
+|  3.9378 | -5.703 |  3.823 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.77 18:07:59
+r; t=0.36 21:47:58
+
+. consistency_check, rfile(`OUT'/lw_sd_default.csv) tol(`TOL') matasave(`r')
+  (checking: test/r-results/lw_sd_default.csv)
+check passed (reldif lb=.001467879, ub=.000558261)
+r; t=0.00 21:47:58
 
 . 
 . local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_vec)
-r; t=0.00 18:07:59
+r; t=0.00 21:47:58
 
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth') mat
+> asave(`r')
+  4.     consistency_check, rfile(`OUT'/lw_sd_lvec_`tag'.csv) tol(`TOL') matasa
+> ve(`r')
+  5. }
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -4.410 | -1.909 | (Original)
-|  0.0000 |  3.910 |  8.374 | 
-|  0.0050 |  2.124 |  8.178 | 
-|  0.0100 | -0.083 |  8.194 | 
-|  0.0150 | -2.382 |  8.036 | 
-|  0.0200 | -4.942 |  7.514 | 
-|  0.0250 | -8.120 |  6.236 | 
-|  0.0300 | -10.555 |  5.558 | 
-|  0.0350 | -12.772 |  5.047 | 
-|  0.0400 | -14.104 |  5.390 | 
+|       . | -4.390 | -1.928 | (Original)
+|  0.0000 |  3.922 |  8.317 | 
+|  0.0050 |  2.135 |  8.131 | 
+|  0.0100 | -0.088 |  8.129 | 
+|  0.0150 | -2.414 |  7.940 | 
+|  0.0200 | -5.020 |  7.366 | 
+|  0.0250 | -8.306 |  5.968 | 
+|  0.0300 | -10.633 |  5.392 | 
+|  0.0350 | -12.827 |  4.898 | 
+|  0.0400 | -14.099 |  5.300 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.92 18:08:00
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+  (checking: test/r-results/lw_sd_lvec_flci.csv)
+check WARNING (reldif lb=.010693539, ub=.003325577)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -4.410 | -1.909 | (Original)
-|  0.0000 | -12.759 | -3.947 | (-)
-|  0.0050 | -13.524 | -3.371 | (-)
-|  0.0100 | -14.289 | -2.761 | (-)
-|  0.0150 | -15.054 | -2.125 | (-)
-|  0.0200 | -15.819 | -1.473 | (-)
-|  0.0250 | -16.584 | -0.813 | (-)
-|  0.0300 | -17.349 | -0.156 | (-)
-|  0.0350 | -18.114 |  0.562 | (-)
-|  0.0400 | -18.879 |  1.266 | (-)
+|       . | -4.390 | -1.928 | (Original)
+|  0.0000 | -12.563 | -4.062 | (-)
+|  0.0050 | -13.328 | -3.455 | (-)
+|  0.0100 | -14.093 | -2.864 | (-)
+|  0.0150 | -14.858 | -2.216 | (-)
+|  0.0200 | -15.623 | -1.580 | (-)
+|  0.0250 | -16.388 | -0.935 | (-)
+|  0.0300 | -17.153 | -0.258 | (-)
+|  0.0350 | -17.918 |  0.448 | (-)
+|  0.0400 | -18.683 |  1.141 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=20.92 18:08:21
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+  (checking: test/r-results/lw_sd_lvec_conditional.csv)
+check passed (reldif lb=5.9435e-08, ub=6.2334e-08)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -4.410 | -1.909 | (Original)
-|  0.0000 |  2.952 |  3.233 | 
-|  0.0050 |  1.418 |  1.811 | 
-|  0.0100 | -0.374 |  0.202 | 
-|  0.0150 | -2.173 | -1.234 | 
-|  0.0200 | -4.003 | -1.300 | 
-|  0.0250 | -5.894 | -0.636 | 
-|  0.0300 | -7.892 |  0.031 | 
-|  0.0350 | -10.082 |  0.732 | 
-|  0.0400 | -12.632 |  1.419 | 
+|       . | -4.390 | -1.928 | (Original)
+|  0.0000 |  2.978 |  3.255 | 
+|  0.0050 |  1.453 |  1.833 | 
+|  0.0100 | -0.349 |  0.211 | 
+|  0.0150 | -2.160 | -1.253 | 
+|  0.0200 | -4.004 | -1.407 | 
+|  0.0250 | -5.914 | -0.755 | 
+|  0.0300 | -7.941 | -0.082 | 
+|  0.0350 | -10.177 |  0.619 | 
+|  0.0400 | -12.812 |  1.316 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=21.61 18:08:43
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
+  (checking: test/r-results/lw_sd_lvec_cf.csv)
+check WARNING (reldif lb=.003407837, ub=.016583406)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -4.410 | -1.909 | (Original)
-|  0.0000 | -12.759 | -3.895 | (-)
-|  0.0050 | -13.524 | -3.290 | (-)
-|  0.0100 | -14.289 | -2.675 | (-)
-|  0.0150 | -15.054 | -2.034 | (-)
-|  0.0200 | -15.819 | -1.378 | (-)
-|  0.0250 | -16.584 | -0.714 | (-)
-|  0.0300 | -17.349 | -0.052 | (-)
-|  0.0350 | -18.114 |  0.671 | (-)
-|  0.0400 | -18.879 |  1.342 | (-)
+|       . | -4.390 | -1.928 | (Original)
+|  0.0000 | -12.563 | -4.012 | (-)
+|  0.0050 | -13.328 | -3.402 | (-)
+|  0.0100 | -14.093 | -2.779 | (-)
+|  0.0150 | -14.858 | -2.127 | (-)
+|  0.0200 | -15.623 | -1.486 | (-)
+|  0.0250 | -16.388 | -0.837 | (-)
+|  0.0300 | -17.153 | -0.155 | (-)
+|  0.0350 | -17.918 |  0.556 | (-)
+|  0.0400 | -18.683 |  1.253 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=15.36 18:08:58
+  (checking: test/r-results/lw_sd_lvec_clf.csv)
+check WARNING (reldif lb=5.9435e-08, ub=.028884777)
+r; t=30.70 21:48:29
 
 . 
-. local opts delta(sd) mvec(0(0.005)0.04) l_vec(l_alt)
-r; t=0.00 18:08:58
+. * TODO: As of April, 2026 doing 0.005 leads to a discrepency with Stata at
+. * TODO: 0.005 for FLCI.  Determine if numerical precision or deep issue.
+. 
+. local opts delta(sd) mvec(0(0.01)0.04) l_vec(l_alt)
+r; t=0.00 21:48:29
 
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(FLCI)
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(`meth') mat
+> asave(`r')
+  4.     consistency_check, rfile(`OUT'/lw_sd_lalt_`tag'.csv) tol(`TOL') matasa
+> ve(`r')
+  5. }
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -3.047 | -0.987 | (Original)
-|  0.0000 |  3.483 |  6.909 | 
-|  0.0050 |  2.232 |  6.692 | 
-|  0.0100 |  0.620 |  6.595 | 
-|  0.0150 | -1.051 |  6.378 | 
-|  0.0200 | -2.921 |  5.884 | 
-|  0.0250 | -5.266 |  4.808 | 
-|  0.0300 | -7.024 |  4.211 | 
-|  0.0350 | -8.525 |  3.832 | 
-|  0.0400 | -9.610 |  3.851 | 
+|       . | -3.031 | -1.003 | (Original)
+|  0.0000 |  3.514 |  6.887 | 
+|  0.0100 |  0.616 |  6.545 | 
+|  0.0200 | -2.981 |  5.770 | 
+|  0.0300 | -7.084 |  4.083 | 
+|  0.0400 | -9.605 |  3.784 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.89 18:08:59
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(Conditional)
+  (checking: test/r-results/lw_sd_lalt_flci.csv)
+check passed (reldif lb=.0029229, ub=.001493469)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -3.047 | -0.987 | (Original)
-|  0.0000 | -10.510 | -2.388 | (-)
-|  0.0050 | -11.010 | -2.017 | (-)
-|  0.0100 | -11.510 | -1.601 | (-)
-|  0.0150 | -12.010 | -1.214 | (-)
-|  0.0200 | -12.510 | -0.789 | (-)
-|  0.0250 | -13.010 | -0.352 | (-)
-|  0.0300 | -13.510 |  0.068 | (-)
-|  0.0350 | -14.010 |  0.519 | (-)
-|  0.0400 | -14.510 |  0.973 | (-)
+|       . | -3.031 | -1.003 | (Original)
+|  0.0000 | -10.348 | -2.476 | (-)
+|  0.0100 | -11.348 | -1.693 | (-)
+|  0.0200 | -12.348 | -0.878 | (-)
+|  0.0300 | -13.348 | -0.013 | (-)
+|  0.0400 | -14.348 |  0.905 | (-)
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=7.36 18:09:06
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-F)
+  (checking: test/r-results/lw_sd_lalt_conditional.csv)
+check passed (reldif lb=2.9099e-08, ub=8.5130e-09)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -3.047 | -0.987 | (Original)
-|  0.0000 |  2.747 |  2.973 | 
-|  0.0050 |  1.678 |  1.983 | 
-|  0.0100 |  0.396 |  0.832 | 
-|  0.0150 | -0.891 | -0.212 | 
-|  0.0200 | -2.212 | -0.658 | 
-|  0.0250 | -3.570 | -0.238 | 
-|  0.0300 | -5.011 |  0.207 | 
-|  0.0350 | -6.599 |  0.649 | 
-|  0.0400 | -8.463 |  1.102 | 
+|       . | -3.031 | -1.003 | (Original)
+|  0.0000 |  2.789 |  3.007 | 
+|  0.0100 |  0.415 |  0.840 | 
+|  0.0200 | -2.212 | -0.743 | 
+|  0.0300 | -5.048 |  0.124 | 
+|  0.0400 | -8.586 |  1.029 | 
 (method = C-F, Delta = DeltaSD, alpha = 0.050)
-r; t=7.81 18:09:14
-
-. honestdid, pre(1/9) post(10/32) b(b) vcov(V) `opts' method(C-LF)
+  (checking: test/r-results/lw_sd_lalt_cf.csv)
+check WARNING (reldif lb=.003392409, ub=.005376686)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
 | ------- | ------ | ------ |
-|       . | -3.047 | -0.987 | (Original)
-|  0.0000 | -10.510 | -2.367 | (-)
-|  0.0050 | -11.010 | -1.973 | (-)
-|  0.0100 | -11.510 | -1.578 | (-)
-|  0.0150 | -12.010 | -1.166 | (-)
-|  0.0200 | -12.510 | -0.739 | (-)
-|  0.0250 | -13.010 | -0.300 | (-)
-|  0.0300 | -13.510 |  0.149 | (-)
-|  0.0350 | -14.010 |  0.575 | (-)
-|  0.0400 | -14.510 |  1.031 | (-)
+|       . | -3.031 | -1.003 | (Original)
+|  0.0000 | -10.348 | -2.455 | (-)
+|  0.0100 | -11.348 | -1.647 | (-)
+|  0.0200 | -12.348 | -0.803 | (-)
+|  0.0300 | -13.348 |  0.067 | (-)
+|  0.0400 | -14.348 |  0.962 | (-)
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (-) CI is open at lower endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=10.83 18:09:25
+  (checking: test/r-results/lw_sd_lalt_clf.csv)
+check WARNING (reldif lb=2.9099e-08, ub=.052740836)
+r; t=13.73 21:48:43
 
 . 
-. * One post-period
-. * ---------------
+. disp _n "---------------"
+
+---------------
+r; t=0.00 21:48:43
+
+. disp    "One post-period"
+One post-period
+r; t=0.00 21:48:43
+
+. disp _n "---------------"
+
+---------------
+r; t=0.00 21:48:43
+
 . 
 . local opts mvec(0(0.1)0.3) delta(sd) numpre(7)
-r; t=0.00 18:09:25
+r; t=0.00 21:48:43
 
-. honestdid, b(`beta') vcov(`sigma') `opts' method(FLCI)
+. foreach meth in FLCI Conditional C-F C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth') matasave(`r')
+  4.     consistency_check, rfile(`OUT'/onepost_sd_`tag'.csv) tol(`TOL') matasa
+> ve(`r')
+  5. }
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -539,9 +708,8 @@ r; t=0.00 18:09:25
 |  0.2000 |  0.092 |  0.639 | 
 |  0.3000 | -0.008 |  0.739 | 
 (method = FLCI, Delta = DeltaSD, alpha = 0.050)
-r; t=0.38 18:09:25
-
-. honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
+  (checking: test/r-results/onepost_sd_flci.csv)
+check passed (reldif lb=.000067984, ub=.000044511)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -552,9 +720,8 @@ r; t=0.38 18:09:25
 |  0.2000 |  0.079 |  0.659 | 
 |  0.3000 | -0.008 |  0.741 | 
 (method = Conditional, Delta = DeltaSD, alpha = 0.050)
-r; t=0.42 18:09:26
-
-. honestdid, b(`beta') vcov(`sigma') `opts' method(C-F)
+  (checking: test/r-results/onepost_sd_conditional.csv)
+check passed (reldif lb=2.2013e-09, ub=1.5940e-08)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -568,9 +735,8 @@ r; t=0.42 18:09:26
 (-) CI is open at lower endpoint; CI length may not be accurate.
 (+) CI is open at upper endpoint; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=0.57 18:09:26
-
-. honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
+  (checking: test/r-results/onepost_sd_cf.csv)
+check passed (reldif lb=.000297448, ub=.000304945)
 (note: running execution using -parallel-; see help parallel for details)
 
 |    M    |   lb   |   ub   |
@@ -583,13 +749,39 @@ r; t=0.57 18:09:26
 (method = C-LF, Delta = DeltaSD, alpha = 0.050)
 (*) CI is open at both endpoints; CI length may not be accurate.
 Try expanding the grid using the grid_lb() and grid_ub() options
-r; t=0.41 18:09:27
+  (checking: test/r-results/onepost_sd_clf.csv)
+check passed (reldif lb=0, ub=0)
+r; t=2.54 21:48:45
+
+. 
+. disp _n
+
+
+r; t=0.00 21:48:45
+
+. disp "As of April, 2026, R has a narrower interval here and hits the limit"
+As of April, 2026, R has a narrower interval here and hits the limit
+r; t=0.00 21:48:45
+
+. disp "where Stata does not, leading to a discrepancy."
+where Stata does not, leading to a discrepancy.
+r; t=0.00 21:48:45
+
+. disp _n
+
+
+r; t=0.00 21:48:45
 
 . 
 . local opts mvec(0(0.5)2) delta(rm) numpre(7)
-r; t=0.00 18:09:27
+r; t=0.00 21:48:45
 
-. honestdid, b(`beta') vcov(`sigma') `opts' method(Conditional)
+. foreach meth in Conditional C-LF {
+  2.     local tag = lower(subinstr("`meth'", "-", "", .))
+  3.     honestdid, b(`beta') vcov(`sigma') `opts' method(`meth') matasave(`r')
+  4.     cap noi consistency_check, rfile(`OUT'/onepost_rm_`tag'.csv) tol(`TOL'
+> ) matasave(`r')
+  5. }
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -603,9 +795,27 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.276 |  0.574 | 
 |  2.0000 | -0.410 |  0.711 | 
 (method = Conditional, Delta = DeltaRM, alpha = 0.050)
-r; t=0.38 18:09:27
-
-. honestdid, b(`beta') vcov(`sigma') `opts' method(C-LF)
+  (checking: test/r-results/onepost_rm_conditional.csv)
+Tolerance exceeded (tol=.005): reldif lb=.001067385, ub=.102613284
+  Stata CI:
+                  1              2              3
+    +----------------------------------------------+
+  1 |             0    .0724456271    .1796393729  |
+  2 |            .5   -.0292901571    .3042379724  |
+  3 |             1   -.1488947638    .4390114314  |
+  4 |           1.5   -.2762452289    .5739410825  |
+  5 |             2   -.4096214149    .7112475863  |
+    +----------------------------------------------+
+  R CI:
+                  1              2              3
+    +----------------------------------------------+
+  1 |             0    .0723834112    .1795771569  |
+  2 |            .5   -.0303899795    .3033472598  |
+  3 |             1   -.1497397274    .4392733574  |
+  4 |           1.5   -.2768251002    .5519925356  |
+  5 |             2   -.4094359279    .5519925356  |
+    +----------------------------------------------+
+                 <istmt>:   198  Stata returned error
 Warning: M = 0 with Delta^RM imposes exact parallel trends in the
 post-treatment period, even if pre-treatment parallel trends is violated
 (note: running execution using -parallel-; see help parallel for details)
@@ -619,8 +829,34 @@ post-treatment period, even if pre-treatment parallel trends is violated
 |  1.5000 | -0.278 |  0.578 | 
 |  2.0000 | -0.410 |  0.713 | 
 (method = C-LF, Delta = DeltaRM, alpha = 0.050)
-r; t=0.36 18:09:27
+  (checking: test/r-results/onepost_rm_clf.csv)
+Tolerance exceeded (tol=.005): reldif lb=.000833783, ub=.103943326
+  Stata CI:
+                  1              2              3
+    +----------------------------------------------+
+  1 |             0     .071340537     .180744463  |
+  2 |            .5   -.0306350286    .3055828439  |
+  3 |             1   -.1504794166    .4405960842  |
+  4 |           1.5    -.278069663    .5775899508  |
+  5 |             2   -.4096214149    .7133118017  |
+    +----------------------------------------------+
+  R CI:
+                  1              2              3
+    +----------------------------------------------+
+  1 |             0    .0712783188    .1806822419  |
+  2 |            .5   -.0314950719    .3055574298  |
+  3 |             1   -.1508448124    .4414835274  |
+  4 |           1.5   -.2779301703    .5519925356  |
+  5 |             2    -.410540998    .5519925356  |
+    +----------------------------------------------+
+                 <istmt>:   198  Stata returned error
+r; t=1.64 21:48:47
 
 . 
-end of do-file
-r; t=0.00 18:09:27
+. log close _all
+      name:  <unnamed>
+       log:  /home/mauricio/Documents/projects/ra/roth/honestDiD/stata-honestdi
+> d/test/unit-tests-consistency.do.log
+  log type:  text
+ closed on:  15 Apr 2026, 21:48:47
+-------------------------------------------------------------------------------
