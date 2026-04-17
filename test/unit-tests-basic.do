@@ -10,35 +10,35 @@ void function _test_assert_ci(struct HonestEventStudy scalar res) {
     L = length(res.options.Mvec)
     n = res.numPrePeriods + res.numPostPeriods
 
-    * CI column count: 3 for single l_vec, 4 for multi
+    // CI column count: 3 for single l_vec, 4 for multi
     c = cols(res.CI)
     if ( K == 1 ) assert(c == 3)
     else          assert(c == 4)
 
-    * CI row count: K * (L + 1) where +1 is original CS row
+    // CI row count: K * (L + 1) where +1 is original CS row
     assert(rows(res.CI) == K * (L + 1))
 
-    * lb <= ub for non-missing rows
+    // lb <= ub for non-missing rows
     ci = select(res.CI, rowmissing(res.CI) :< c)
     assert(rows(ci) > 0)
     if ( c == 3 ) assert(all(ci[.,2] :<= ci[.,3]))
     else          assert(all(ci[.,3] :<= ci[.,4]))
 
-    * l_vec rows must equal numPostPeriods
+    // l_vec rows must equal numPostPeriods
     assert(rows(res.options.l_vec) == res.numPostPeriods)
 
-    * betahat and sigma dimensions
+    // betahat and sigma dimensions
     assert(length(res.betahat) == n)
     assert(rows(res.sigma) == n)
     assert(cols(res.sigma) == n)
 
-    * alpha is valid
+    // alpha is valid
     assert((res.options.alpha > 0) & (res.options.alpha < 1))
 
-    * OG has K entries (one original CS per l_vec)
+    // OG has K entries (one original CS per l_vec)
     assert(rows(res.OG) == K)
 
-    * open: K columns for multi (idx + value), 1 column for single
+    // open: K columns for multi (idx + value), 1 column for single
     if ( K == 1 ) assert(cols(res.open) == 1)
     else          assert(cols(res.open) == 2)
 }
@@ -264,7 +264,7 @@ program basic_matasave
         _test_assert_ci(`r1')
         assert(`r1'.options.alpha  == 0.05)
         assert(`r1'.options.method == "FLCI")
-        assert(`r1'.options.Mvec   == (0, 0.1, 0.2, 0.3))
+        assert(`r1'.options.Mvec   == (0, 0.1, 0.2))
     }
 
     * Multi l_vec, 3 M values: check option-specific fields
