@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3.4 27Feb2025}{...}
+{* *! version 1.4.0 16Apr2026}{...}
 {viewerdialog honestdid "dialog honestdid"}{...}
 {vieweralsosee "[R] honestdid" "mansection R honestdid"}{...}
 {viewerjumpto "Syntax" "honestdid##syntax"}{...}
@@ -42,6 +42,7 @@ Typically at least one of {opt numpre()} or {opt pre()} and {opt post()} are req
 {synopt :{opt vcov(str)}} name of vcov matrix; default is e(V){p_end}
 {synopt :{opt omit}} omit dropped levels from {cmd:b} and {cmd:vcov} parsing names of {cmd:b} (e.g. omitted variables in regression) {p_end}
 {synopt :{opt l_vec(str)}} name of vector with parameters of interest (default is first period post event){p_end}
+{synopt :{opt l_vecs(str)}} name of multiple vectors with parameters of interest (cannot be combined with {opt l_vec()}){p_end}
 {synopt :{opt mvec(str)}} either name of vector with M values or number list of M values (must be >= 0){p_end}
 {synopt :{opth grid_lb(real)}} lower bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}
 {synopt :{opth grid_ub(real)}} upper bound for grid search (ignored with FLCI); default is selected internally based on estimates{p_end}
@@ -170,8 +171,9 @@ The following data are available in {cmd:s(HonestEventStudy)} (default name: Hon
         real vector postPeriodIndices
             post period indices of coef vector
 
-        real vector open
+        real matrix open
             vector for whether CI is open at endpoint (0 not open, 1 at lower, 2 at upper, 3 at both)
+            (matrix if option l_vecs is used with multiple l_vec)
 
         struct _honestOptions scalar options
             structure with options used in internal computations
@@ -181,8 +183,9 @@ The following data are available in {cmd:s(HonestEventStudy).options} (default n
         real scalar alpha
             1 - confidence level
             
-        real vector l_vec
+        real matrix l_vec
             vector with parameters of interest (default is first period post event)
+            (matrix if option l_vecs is used with multiple l_vec)
 
         real vector Mvec
             vector with M values

@@ -15,6 +15,10 @@ program main
     matrix l_vec4 = -1 \ 2 \ -3 \ 4 \ -5 \ 6 \ -7
 
     unit_test basic_failures
+    unit_test basic_multilvec
+    unit_test basic_omit
+    unit_test basic_matasave
+    unit_test basic_edgecases
 
     unit_test basic_checks, delta(sd) numpre(4) method(FLCI)
     unit_test basic_checks, delta(sd) numpre(4) method(C-F)

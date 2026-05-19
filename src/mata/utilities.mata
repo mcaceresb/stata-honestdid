@@ -32,7 +32,8 @@ cap mata mata drop _honestExampleLWCall()
 mata
 struct _honestOptions {
     real scalar alpha
-    real vector l_vec
+    real matrix l_vec
+    string rowvector l_vec_names
     real vector Mvec
     real scalar rm
     real scalar omit
@@ -451,10 +452,10 @@ real matrix function _honestExampleBCSigma() {
 }
 
 string scalar function _honestExampleLWCall() {
-    return("reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [fw = nobs], absorb(PUS_SURVEY_YEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant")
+    return("reghdfe emp rtESV13 rtESV14 rtESV15 rtESV16 rtESV17 rtESV18 rtESV19 rtESV110 rtESV111 rtESV113 rtESV114 rtESV115 rtESV116 rtESV117 rtESV118 rtESV119 rtESV120 rtESV121 rtESV122 rtESV123 rtESV124 rtESV125 rtESV126 rtESV127 rtESV128 rtESV129 rtESV130 rtESV131 rtESV132 rtESV133 rtESV134 rtESV135 yearsfcor yearsflr aveitc fscontrol asian black hispanic other [aw = nobs], absorb(PUS_SURVEY_YEAR BIRTHYEAR BIRTHSTATE PUS_SURVEY_YEAR#BIRTHYEAR) cluster(BIRTHSTATE) noconstant")
 }
 
 void function _honestVersion() {
-    printf("(note: HonestDiD mata functions v1.3.4 successfully loaded)\n")
+    printf("(note: HonestDiD mata functions v1.4.0 successfully loaded)\n")
 }
 end

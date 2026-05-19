@@ -1,4 +1,4 @@
-*! version 1.3.4 27Feb2025 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
+*! version 1.4.0 16Apr2026 Mauricio Caceres Bravo, mauricio.caceres.bravo@gmail.com
 *! HonestDiD R to Stata translation
 
 capture program drop honestdid
@@ -28,6 +28,7 @@ program honestdid, sclass
         b(str)                             /// name of coefficient matrix; default is e(b)
         vcov(str)                          /// name of vcov matrix; default is e(V)
         l_vec(str)                         /// Vector with parameters of interest (default is first period post event)
+        l_vecs(str)                        /// List of vector names for multiple l_vecs
         mvec(str)                          /// Vector or list with with M-values
         grid_lb(str)                       /// Lower bound for grid
         grid_ub(str)                       /// Upper bound for grid
@@ -110,7 +111,7 @@ program honestdid, sclass
     if "`grid_ub'"    != "." confirm number `grid_ub'
     if "`gridPoints'" != ""  confirm number `gridPoints'
 
-    local dohonest = ("`b'`v'`l_vec'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
+    local dohonest = ("`b'`v'`l_vec'`l_vecs'`alpha'`mvec'`method'`preperiodindices'`postperiodindices'" != "")
     local dohonest = `dohonest' | `changegrid' | (`numpreperiods' != 0)
     if ( `dohonest' & ("`cached'" != "") ) {
         disp as txt "{bf:warning:} cached results ignored if modifications are specified"
@@ -118,7 +119,7 @@ program honestdid, sclass
     }
 
     if ( `dohonest' | ("`cached'" == "") ) {
-        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') mvec(`mvec') method(`method') `alpha' ///
+        HonestSanityChecks, b(`b') vcov(`vcov') l_vec(`l_vec') l_vecs(`l_vecs') mvec(`mvec') method(`method') `alpha' ///
             numpre(`numpreperiods') pre(`preperiodindices') post(`postperiodindices') `rm'
     }
     else {
@@ -165,6 +166,7 @@ program honestdid, sclass
                                            "`preperiodindices'",   ///
                                            "`postperiodindices'",  ///
                                            "`l_vec'",              ///
+                                           "`l_vecs'",             ///
                                            "`mvec'",               ///
                                            `alpha',                ///
                                            "`method'",             ///
@@ -189,6 +191,7 @@ program honestdid, sclass
                                       "`preperiodindices'",   ///
                                       "`postperiodindices'",  ///
                                       "`l_vec'",              ///
+                                      "`l_vecs'",             ///
                                       "`mvec'",               ///
                                       `alpha',                ///
                                       "`method'",             ///
@@ -209,6 +212,11 @@ program honestdid, sclass
     if ( `c(stata_version)' >= 16 ) frame drop `frname'
     * `results'.timeVec = (2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012)
     * `results'.referencePeriod = 2008
+
+    if ( "`coefplot'" != "" & "`l_vecs'" != "" ) {
+        disp as err "{bf:warning:} coefplot not supported with l_vecs(); option ignored"
+        local coefplot
+    }
 
     tempname plotmatrix cimatrix dummycoef labels
     if ( "`coefplot'" != "" ) {
@@ -295,6 +303,7 @@ program HonestSanityChecks
         b(str)                      /// name of coefficient matrix; default is e(b)
         vcov(str)                   /// name of vcov matrix; default is e(V)
         l_vec(str)                  /// Vector with parameters of interest (default is first period post event)
+        l_vecs(str)                 /// List of vector names for multiple l_vecs
         mvec(str)                   /// Vector or list with with M-values
         alpha(real 0.05)            /// 1 - level of CI
         NUMPREperiods(int 0)        /// number of pre-treatment periods
@@ -405,7 +414,16 @@ program HonestSanityChecks
         }
     }
 
+    if ( "`l_vec'" != "" & "`l_vecs'" != "" ) {
+        disp as err "Specify only one of l_vec() or l_vecs()"
+        exit 198
+    }
     if ( "`l_vec'" != "" ) confirm matrix `l_vec'
+    if ( "`l_vecs'" != "" ) {
+        foreach lv of local l_vecs {
+            confirm matrix `lv'
+        }
+    }
     if ( "`mvec'"  != "" ) {
         local 0, mvec(`mvec')
         cap syntax, mvec(numlist)
@@ -427,27 +445,42 @@ program HonestParallel
     * }
     disp as txt "(note: running execution using -parallel-; see {stata help parallel} for details)"
 
-    cap parallel initialize `=min(`ncores', `mveclen')', f
+    * Load EventStudy and determine K (number of l_vecs)
+    tempname results M K_lvec orig_l_vec orig_l_vec_names kvecVec pf_k
+    mata `results' = _honestPLLLoad(`"`honestfile'"')
+    mata st_numscalar("`K_lvec'", cols(`results'.options.l_vec))
+    local K_lvec = `=scalar(`K_lvec')'
+
+    * For multi-l_vec: K workers (one per l_vec); for single: min(ncores, L) workers
+    local pll_nobs   = cond(`K_lvec' > 1, `K_lvec', `mveclen')
+    local pll_ncores = min(`ncores', `pll_nobs')
+
+    cap parallel initialize `pll_ncores', f
     if ( _rc ) {
         disp as err "(note: unable to initialize -parallel-; falling back on sequential execution)"
         exit 1234
     }
 
-    tempname results M
-    forvalues p = 1 / `mveclen' {
+    forvalues p = 1 / `pll_nobs' {
         tempfile pf`p'
     }
-    mata `results' = _honestPLLLoad(`"`honestfile'"')
+
     preserve
         clear
         qui {
-            set obs `mveclen'
-            gen mindex  = _n
+            set obs `pll_nobs'
+            if ( `K_lvec' > 1 ) {
+                * Multi-l_vec: one row per l_vec; kvec = l_vec index
+                gen long kvec   = _n
+            }
+            else {
+                * Single l_vec: one row per M value
+                gen long mindex = _n
+            }
             gen resfile = `"`honestfile'"'
             gen parfile = ""
-            sort mindex
-            forvalues p = 1 / `mveclen' {
-            replace parfile = "`pf`p''" in `p'
+            forvalues p = 1 / `pll_nobs' {
+                replace parfile = "`pf`p''" in `p'
             }
         }
         global HONEST_CALLER honestdid
@@ -457,11 +490,30 @@ program HonestParallel
         mata `M' = `results'.options.Mvec
         mata `results'.options.Mvec = J(1, 0, .)
         local nfiles = 0
-        forvalues p = 1 / `mveclen' {
-            cap confirm file `"`=parfile[`p']'"'
-            if ( _rc == 0 ) {
-                mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
-                local ++nfiles
+
+        if ( `K_lvec' > 1 ) {
+            * Multi-l_vec assembly: extract kvecVec from each parfile's l_vec_names
+            mata `orig_l_vec'       = `results'.options.l_vec
+            mata `orig_l_vec_names' = `results'.options.l_vec_names
+            mata `kvecVec' = J(0, 1, .)
+            forvalues p = 1 / `K_lvec' {
+                cap confirm file `"`=parfile[`p']'"'
+                if ( _rc == 0 ) {
+                    mata `pf_k' = _honestPLLLoad(st_sdata(`p', "parfile"))
+                    mata _honestPLLAppendReplace(`results', `pf_k')
+                    mata `kvecVec' = `kvecVec' \ _honestPLLGetKvecVec(`pf_k', `mveclen')
+                    local ++nfiles
+                }
+            }
+        }
+        else {
+            * Single l_vec assembly: existing behavior
+            forvalues p = 1 / `mveclen' {
+                cap confirm file `"`=parfile[`p']'"'
+                if ( _rc == 0 ) {
+                    mata _honestPLLAppendReplace(`results', _honestPLLLoad(st_sdata(`p', "parfile")))
+                    local ++nfiles
+                }
             }
         }
 
@@ -470,16 +522,42 @@ program HonestParallel
             exit 1234
         }
 
+        * NOTE: An if block wrapping a mata block inside a program causes a syntax error
+
+        * Multi-l_vec Mvec check: unique assembled Mvec values should match original M
+        tempname _unique_Mvec
         mata {
-            `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
-            if ( !all(`M' :== `results'.options.Mvec) ) {
-                errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
-                _error(1234)
+            if ( `K_lvec' > 1 ) {
+                `_unique_Mvec' = uniqrows(colshape(`results'.options.Mvec, 1))
+                if ( rows(`_unique_Mvec') != `mveclen' ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+                if ( !all(`_unique_Mvec' :== sort(colshape(`M', 1), 1)) ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+                `results'.options.Mvec = `M'
             }
         }
-
+        * Single l_vec Mvec check: assembled Mvec should equal original M
+        mata {
+            if ( `K_lvec' <= 1 ) {
+                `results'.options.Mvec = rowshape(sort(colshape(`results'.options.Mvec, 1), 1), 1)
+                if ( !all(`M' :== `results'.options.Mvec) ) {
+                    errprintf("-parallel- run failed (Mvec); falling back on sequential execution\n")
+                    _error(1234)
+                }
+            }
+        }
     restore
-    mata _honestPLLFinish(`results')
+
+    if ( `K_lvec' > 1 ) {
+        mata _honestPLLFinishMultiK(`results', `kvecVec', `orig_l_vec', `orig_l_vec_names', `mveclen')
+    }
+    else {
+        mata _honestPLLFinish(`results')
+    }
     mata _honestPLLSave(`"`honestfile'"', `results')
 
     if ( `nfiles' != ${PLL_CHILDREN} ) {
